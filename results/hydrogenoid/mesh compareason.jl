@@ -9,9 +9,9 @@ const problinmesh = HydrogenoidProblem(;
                             l             = 0, 
                             Rmax          = 90, 
                             Nmesh         = 70,
-                            typemesh      = geometricmesh, 
-                            typebasis     = ShortP1IntLegendreBasis, 
-                            optsmesh      = (s=0.9,),  
+                            typemesh      = linmesh, 
+                            typebasis     = P1IntLegendreGenerator, 
+                            optsmesh      = (),  
                             optsbasis     = (ordermax = 5, ),                           
                             name          = "IntLeg2-linmesh",
                             nU            = nothing)
