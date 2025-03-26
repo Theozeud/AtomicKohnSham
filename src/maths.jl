@@ -13,8 +13,10 @@ function solve_generalized_eigenvalue_problem(A::AbstractMatrix{<:Real}, B::Abst
     #λ, U = real.(eigs(A,B; which = :SR, nev = n))
     #λ, U
     #C = sqrt(inv(mB))
-    λ, U = eigen(A,B)
-    λ[1:n], U[:,1:n]
+    #λ, U = eigen(A,B)
+    C = sqrt(inv(B))
+    λ, U = eigen(C*A*C)
+    λ[1:n], C*U[:,1:n]
  
 end
 
