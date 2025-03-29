@@ -2,6 +2,9 @@ using KohnShamResolution
 
 include("../../benchmarktools/hydrogenoid/setup.jl")
 
+using DoubleFloats
+
+
 const proborder2 = HydrogenoidProblem(; 
                             T             = Float64, 
                             z             = 1, 
@@ -16,7 +19,7 @@ const proborder2 = HydrogenoidProblem(;
                             nU            = nothing)
 
 const proborder5 = HydrogenoidProblem(; 
-                            T             = Float64, 
+                            T             = Double64, 
                             z             = 1, 
                             l             = 0, 
                             Rmax          = 90, 
@@ -29,7 +32,7 @@ const proborder5 = HydrogenoidProblem(;
                             nU            = nothing)
 
 const proborder10 = HydrogenoidProblem(; 
-                            T             = Float64, 
+                            T             = Double64, 
                             z             = 1, 
                             l             = 0, 
                             Rmax          = 90, 
@@ -37,7 +40,7 @@ const proborder10 = HydrogenoidProblem(;
                             typemesh      = expmesh, 
                             typebasis     = P1IntLegendreGenerator, 
                             optsmesh      = (s = 2.0,),  
-                            optsbasis     = (ordermax = 10, ),                           
+                            optsbasis     = (ordermax = 20, ),                           
                             name          = "IntLeg10-expmesh",
                             nU            = nothing)
 #@time λgeo = eigvals_hydro(problinmesh)
