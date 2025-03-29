@@ -267,8 +267,10 @@ function exchange_corr_matrix!( discretization::LDADiscretization,
     @unpack matrices, basis = discretization
     @unpack Vxc = matrices
     ρ(x) = compute_density(discretization, D, x)
-    weight(x) = vxc(model.exc, ρ(x))
-    fill_weight_mass_matrix!(basis, weight, Vxc)
+    weight = FunWeight(x -> vxc(model.exc, ρ(x)))
+    fill!(Vxc, zero(eltype(Vxc))) 
+    fill_mass_matrix!(basis, Vxc; weight = weight)
+    Vxc .= (Vxc .+ Vxc') ./2
     nothing
 end
 

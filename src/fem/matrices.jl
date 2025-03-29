@@ -30,21 +30,25 @@ function sparse_mass_matrix(pb::PolynomialBasis; weight::AbstractWeight = NoWeig
     A
 end
 
-function mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = default_method(weight))
+function mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        mass_matrix(pb; weight = InvX(), method = method)
+        weight = InvX()
+        mass_matrix(pb; weight = weight, method = default_method(method, weight))
     elseif n == -2
-        mass_matrix(pb; weight = InvX2(), method = method)
+        weight = InvX2()
+        mass_matrix(pb; weight = weight, method = default_method(method, weight))
     end
 end
 
-function sparse_mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = default_method(weight))
+function sparse_mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        sparse_mass_matrix(pb; weight = InvX(), method = method)
+        weight = InvX()
+        sparse_mass_matrix(pb; weight = weight, method = default_method(method, weight))
     elseif n == -2
-        sparse_mass_matrix(pb; weight = InvX2(), method = method)
+        weight = InvX2()
+        sparse_mass_matrix(pb; weight = weight, method = default_method(method, weight))
     end
 end
 
@@ -79,12 +83,14 @@ function fill_mass_matrix!( pb::PolynomialBasis,
 end
 
 
-function fill_mass_matrix!(pb::PolynomialBasis, n::Int, A::AbstractArray{<:Real}; method::IntegrationMethod = default_method(weight))
+function fill_mass_matrix!(pb::PolynomialBasis, n::Int, A::AbstractArray{<:Real}; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        fill_mass_matrix!(pb, A; weight = InvX(), method = method)
+        weight = InvX()
+        fill_mass_matrix!(pb, A; weight = weight, method = default_method(method, weight))
     elseif n == -2
-        fill_mass_matrix!(pb, A; weight = InvX2(), method = method)
+        weight = InvX2()
+        fill_mass_matrix!(pb, A; weight = weight, method = default_method(method, weight))
     end
     nothing
 end
@@ -186,12 +192,14 @@ function mass_tensor(pb::PolynomialBasis; weight::AbstractWeight = NoWeight(), m
     A
 end
 
-function mass_tensor(pb::PolynomialBasis, n::Int; method::IntegrationMethod = default_method(weight))
+function mass_tensor(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        mass_tensor(pb; weight = InvX(), method = method)
+        weight = InvX()
+        mass_tensor(pb; weight = weight, method = default_method(method, weight))
     elseif n == -2
-        mass_tensor(pb; weight = InvX2(), method = method)
+        weight = InvX2()
+        mass_tensor(pb; weight = weight, method = default_method(method, weight))
     end
 end
 
@@ -232,12 +240,14 @@ end
 function fill_mass_tensor!(pb::PolynomialBasis, 
                            n::Int, 
                            A::Union{AbstractArray{<:Real},Dict{Tuple{Int64, Int64, Int64}, <:Real}};
-                           method::IntegrationMethod = default_method(weight))
+                           method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        fill_mass_tensor!(pb, A; weight = InvX(), method = method)
+        weight = InvX()
+        fill_mass_tensor!(pb, A; weight = weight, method = default_method(method, weight))
     elseif n == -2
-        fill_mass_tensor!(pb, A; weight = InvX2(), method = method)
+        weight = InvX2()
+        fill_mass_tensor!(pb, A; weight = weight, method = default_method(method, weight))
     end
     nothing
 end

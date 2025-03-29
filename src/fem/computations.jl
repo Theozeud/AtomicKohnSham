@@ -3,9 +3,22 @@
 #####################################################################
 abstract type IntegrationMethod end
 
+struct NoSelectedMethod <: IntegrationMethod end
+
 struct ExactIntegration <: IntegrationMethod end
 
-struct QuadratureIntegration <: IntegrationMethod end
+struct QuadratureIntegration{T <: Real} <: IntegrationMethod 
+    x::Vector{T}
+    w::Vector{T}
+    fx::Vector{T}
+    fx2::Vector{T}
+    function QuadratureIntegration()
+        x, w = gausslegendre(100)
+        fx = similar(x)
+        fx2 = similar(fx)
+        new{eltype(x)}(x,w,fx,fx2)
+    end
+end
 
 #####################################################################
 #                         WEIGHT STRUCTURE
@@ -13,21 +26,27 @@ struct QuadratureIntegration <: IntegrationMethod end
 
 abstract type AbstractWeight end
 
+default_method(::AbstractWeight) = ExactIntegration()
+default_method(method::IntegrationMethod, ::AbstractWeight) = method
+default_method(::NoSelectedMethod, weight::AbstractWeight) = default_method(weight)
+
 struct NoWeight <: AbstractWeight end   # w(x) = 1     
 struct InvX <: AbstractWeight end       # w(x) = 1/x
 struct InvX2 <: AbstractWeight end      # w(x) = 1/x^2  
 
+struct FunWeight{funType <: Base.Function} <: AbstractWeight 
+    f::funType
+end
 
-default_method(::AbstractWeight) = ExactIntegration()
-default_method(::functionalWeight) = QuadratureIntegration()
+(weight::FunWeight)(args...; kwargs...) = weight.f(args...; kwargs...)
 
-
+default_method(::FunWeight) = QuadratureIntegration()
 
 
 has_singularity(::NoWeight, domain::Tuple{T,T}) where T <: Real = false
 has_singularity(::InvX,  domain::Tuple{T,T}) where T <: Real    = domain[1] ≤ 0 ≤ domain[2]
 has_singularity(::InvX2, domain::Tuple{T,T}) where T <: Real    = domain[1] ≤ 0 ≤ domain[2]
-
+has_singularity(::FunWeight, domain::Tuple{T,T}) where T<: Real = false
 
 #####################################################################
 #                         INTEGRATION DATA
@@ -38,7 +57,7 @@ has_singularity(::InvX2, domain::Tuple{T,T}) where T <: Real    = domain[1] ≤ 
 
 Structure holding all the data necessary to compute the integral
 
-    ∫ₐᵇ w(x) ⋅  ∏ᵢ Pᵢ(ϕ(x)) dx
+    ∫ₐᵇ w(x) ⋅ ∏ᵢ Pᵢ(ϕ(x)) dx
 
 #where:
 - `Pᵢ` are Laurent polynomials,
@@ -231,4 +250,25 @@ function swsp(::ExactIntegration, ::InvX2, intdata::IntegrationData)
         val += Q[k] * _integration_monome_over_deg2(k, invϕ[1], invϕ[2], binf, bsup)
     end 
     invϕ[1] * val
+end
+
+
+#####################################################################
+#           QUADRATURE SHIFTED WEIGHTED SCALAR PRODUCT
+#####################################################################
+
+function swsp(quadra::QuadratureIntegration, weight::FunWeight, intdata::IntegrationData)
+    @unpack x, w, fx, fx2 = quadra
+    @unpack ϕ, invϕ, P, a, b, binf, bsup = intdata
+    Q = reduce(*, P)
+    #g = x -> ϕ[1]*x+ϕ[2]
+    #f = x -> weight(x) * Q(g(x))
+    #return approximate_integral(f, (a,b); method = QuadGKJL(), reltol = 100*eps(Float64), abstol =  100*eps(Float64))
+    if binf == -1.0 && bsup == 1.0
+        @. fx   = invϕ[1] * x + invϕ[2]
+        @. fx2  = weight(fx) * Q(x) 
+        return invϕ[1] * dot(w, fx2)
+    else
+        @error "This case has not been implemented."
+    end
 end
