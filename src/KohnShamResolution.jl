@@ -5,15 +5,21 @@ module KohnShamResolution
     using SparseArrays
     using FillArrays
     using BlockDiagonals
-    using LinearOperators
+
     using TensorOperations
+    using LinearOperators
+    
+    using FastGaussQuadrature
     using Krylov
     using Arpack
     using Optim
     using Integrals
+
     using HypergeometricFunctions
+
     using UnPack
     using Memoize
+    
     using Base.Threads
     
     # ANNEXE
@@ -65,6 +71,8 @@ module KohnShamResolution
            weight_mass_matrix, sparse_weight_mass_matrix,
            weight_mass_vector, sparse_weight_mass_vector,
            weight_mass_3tensor
+    
+    export IntegrationMethod, ExactIntegration, QuadratureIntegration
 
     abstract type AbstractGenerator{T} end
     @inline Base.eltype(::AbstractGenerator{T}) where T = T
