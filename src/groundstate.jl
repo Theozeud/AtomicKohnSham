@@ -28,7 +28,7 @@ function init(  model::AbstractDFTModel, discretization::KohnShamDiscretization,
                 exc_integration_method::IntegrationMethod = ExactIntegration(),
                 fem_integration_method::IntegrationMethod = ExactIntegration(),
                 hartree::Real = 1, 
-                degen_tol::Real = eps(bottom_type(discretization.basis)),
+                degen_tol::Real = eps(eltype(discretization.basis)),
                 logconfig = LogConfig(),
                 verbose::Int = 3)
 
