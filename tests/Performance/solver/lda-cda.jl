@@ -16,7 +16,7 @@ to = TimerOutput()
 # Creation of the model
 z = 10
 N = 10
-KM = KohnShamExtended(z = z, N = N)
+KM = SlaterXα(z, N)
 
 # Choice of the method
 method = CDA(0.3)
@@ -68,16 +68,7 @@ for i ∈ 1:50
                 @timeit to "Etot" energies[:Etot] = compute_total_energy(discretization, model, D, n, ϵ)
                 @timeit to "Ekin" energies[:Ekin] = compute_kinetic_energy(discretization, U, n)
                 @timeit to "Ecou" energies[:Ecou] = compute_coulomb_energy(discretization, U, n)
-                @timeit to "Ehar" begin
-                    @unpack elT, matrices = discretization
-                    @unpack A, F, M₀ = matrices
-                    @unpack tmp_B, tmp_C = discretization.cache
-                    @timeit to "tmpB" tensor_matrix_dict!(tmp_B,D,F)
-                    @timeit to "tmpC" tmp_C .= A\tmp_B
-                    @timeit to "Crho" @tensor Crho = D[i,j] * M₀[i,j]
-                    @timeit to "hartree" elT(0.5) * (dot(tmp_B,tmp_C) + Crho^2/Rmax)
-                    #energies[:Ehar] = compute_hartree_energy(discretization, D)
-                end
+                @timeit to "Ehar" energies[:Ehar] = compute_hartree_energy(discretization, D)
                 @timeit to "Eexc" !isthereExchangeCorrelation(model) || (energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D))
             end
         end
