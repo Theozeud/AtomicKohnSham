@@ -88,8 +88,8 @@ function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
             numbas += 1
         end
         cells_to_indices[i] = zeros(Int,generators.ordermax+1)
-        cells_to_indices[i][1] = numbas - 2*generators.ordermax + 1
-        cells_to_indices[i][2:end] .= (numbas - generators.ordermax + 1):numbas
+        cells_to_indices[i][1] = numbas - 2*generators.ordermax
+        cells_to_indices[i][2:end] .= (numbas - generators.ordermax):numbas-1
     end
     # Last mesh
     i = lastindex(mesh)-1
@@ -99,30 +99,8 @@ function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
         numbas += 1
     end
     cells_to_indices[i] = zeros(Int,generators.ordermax)
-    cells_to_indices[i][1] = numbas - 2*generators.ordermax + 2
-    cells_to_indices[i][2:end] .= (numbas - generators.ordermax+2):numbas
-    #=
-    for i ∈ eachindex(mesh)[1:end-2]
-        indices_cells[i,:]        = [i,i+1] 
-        indices_generators[i,:]   = [1,2]
-    end
-    for i ∈ eachindex(mesh)[1:end-1]
-        if i != firstindex(mesh) && i != lastindex(mesh)-1
-            cells_to_indices[i,:] = ((i-1) * generators.size):(i * generators.size-1)
-        elseif i == firstindex(mesh)
-            cells_to_indices[1,1:end-1] = 1:(generators.size-1)
-        else
-            cells_to_indices[end,1:end-1] = (size - generators.size + 2):size
-        end
-        for n ∈ 2:generators.ordermax
-            index = (lastindex(mesh) - 2) + (i-1) * (generators.size-2) + n -1
-            indices_cells[index, 1]       = i
-            indices_generators[index, 1]  = n+1 
-        end
-    end
-    cells_to_indices[1,2] = 0
-    cells_to_indices[end,1] = 0
-    =#
+    cells_to_indices[i][1] = numbas - 2*generators.ordermax + 1
+    cells_to_indices[i][2:end] .= (numbas - generators.ordermax+1):numbas-1
 
     # NORMALISATION COEFFICIENTS
     normalisation = ones(Int, size)
