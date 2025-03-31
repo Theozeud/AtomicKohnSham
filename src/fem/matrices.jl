@@ -1,13 +1,36 @@
 # UTILS FOR INTERSECTION
-
-function find_intersection_indices(A::Vector{Int}, B::Vector{Int})
-    intersect_elements = filter(x -> x != 0, intersect(A, B))
-    return [(findfirst(x -> x == el, A), findfirst(x -> x == el, B)) for el in intersect_elements]
+function find_intersection!(I::Vector{Int}, A::Union{NTuple{N,Int},Int}, B::Union{NTuple{M,Int},Int}) where {N,M}
+    count = 0
+    for a ∈ A
+        if a ∈ B
+            count += 1
+            I[count] = a
+        end
+    end
+    count
 end
 
-function find_intersection_indices(A::Vector{Int}, B::Vector{Int}, C::Vector{Int})
-    intersect_elements = filter(x -> x != 0, intersect(A, B, C))
-    return  [(findfirst(x -> x == el, A), findfirst(x -> x == el, B), findfirst(x -> x == el, C)) for el in intersect_elements]
+
+function find_intersection_indices!(I::Vector{NTuple{2,Int}}, A::Union{NTuple{N,Int},Int}, B::Union{NTuple{M,Int},Int}) where {N,M}
+    count = 0
+    for a ∈ A
+        if a ∈ B
+            count += 1
+            I[count] = (findfirst(==(a),A),findfirst(==(a),B))
+        end
+    end
+    count
+end
+    
+function find_intersection_indices!(I::Vector{NTuple{3,Int}}, A::Union{NTuple{N,Int},Int}, B::Union{NTuple{M,Int},Int}, C::Union{NTuple{P,Int},Int}) where {N,M,P}
+    count = 0
+    for a ∈ A
+        if a ∈ B && a ∈ C
+            count += 1
+            I[count] = (findfirst(==(a),A),findfirst(==(a),B),findfirst(==(a),C))
+        end
+    end
+    count
 end
 
 #####################################################################
@@ -33,22 +56,18 @@ end
 function mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        weight = InvX()
-        mass_matrix(pb; weight = weight, method = default_method(method, weight))
+        mass_matrix(pb; weight = InvX(), method = default_method(method, InvX()))
     elseif n == -2
-        weight = InvX2()
-        mass_matrix(pb; weight = weight, method = default_method(method, weight))
+        mass_matrix(pb; weight = InvX2(), method = default_method(method, InvX2()))
     end
 end
 
 function sparse_mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        weight = InvX()
-        sparse_mass_matrix(pb; weight = weight, method = default_method(method, weight))
+        sparse_mass_matrix(pb; weight = InvX(), method = default_method(method, InvX()))
     elseif n == -2
-        weight = InvX2()
-        sparse_mass_matrix(pb; weight = weight, method = default_method(method, weight))
+        sparse_mass_matrix(pb; weight = InvX2(), method = default_method(method, InvX2()))
     end
 end
 
@@ -58,14 +77,16 @@ function fill_mass_matrix!( pb::PolynomialBasis,
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
     @unpack generators, mesh = pb
+    J = fill((0,0),pb.max_length_intersection[1])
     for I ∈ pb.matrix_fill_indices
-        for (i,j) ∈ find_intersection_indices(pb.indices_cells[I[1],:], pb.indices_cells[I[2],:])
+        count = find_intersection_indices!(J,pb.indices_cells[I[1]],pb.indices_cells[I[2]])
+        @views Jv = J[1:count]
+        for (i,j) ∈ Jv
             P = getgenerator(pb, I[1], i)
             Q = getgenerator(pb, I[2], j)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
-            a = mesh[pb.indices_cells[I[1],i]]
-            b = mesh[pb.indices_cells[I[1],i]+1]
+            (a,b) = getmesh(pb, I[1], i)
             intdata = IntegrationData(weight,
                                       (P,Q),
                                       ϕ,
@@ -86,11 +107,9 @@ end
 function fill_mass_matrix!(pb::PolynomialBasis, n::Int, A::AbstractArray{<:Real}; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        weight = InvX()
-        fill_mass_matrix!(pb, A; weight = weight, method = default_method(method, weight))
+        fill_mass_matrix!(pb, A; weight = InvX(), method = default_method(method, InvX()))
     elseif n == -2
-        weight = InvX2()
-        fill_mass_matrix!(pb, A; weight = weight, method = default_method(method, weight))
+        fill_mass_matrix!(pb, A; weight = InvX2(), method = default_method(method, InvX2()))
     end
     nothing
 end
@@ -117,14 +136,16 @@ end
 
 function fill_stiffness_matrix!(pb::PolynomialBasis, A::AbstractMatrix{<:Real}; method::IntegrationMethod = ExactIntegration())
     @unpack mesh = pb
+    J = fill((0,0),pb.max_length_intersection[1])
     for I ∈ pb.matrix_fill_indices
-        for (i,j) ∈ find_intersection_indices(pb.indices_cells[I[1],:], pb.indices_cells[I[2],:])
+        count = find_intersection_indices!(J,pb.indices_cells[I[1]],pb.indices_cells[I[2]])
+        @views Jv = J[1:count]
+        for (i,j) ∈ Jv
             P = getderivgenerator(pb, I[1], i)
             Q = getderivgenerator(pb, I[2], j)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
-            a = mesh[pb.indices_cells[I[1],i]]
-            b = mesh[pb.indices_cells[I[1],i]+1]
+            (a,b) = getmesh(pb, I[1], i)
             intdata = IntegrationData(NoWeight(),
                                       (P,Q),
                                       ϕ,
@@ -165,8 +186,7 @@ function fill_mass_vector!(pb::PolynomialBasis, A::AbstractMatrix{<:Real}; weigh
             P = getgenerator(pb, I[1], i)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
-            a = mesh[pb.indices_cells[I[1],i]]
-            b = mesh[pb.indices_cells[I[1],i]+1]
+            (a,b) = getmesh(pb, I[1], i)
             intdata = IntegrationData(weight,
                                       (P,),
                                       ϕ,
@@ -195,11 +215,9 @@ end
 function mass_tensor(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        weight = InvX()
-        mass_tensor(pb; weight = weight, method = default_method(method, weight))
+        mass_tensor(pb; weight = InvX(), method = default_method(method, InvX()))
     elseif n == -2
-        weight = InvX2()
-        mass_tensor(pb; weight = weight, method = default_method(method, weight))
+        mass_tensor(pb; weight = InvX2(), method = default_method(method, InvX2()))
     end
 end
 
@@ -208,15 +226,17 @@ function fill_mass_tensor!( pb::PolynomialBasis,
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
     @unpack mesh = pb
+    J = fill((0,0,0),pb.max_length_intersection[2])
     for I ∈ pb.tensor_fill_indices
-        for (i,j,k) ∈ find_intersection_indices(pb.indices_cells[I[1],:], pb.indices_cells[I[2],:], pb.indices_cells[I[3],:])
+        count = find_intersection_indices!(J, pb.indices_cells[I[1]],pb.indices_cells[I[2]], pb.indices_cells[I[3]])
+        @views Jv = J[1:count]
+        for (i,j,k) ∈ Jv
             P = getgenerator(pb, I[1], i)
             Q = getgenerator(pb, I[2], j)
             L = getgenerator(pb, I[3], k)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
-            a = mesh[pb.indices_cells[I[1],i]]
-            b = mesh[pb.indices_cells[I[1],i]+1]
+            (a,b) = getmesh(pb, I[1], i)
             intdata = IntegrationData(weight,
                                       (P,Q,L),
                                       ϕ,
@@ -243,11 +263,9 @@ function fill_mass_tensor!(pb::PolynomialBasis,
                            method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
-        weight = InvX()
-        fill_mass_tensor!(pb, A; weight = weight, method = default_method(method, weight))
+        fill_mass_tensor!(pb, A; weight = InvX(), method = default_method(method, InvX()))
     elseif n == -2
-        weight = InvX2()
-        fill_mass_tensor!(pb, A; weight = weight, method = default_method(method, weight))
+        fill_mass_tensor!(pb, A; weight = InvX2(), method = default_method(method, InvX2()))
     end
     nothing
 end
@@ -257,15 +275,17 @@ function fill_mass_tensor!( pb::PolynomialBasis,
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
     @unpack mesh = pb
+    J = fill((0,0,0),pb.max_length_intersection[2])
     for I ∈ pb.tensor_fill_indices
-        for (i,j,k) ∈ find_intersection_indices(pb.indices_cells[I[1],:], pb.indices_cells[I[2],:], pb.indices_cells[I[3],:])
+        count = find_intersection_indices!(J, pb.indices_cells[I[1]],pb.indices_cells[I[2]], pb.indices_cells[I[3]])
+        @views Jv = J[1:count]
+        for (i,j,k) ∈ Jv
             P = getgenerator(pb, I[1], i)
             Q = getgenerator(pb, I[2], j)
             L = getgenerator(pb, I[3], k)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
-            a = mesh[pb.indices_cells[I[1],i]]
-            b = mesh[pb.indices_cells[I[1],i]+1]
+            (a,b) = getmesh(pb, I[1], i)
             intdata = IntegrationData(weight,
                                       (P,Q,L),
                                       ϕ,

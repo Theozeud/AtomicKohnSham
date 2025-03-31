@@ -1,55 +1,27 @@
-# Integrated Legendre Generators
+"""
+    struct P1IntLegendreGenerator{T} <: AbstractGenerator{T}
 
-struct IntLegendreGenerator{T} <: AbstractGenerator{T}
-    polynomials::Vector{LaurentPolynomial{T}}
-    derivpolynomials::Vector{LaurentPolynomial{T}}
-    size::Int
-    ordermin::Int
-    ordermax::Int
-    binf::T
-    bsup::T
+Generator for integrated Legendre polynomials and P1 and their derivatives.
 
-    function IntLegendreGenerator(T::Type = Float64; ordermin::Int = 2, ordermax = 2, binf::Real = -T(1), bsup::Real = T(1))
-        @assert ordermin ≥ 1
-        polynomials = Vector{LaurentPolynomial{T}}(undef,ordermax-ordermin+1)
-        derivpolynomials = Vector{LaurentPolynomial{T}}(undef,ordermax-ordermin+1) 
-        for n ∈ ordermin:ordermax
-            Pₙ = Legendre(n-1; T = T, a = T(binf), b = T(bsup))
-            derivpolynomials[n-ordermin+1] = Pₙ
-            Qₙ = intLegendre(n-1; T = T, a = T(binf), b = T(bsup))
-            polynomials[n-ordermin+1] = Qₙ
-        end
-        new{T}(polynomials, derivpolynomials, ordermax - ordermin + 1, ordermin, ordermax, T(binf), T(bsup))
-    end
-end
+# Attributes
+- `polynomials::Vector{LaurentPolynomial{T}}` : Vector containing the integrated Legendre polynomials up to order `ordermax`.
+- `derivpolynomials::Vector{LaurentPolynomial{T}}` : Vector containing the derivatives of the Legendre polynomials.
+- `size::Int` : Size of the polynomial vector, equal to `ordermax + 1`.
+- `ordermax::Int` : Maximum order of the generated polynomials.
+- `binf::T` : Lower bound of the definition interval.
+- `bsup::T` : Upper bound of the definition interval.
 
-@inline Base.firstindex(::IntLegendreGenerator) = 1
-@inline Base.eachindex(ilg::IntLegendreGenerator) = eachindex(ilg.polynomials)
-@inline Base.getindex(ilg::IntLegendreGenerator, n::Int) =  ilg.polynomials[n] 
-@inline getpolynomial(ilg::IntLegendreGenerator) = ilg.polynomials
-@inline getderivpolynomial(ilg::IntLegendreGenerator) = ilg.derivpolynomials
+# Constructor
+    P1IntLegendreGenerator(T::Type = Float64; ordermax = 2, binf::Real = -T(1), bsup::Real = T(1))
 
-function IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
-    generators = IntLegendreGenerator(T; kwargs...)
-    size = generators.size * (lastindex(mesh) - 1)
-    indices_cells       = zeros(Int, size, 1)
-    indices_generators  = zeros(Int, size, 1)
-    normalisation       = ones(Int, size)
-    cells_to_indices = zeros(Int, length(mesh)-1, generators.size) 
-    for i ∈ eachindex(mesh)[1:end-1]
-        cells_to_indices[i,:] = ((i-1) * generators.size + 1):(i * generators.size)
-        for n ∈ 1:generators.size
-            indices_cells[(i-1) * generators.size + n, 1]       = i
-            indices_generators[(i-1) * generators.size + n, 1]  = n
-        end
-    end
-    PolynomialBasis(generators, mesh, size, indices_cells, indices_generators, cells_to_indices, 
-                    normalisation) 
-end
+Constructs a generator for integrated Legendre polynomials.
 
-
-# P1 + Integrated Legendre Generators
-
+## Arguments
+- `T::Type` : Numeric type for polynomial coefficients (default `Float64`).
+- `ordermax::Int` : Maximum polynomial order (must be `≥ 1`).
+- `binf::Real` : Lower bound of the definition interval (default `-1`).
+- `bsup::Real` : Upper bound of the definition interval (default `1`).
+"""
 struct P1IntLegendreGenerator{T} <: AbstractGenerator{T}
     polynomials::Vector{LaurentPolynomial{T}}
     derivpolynomials::Vector{LaurentPolynomial{T}}
@@ -58,7 +30,7 @@ struct P1IntLegendreGenerator{T} <: AbstractGenerator{T}
     binf::T
     bsup::T
 
-    function P1IntLegendreGenerator(T::Type = Float64; ordermax = 2, binf::Real = -T(1), bsup::Real = T(1))
+    function P1IntLegendreGenerator(T::Type = Float64; ordermax::Int = 2, binf::Real = -T(1), bsup::Real = T(1))
         @assert ordermax ≥ 1
         polynomials = Vector{LaurentPolynomial{T}}(undef, ordermax+1)
         derivpolynomials = Vector{LaurentPolynomial{T}}(undef, ordermax+1)
@@ -82,13 +54,54 @@ end
 @inline getpolynomial(p1ilg::P1IntLegendreGenerator) = p1ilg.polynomials
 @inline getderivpolynomial(p1ilg::P1IntLegendreGenerator) = p1ilg.derivpolynomials
 
+
 function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
+    # CREATE GENERATORS
     generators = P1IntLegendreGenerator(T; kwargs...)
+    # SIZE OF THE BASIS
     size = (generators.ordermax - 1)* (lastindex(mesh) - 1) +  (lastindex(mesh) - 2)
-    indices_cells       = zeros(Int, size, 2)
-    indices_generators  = zeros(Int, size, 2)
-    normalisation       = ones(Int, size)
-    cells_to_indices = zeros(Int, length(mesh)-1, generators.size)
+    # DICTIONNARY TO HAVE ENOUGHT INFORMATIONS ON THE BASIS TO FILL FEM MATRICES EFFICIENTLY
+    indices_cells       = Dict{Int,Union{Int,Tuple{Int,Int}}}() #zeros(Int, size, 2)
+    indices_generators  = Dict{Int,Union{Int,Tuple{Int,Int}}}() #zeros(Int, size, 2)
+    cells_to_indices    = Dict{Int,Vector{Int}}()               #zeros(Int, length(mesh)-1, generators.size)
+
+    numbas = 1
+    # First mesh
+    i = firstindex(mesh)
+    indices_cells[numbas]         = (i,i+1) 
+    indices_generators[numbas]    = (1,2)
+    numbas += 1
+    for j ∈ 2:generators.ordermax
+        indices_cells[numbas]       = i
+        indices_generators[numbas]  = j+1
+        numbas += 1
+    end
+    cells_to_indices[i] = 1:generators.ordermax
+    # Mid-meshes
+    for i ∈ eachindex(mesh)[2:end-2]
+        indices_cells[numbas]       = (i,i+1) 
+        indices_generators[numbas]  = (1,2)
+        numbas += 1
+        for j ∈ 2:generators.ordermax
+            indices_cells[numbas]       = i
+            indices_generators[numbas]  = j+1
+            numbas += 1
+        end
+        cells_to_indices[i] = zeros(Int,generators.ordermax+1)
+        cells_to_indices[i][1] = numbas - 2*generators.ordermax + 1
+        cells_to_indices[i][2:end] .= (numbas - generators.ordermax + 1):numbas
+    end
+    # Last mesh
+    i = lastindex(mesh)-1
+    for j ∈ 2:generators.ordermax
+        indices_cells[numbas]       = i
+        indices_generators[numbas]  = j+1
+        numbas += 1
+    end
+    cells_to_indices[i] = zeros(Int,generators.ordermax)
+    cells_to_indices[i][1] = numbas - 2*generators.ordermax + 2
+    cells_to_indices[i][2:end] .= (numbas - generators.ordermax+2):numbas
+    #=
     for i ∈ eachindex(mesh)[1:end-2]
         indices_cells[i,:]        = [i,i+1] 
         indices_generators[i,:]   = [1,2]
@@ -109,6 +122,17 @@ function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
     end
     cells_to_indices[1,2] = 0
     cells_to_indices[end,1] = 0
-    PolynomialBasis(generators, mesh, size, indices_cells, indices_generators, cells_to_indices, 
-        normalisation) 
+    =#
+
+    # NORMALISATION COEFFICIENTS
+    normalisation = ones(Int, size)
+
+    PolynomialBasis(generators, 
+                    mesh, 
+                    size, 
+                    indices_cells, 
+                    indices_generators, 
+                    cells_to_indices, 
+                    normalisation,
+                    (2,2)) 
 end
