@@ -36,35 +36,22 @@ module KohnShamResolution
     abstract type AbstractPolynomial{T} end
     @inline Base.eltype(::AbstractPolynomial{T}) where T = T
 
-
     export LaurentPolynomial
     export Polynomial, Monomial, RandMonomial, RandPolynomial, RootsPolynomial
-    export deg, degmax, degmin, haslog, ismonomial, iszero
-    export integrate!, integrate, deriv!, deriv, scalar_product, normL2, elag!, diveucl
+    export deg, degmax, degmin, ismonomial, iszero
+    export integrate, deriv, scalar_product, normL2, elag!, diveucl
     include("fem/laurentpolynomial.jl")
-
-    #include("laurentpolynomial/integration_tools.jl")
-
-    #export RationalFraction, SommeRationalFraction
-    #export fraction_decomp, inEntpart
-    #include("laurentpolynomial/rationalfraction.jl")
 
     export Legendre, intLegendre
     include("fem/legendre polynomial.jl")
 
-    #export PiecewiseLaurentPolynomial
-    #export get_support
-    #include("laurentpolynomial/piecewiselaurentpolynomial.jl")
 
-    
     ############        FINITE ELEMENT METHOD        ############
 
     abstract type Basis end
     export PolynomialBasis
 
-    export IntLegendreGenerator, P1IntLegendreGenerator
-
-    export ExactIntegration
+    export P1IntLegendreGenerator
 
     export mass_matrix, sparse_mass_matrix, 
            stiffness_matrix, sparse_stiffness_matrix,
@@ -86,7 +73,6 @@ module KohnShamResolution
     include("fem/matrices.jl")
     include("fem/integration_formula.jl")
 
-    #include("fem/utils_computations.jl")
 
     # KOHN-SHAM MODEL
     export ExchangeCorrelation,NoExchangeCorrelation, SlaterXα, LSDA
