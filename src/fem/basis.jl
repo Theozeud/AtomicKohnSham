@@ -124,14 +124,16 @@ end
 ########################       Evaluation tools       ########################
 
 function (pb::PolynomialBasis)(i::Int, x::T) where T
-    newT = promote_type(eltype(pb), T)
-    localisation_x = findindex(basis.mesh, x)
-    y = zero(newT)
+    localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
+    if isnothing(j)
+        newT = promote_type(eltype(pb), T)
+        return zero(newT)
+    end
     P = getgenerator(pb, i, j)
     ϕ = getshift(pb, i, j)
     ϕx = ϕ[1]*x + ϕ[2]
-    y += P(ϕx)
+    y = P(ϕx)
     y *= getnormalization(pb, i)
     return y
 end
@@ -140,7 +142,7 @@ function (pb::PolynomialBasis)(coeffs::AbstractVector, x::T) where T
     @assert length(coeffs) == pb.size
     newT = promote_type(eltype(pb),T)
     y = zero(newT)
-    localisation_x = findindex(basis.mesh, x)
+    localisation_x = findindex(pb.mesh, x)
     for i ∈ cells_to_indices[localisation_x]
         y += coeffs[i] * pb(i, x)
     end
@@ -148,14 +150,16 @@ function (pb::PolynomialBasis)(coeffs::AbstractVector, x::T) where T
 end
 
 function eval_derivative(pb::PolynomialBasis, i::Int, x::T) where T
-    newT = promote_type(eltype(pb), T)
-    localisation_x = findindex(basis.mesh, x)
-    y = zero(newT)
+    localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
+    if isnothing(j)
+        newT = promote_type(eltype(pb), T)
+        return zero(newT)
+    end
     P = getderivgenerator(pb, i, j)
     ϕ = getshift(pb, i, j)
     ϕx = ϕ[1]*x + ϕ[2]
-    y += P(ϕx)
+    y = P(ϕx)
     y *= getnormalization(pb, i)
     return y
 end
