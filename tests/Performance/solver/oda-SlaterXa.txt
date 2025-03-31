@@ -75,3 +75,41 @@ Loop header                        10   49.5μs    0.0%  4.95μs      320B    0.
 Create mesh                         1   31.2μs    0.0%  31.2μs   1.64KiB    0.0%  1.64KiB
 Make Solution                       1   18.3μs    0.0%  18.3μs   3.83KiB    0.0%  3.83KiB
 ─────────────────────────────────────────────────────────────────────────────────────────
+==============================================
+PERFORMANCE PARAMETERS
+Nh = 10
+lh = 1
+ordermax = 10
+Method = ODA
+Number of basis function : 89
+==============================================
+─────────────────────────────────────────────────────────────────────────────────────────
+                                                Time                    Allocations      
+                                       ───────────────────────   ────────────────────────
+           Tot / % measured:                1.95s /  51.5%            272MiB /  48.6%    
+
+Section                        ncalls     time    %tot     avg     alloc    %tot      avg
+─────────────────────────────────────────────────────────────────────────────────────────
+PerformStep                        10    976ms   97.1%  97.6ms    124MiB   93.6%  12.4MiB
+  Prepare eigenvalue problem       10    524ms   52.2%  52.4ms   2.49MiB    1.9%   254KiB
+  update density                   10    221ms   22.0%  22.1ms   64.8MiB   49.0%  6.48MiB
+  compute energy                   10    106ms   10.5%  10.6ms   40.7MiB   30.8%  4.07MiB
+    Eexc                           10   95.8ms    9.5%  9.58ms   38.5MiB   29.1%  3.85MiB
+      Eexc                         10   5.42ms    0.5%   542μs   38.3KiB    0.0%  3.83KiB
+      Eval objectiv function       10   39.6μs    0.0%  3.96μs   1.41KiB    0.0%     144B
+      Compute density              10   33.8μs    0.0%  3.38μs      640B    0.0%    64.0B
+    Etot                           10   8.73ms    0.9%   873μs   1.71MiB    1.3%   175KiB
+    Ehar                           10    781μs    0.1%  78.1μs    457KiB    0.3%  45.7KiB
+    Ekin                           10    168μs    0.0%  16.8μs   19.7KiB    0.0%  1.97KiB
+    Ecou                           10   99.1μs    0.0%  9.91μs   19.2KiB    0.0%  1.92KiB
+  Find orbital                     10   97.6ms    9.7%  9.76ms   15.7MiB   11.8%  1.57MiB
+  density computation              10    254μs    0.0%  25.4μs      320B    0.0%    32.0B
+  aufbau                           10    217μs    0.0%  21.7μs   49.1KiB    0.0%  4.91KiB
+Init Solver                         1   24.6ms    2.5%  24.6ms   7.44MiB    5.6%  7.44MiB
+Loop header                        10   3.57ms    0.4%   357μs   1.89KiB    0.0%     194B
+Create basis                        1    281μs    0.0%   281μs    205KiB    0.2%   205KiB
+Loop footer                        10    238μs    0.0%  23.8μs    621KiB    0.5%  62.1KiB
+init Discretization                 1   65.3μs    0.0%  65.3μs    261KiB    0.2%   261KiB
+Create mesh                         1   57.2μs    0.0%  57.2μs   2.02KiB    0.0%  2.02KiB
+Make Solution                       1   22.1μs    0.0%  22.1μs   1.39KiB    0.0%  1.39KiB
+─────────────────────────────────────────────────────────────────────────────────────────
