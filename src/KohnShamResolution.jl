@@ -109,7 +109,7 @@ module KohnShamResolution
     export LDADiscretization, LSDADiscretization
     include("discretization/lda.jl")
     include("discretization/lsda.jl")
-
+    #include("discretization/old_lsda.jl")
 
     export DFTProblem
     include("problem.jl")
