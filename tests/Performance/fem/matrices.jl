@@ -8,6 +8,9 @@ original_stdout = stdout
 output_file = open("tests/Performance/fem/matrices_$(Threads.nthreads())_threads.txt", "a")
 redirect_stdout(output_file)
 
+println("")
+println("=====================================")
+println("=====================================")
 
 # IntLeg2 - Nmesh = 50
 println("IntLeg2, Nmesh = 50")
@@ -61,8 +64,8 @@ M₋₂ = zeros(T,l,l)
 
 println("=====================================")
 
-# IntLeg10 - Nmesh = 50
-println("IntLeg10, Nmesh = 50")
+# IntLeg10 - Nmesh = 300
+println("IntLeg10, Nmesh = 300")
 Nmesh = 300
 T = Float64
 Rmin = 0.0
