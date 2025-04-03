@@ -24,10 +24,11 @@ mutable struct LDACache{T <: Real}
     tmp_MV::Matrix{T}               # Store the contraction F:C
     tmp_B::Vector{T}                # Matrix of 4πρQᵢ  
     tmp_C::Vector{T}                # Matrix for V(ρ) - solution of the Gauss Electrostatic law
+    tmp_vect::Vector{T}             # Vector to store temprary vector
 end
 
 
-function create_cache_lda(lₕ::Int, Nₕ::Int, T)
+function create_cache_lda(lₕ::Int, Nₕ::Int, T::Type)
     # FEM MATRICES
     A           = spzeros(T, Nₕ, Nₕ) 
     M₀          = zeros(T, Nₕ, Nₕ)
@@ -46,9 +47,10 @@ function create_cache_lda(lₕ::Int, Nₕ::Int, T)
     tmp_MV          = zeros(T, Nₕ, Nₕ)  
     tmp_B           = zeros(T, Nₕ)
     tmp_C           = zeros(T, Nₕ)
+    tmp_vect        = zeros(T, Nₕ)
 
     LDAMatrices{T, typeof(A), typeof(Hfix)}(A, M₀, M₋₁, M₋₂, F, H, Kin, Coulomb, Hfix, Hartree, Vxc),  
-    LDACache{T}(tmp_MV, tmp_B, tmp_C)
+    LDACache{T}(tmp_MV, tmp_B, tmp_C, tmp_vect)
 end
 
 
@@ -69,11 +71,7 @@ struct LDADiscretization{T <: Real, T2 <: Real, typeBasis <: Basis} <: KohnShamD
     matrices::LDAMatrices{T2}
     cache::LDACache{T2}
     function LDADiscretization(lₕ::Int, basis::Basis, mesh::Mesh, nₕ::Int = length(basis))
-        elT = try
-             bottom_type(basis)
-        catch
-            eltype(basis)
-        end
+        elT = eltype(basis)
         Nₕ = length(basis)
         new{eltype(mesh), elT, typeof(basis)}(lₕ, nₕ, Nₕ, basis, mesh, first(mesh), last(mesh), elT, create_cache_lda(lₕ, Nₕ, elT)...)
     end
@@ -86,24 +84,22 @@ dim(discretization::LDADiscretization) = discretization.Nₕ * (discretization.l
 #                          Init Cache
 #####################################################################
 
-function init_cache!(discretization::LDADiscretization, model::AbstractDFTModel, hartree::Real)
+function init_cache!(discretization::LDADiscretization, model::AbstractDFTModel, hartree::Real, integration_method::IntegrationMethod)
 
     @unpack lₕ, basis, matrices  = discretization
     @unpack A, M₀, M₋₁, M₋₂, F, Kin, Coulomb, Hfix = matrices
 
     # CREATION OF FEM MATRICES
-    fill_stiffness_matrix!(basis, A)
-    fill_mass_matrix!(basis, M₀)
-    fill_weight_mass_matrix!(basis, -1, M₋₁)
-    lₕ == 0 || fill_weight_mass_matrix!(basis, -2, M₋₂)
-    iszero(hartree) || fill_weight_mass_3tensor!(basis, Monomial(-1), F)
+    fill_stiffness_matrix!(basis, A; method = integration_method)
+    fill_mass_matrix!(basis, M₀; method = integration_method)
+    fill_mass_matrix!(basis, -1, M₋₁; method = integration_method)
+    lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂; method = integration_method)
+    iszero(hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
 
     # CREATION OF THE FIX PART OF THE HAMILTONIAN 
     kinetic_matrix!(discretization)
     coulomb_matrix!(discretization, model)
     for l ∈ 1:lₕ+1
-        #@views vHfix = Hfix[l,:,:]
-        #@views vKin = Kin[l,:,:]
         @. Hfix[l] = Kin[l] + Coulomb
     end
     nothing
@@ -152,7 +148,6 @@ function prepare_eigenvalue_problem!(   discretization::LDADiscretization,
     # BUILD THE HAMILTONIAN OF THE lᵗʰ SECTION
     @threads for l ∈ 0:discretization.lₕ
         @views vH = H[:,:,l+1]
-        #@views vHfix = Hfix[l+1,:,:]
         @. vH = Hfix[l+1] + Vxc + Hartree
     end
     nothing
@@ -256,6 +251,7 @@ function hartree_matrix!(discretization::LDADiscretization, D::AbstractMatrix{<:
     tensor_vector_dict!(tmp_MV, tmp_C, F)
     @. Hartree = tmp_MV + newCrho/Rmax * M₀
     @. Hartree .*= coeff
+    Hartree .= (Hartree .+ Hartree') ./2
     nothing
 end
 
@@ -269,8 +265,10 @@ function exchange_corr_matrix!( discretization::LDADiscretization,
     @unpack matrices, basis = discretization
     @unpack Vxc = matrices
     ρ(x) = compute_density(discretization, D, x)
-    weight(x) = vxc(model.exc, ρ(x))
-    fill_weight_mass_matrix!(basis, weight, Vxc)
+    weight = FunWeight(x -> vxc(model.exc, ρ(x)))
+    fill!(Vxc, zero(eltype(Vxc))) 
+    fill_mass_matrix!(basis, Vxc; weight = weight)
+    Vxc .= (Vxc .+ Vxc') ./2
     nothing
 end
 
@@ -310,7 +308,6 @@ function compute_kinetic_energy(discretization::LDADiscretization,
     @unpack Kin = discretization.matrices
     energy_kin = zero(elT)
     @inbounds for l ∈ 1:lₕ+1 
-        #@views vKin = Kin[l,:,:]  
         @inbounds for k ∈ 1:nₕ
             if !iszero(n[l,k])
                 @views Ulk = U[:,k,l]
@@ -381,7 +378,7 @@ function compute_exchangecorrelation_energy(discretization::LDADiscretization,
     @unpack Rmax = discretization
     ρ(x) = compute_density(discretization, D, x)
     f(x,p) = exc(model.exc, ρ(x)) * x^2
-    prob = IntegralProblem(f, (zero(Rmax),Rmax))
+    prob = IntegralProblem(f, (zero(Rmax), Rmax))
     4π * solve(prob, QuadGKJL(); reltol = 1e-10, abstol = 1e-10).u
 end
 
@@ -437,15 +434,18 @@ function density!(  discretization::LDADiscretization,
 end
 
 function compute_density(discretization::LDADiscretization, D::AbstractMatrix{<:Real}, x::Real)
-    @unpack basis = discretization
-    newT = promote_type(eltype(basis), typeof(x))
-    val = zero(newT)
-    eval_basis = zeros(newT, basis.size)
-    @inbounds for i ∈ eachindex(basis)
-        eval_basis[i] = basis(i,x)
+    @unpack basis, cache = discretization
+    @unpack tmp_vect, tmp_C = cache
+    localisation_x = findindex(basis.mesh, x)
+    I = basis.cells_to_indices[localisation_x]
+    @views eval_basis = tmp_C[I]
+    @inbounds for (n,i) ∈ enumerate(I)
+        eval_basis[n] = basis(i,x)
     end
-    val = (eval_basis)' * D * eval_basis
-    return val* 1/4π * 1/(x^2)
+    @views tv = tmp_vect[I]
+    @views Dview = D[I,I]
+    mul!(tv,Dview,eval_basis)
+    return 1/(4π*x^2) * dot(eval_basis,tv)
 end
 
 

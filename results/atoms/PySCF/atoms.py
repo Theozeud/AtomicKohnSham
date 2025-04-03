@@ -1,18 +1,35 @@
-from pyscf import gto, dft
+from pyscf import gto, scf, ci
 
-mol = gto.M(
-    atom = 'He 0 0 0',  # Coordonnées de l'atome
-    basis = 'sto-3g',   # Base de fonctions (STO-3G pour des calculs de base)
-    charge = 0,         # Charge nette de la molécule
-    spin = 0,           # Nombre d'électrons non appariés (0 pour un atome d'hydrogène)
-    symmetry = True,    # Activer la symétrie
+# Définir la molécule LiCN
+mol = gto.Mole()
+mol.build(
+    # Position des atomes (cartésienne)
+    atom = '''                      
+    Li 0.000000 0.000000 0.000000
+    C  1.100000 0.000000 0.000000
+    N  2.200000 0.000000 0.000000
+    ''',
+    # Base utilisée pour les calculs                        
+    basis = '6-31G',
+    # Pas de symétrie  
+    symmetry = False  
 )
 
+# Effectuer un calcul Hartree-Fock
+mf = scf.RHF(mol)
+mf.kernel()
 
-mf_hf = dft.RKS(mol)
+# Créer un objet CI avec le calcul Hartree-Fock
+myci = ci.CISD(mf)
 
-mf_hf.xc = '' 
-energy = mf_hf.kernel()
+# Effectuer le calcul CI
+myci.kernel()
 
-# Afficher l'énergie fondamentale
-print(f"Energy of the ground state: {energy} Hartree")
+# Afficher les résultats
+print(f"Énergie totale CI (CISD) : {myci.e_tot:.6f} Hartree")
+
+# Calculer le moment dipolaire
+dipole_moment = mf.dip_moment()
+
+# Afficher le moment dipolaire
+print(f"Le moment dipolaire de la molécule LiCN est : {dipole_moment}")

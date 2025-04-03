@@ -47,7 +47,7 @@ function create_cache_method(method::RCAMethod, discretization::KohnShamDiscreti
     n                   = init_occupation_number(discretization)
     Noccup              = zeros(Int,3)
     tdegen              = zero(elT)
-    index_aufbau        = zeros(Int, (discretization.lₕ+1)*discretization.nₕ)
+    index_aufbau        = zeros(Int, length(ϵ))
     energies_prev       = Dict( :Etot => zero(elT),
                                 :Ekin => zero(elT),
                                 :Ecou => zero(elT),
@@ -145,7 +145,10 @@ function performstep!(cache::RCACache, method::RCAMethod, solver::KohnShamSolver
         energies[:Ekin] = compute_kinetic_energy(discretization, U, n)
         energies[:Ecou] = compute_coulomb_energy(discretization, U, n)
         energies[:Ehar] = compute_hartree_energy(discretization, D)
-        !isthereExchangeCorrelation(model) || (energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D))
+        !isthereExchangeCorrelation(model) || 
+                (energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D))
+        #!(typeof(discretization) <: LSDADiscretization) || 
+        #        (energies[:Ekincorr] = compute_kinetic_correlation_energy!(discretization, model, D))
     end
 
     # STEP  6 : COMPUTE THE NEW DENSITY
@@ -153,7 +156,7 @@ function performstep!(cache::RCACache, method::RCAMethod, solver::KohnShamSolver
 end
 
 
-function loopfooter!(cache::RCACache, method::RCAMethod, solver::KohnShamSolver) end
+function loopfooter!(::RCACache, ::RCAMethod, ::KohnShamSolver) end
 
 function monitor(cache::RCACache, ::RCAMethod, ::KohnShamSolver)
     println("Relaxed Parameter : $(cache.t)")

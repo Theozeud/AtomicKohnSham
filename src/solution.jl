@@ -25,13 +25,6 @@ struct KohnShamSolution{problemType <: DFTProblem,
 
     datas::solutionType                 # All datas depending on the method used
 
-    #=
-    occupation_number       # Final occupation number
-    orbitals_energy         # Final orbitals energy
-    orbitals                # Final coefficients of orbitals
-    density_coeffs          # Final coefficients of density
-    =#
-
     log::logbookType                    # LogBook of all recorded quantities
 
     name::String                        # Name of the solution

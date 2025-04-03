@@ -25,11 +25,10 @@ end
 function init(  model::AbstractDFTModel, discretization::KohnShamDiscretization, method::SCFMethod; 
                 scftol::Real, 
                 maxiter::Int = 100,
-                quad_method = QuadGKJL(),
-                quad_reltol::Real  = 1e-3,
-                quad_abstol::Real   = 1e-3,
+                exc_integration_method::IntegrationMethod = ExactIntegration(),
+                fem_integration_method::IntegrationMethod = ExactIntegration(),
                 hartree::Real = 1, 
-                degen_tol::Real = eps(bottom_type(discretization.basis)),
+                degen_tol::Real = eps(eltype(discretization.basis)),
                 logconfig = LogConfig(),
                 verbose::Int = 3)
 
@@ -37,7 +36,7 @@ function init(  model::AbstractDFTModel, discretization::KohnShamDiscretization,
     T = discretization.elT
 
     # Init Cache of the Discretisation
-    init_cache!(discretization, model, hartree)
+    init_cache!(discretization, model, hartree, fem_integration_method)
 
     # Init Cache of the Method
     cache = create_cache_method(method, discretization)
@@ -48,9 +47,8 @@ function init(  model::AbstractDFTModel, discretization::KohnShamDiscretization,
     #  SolverOptions
     opts = SolverOptions(T(scftol), 
                          maxiter, 
-                         quad_method, 
-                         T(quad_reltol), 
-                         T(quad_abstol), 
+                         exc_integration_method, 
+                         fem_integration_method, 
                          T(hartree), 
                          T(degen_tol),
                          UInt8(verbose))
@@ -67,10 +65,8 @@ end
 
 # LOOPHEADER
 function loopheader!(solver::KohnShamSolver)
-
     # LOOPHEADER SPECIFIC FOR THE METHOD 
     loopheader!(solver.cache, solver.method, solver)
-
     nothing                                         
 end 
 
