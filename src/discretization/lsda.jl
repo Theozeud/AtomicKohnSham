@@ -110,7 +110,7 @@ end
 #                          Initialization
 #####################################################################
 
-init_density(kd::LSDADiscretization)                 = fill(one(kd.elT), kd.Nₕ, kd.Nₕ, 2)  
+init_density(kd::LSDADiscretization)                 = fill(zero(kd.elT), kd.Nₕ, kd.Nₕ, 2)  
 init_orbitals(kd::LSDADiscretization)                = zeros(kd.elT, kd.Nₕ, kd.nₕ, kd.lₕ+1, 2)
 init_orbitals_energy(kd::LSDADiscretization)         = zeros(kd.elT, kd.lₕ+1, kd.nₕ, 2)
 init_occupation_number(kd::LSDADiscretization)       = zeros(kd.elT, kd.lₕ+1, kd.nₕ, 2)
@@ -411,7 +411,7 @@ function compute_exchangecorrelation_energy(discretization::LSDADiscretization,
 end
 
 function compute_kinetic_correlation_energy!(   discretization::LSDADiscretization, 
-                                                solver::KohnShamSolver, 
+                                                model::KohnShamExtended,
                                                 D::AbstractArray{<:Real})
     @unpack Rmax = discretization
     @views DUP = D[:,:,1]   
@@ -421,7 +421,7 @@ function compute_kinetic_correlation_energy!(   discretization::LSDADiscretizati
     ρ(x) = ρDOWN(x) + ρUP(x)
     ξ(x) = (ρUP(x) - ρDOWN(x))/ρ(x)
     rs(x) = (3/(4π * ρ(x)))^(1/3)
-    tc(x,p) =  -4 * ec(solver.model.exc, ρUP(x), ρDOWN(x)) * ρ(x) * x^2 + 3 * x^2 * ( ρUP(x)* vcUP(solver.model.exc, ρUP(x), ρDOWN(x))+ ρDOWN(x) * vcDOWN(solver.model.exc, ρUP(x), ρDOWN(x))) #
+    tc(x,p) =  -4 * ec(model.exc, ρUP(x), ρDOWN(x)) * ρ(x) * x^2 + 3 * x^2 * ( ρUP(x)* vcUP(model.exc, ρUP(x), ρDOWN(x))+ ρDOWN(x) * vcDOWN(model.exc, ρUP(x), ρDOWN(x))) #
     prob = IntegralProblem(tc, (zero(Rmax),Rmax))
     solver.energy_kincor = 4π * solve(prob, QuadGKJL(); reltol = 1e-10, abstol = 1e-10).u
     nothing
