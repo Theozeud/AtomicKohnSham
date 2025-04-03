@@ -122,34 +122,62 @@ Create mesh                         1   40.3μs    0.0%  40.3μs   7.38KiB    0.
 Make Solution                       1   23.2μs    0.0%  23.2μs   1.62KiB    0.0%  1.62KiB
 ─────────────────────────────────────────────────────────────────────────────────────────
 
-────────────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────────────────────────────────────
                                                 Time                    Allocations      
                                        ───────────────────────   ────────────────────────
-           Tot / % measured:                2.77s /  82.9%           0.95GiB /  98.9%    
+           Tot / % measured:                1.86s /  85.8%            950MiB /  98.8%    
 
 Section                        ncalls     time    %tot     avg     alloc    %tot      avg
 ─────────────────────────────────────────────────────────────────────────────────────────
-PerformStep                        50    2.09s   90.9%  41.8ms    617MiB   64.2%  12.3MiB
-  Find orbital                     50    1.89s   82.5%  37.9ms    596MiB   62.1%  11.9MiB
-  compute energy                   50   68.3ms    3.0%  1.37ms   12.6MiB    1.3%   259KiB
-    Etot                           50   33.8ms    1.5%   675μs   5.78MiB    0.6%   118KiB
-    Ehar                           50   31.1ms    1.4%   622μs   5.85MiB    0.6%   120KiB
-      Crho                         50   23.5ms    1.0%   471μs   75.0KiB    0.0%  1.50KiB
-      tmpC                         50   5.79ms    0.3%   116μs   5.76MiB    0.6%   118KiB
-      hartree                      50    580μs    0.0%  11.6μs   5.47KiB    0.0%     112B
-      tmpB                         50    194μs    0.0%  3.88μs   1.56KiB    0.0%    32.0B
-    Ekin                           50   1.57ms    0.1%  31.3μs    512KiB    0.1%  10.2KiB
-    Ecou                           50   1.04ms    0.0%  20.8μs    508KiB    0.1%  10.2KiB
-    Eexc                           50    179μs    0.0%  3.59μs   1.56KiB    0.0%    32.0B
-  Prepare eigenvalue problem       50   57.8ms    2.5%  1.16ms    329KiB    0.0%  6.58KiB
-  update density                   50   33.0ms    1.4%   660μs   5.66MiB    0.6%   116KiB
-  density computation              50   20.5ms    0.9%   410μs   1.56KiB    0.0%    32.0B
-  aufbau                           50   10.2ms    0.4%   205μs   1.43MiB    0.1%  29.2KiB
-Create basis                        1    146ms    6.3%   146ms    240MiB   25.0%   240MiB
-Init Solver                         1   32.1ms    1.4%  32.1ms   39.3MiB    4.1%  39.3MiB
-Loop footer                        50   19.4ms    0.8%   387μs   59.2MiB    6.2%  1.18MiB
-Loop header                        50   6.26ms    0.3%   125μs   1.56KiB    0.0%    32.0B
-init Discretization                 1   5.78ms    0.3%  5.78ms   4.78MiB    0.5%  4.78MiB
-Create mesh                         1    119μs    0.0%   119μs   7.38KiB    0.0%  7.38KiB
-Make Solution                       1   30.3μs    0.0%  30.3μs   1.62KiB    0.0%  1.62KiB
+PerformStep                        50    1.49s   93.8%  29.9ms    617MiB   65.7%  12.3MiB
+  Find orbital                     50    1.36s   85.3%  27.2ms    596MiB   63.5%  11.9MiB
+  Prepare eigenvalue problem       50   46.9ms    2.9%   938μs    327KiB    0.0%  6.55KiB
+  compute energy                   50   45.0ms    2.8%   901μs   12.6MiB    1.3%   259KiB
+    Etot                           50   21.9ms    1.4%   438μs   5.78MiB    0.6%   118KiB
+    Ehar                           50   21.0ms    1.3%   421μs   5.85MiB    0.6%   120KiB
+      Crho                         50   16.2ms    1.0%   325μs   75.0KiB    0.0%  1.50KiB
+      tmpC                         50   3.66ms    0.2%  73.3μs   5.76MiB    0.6%   118KiB
+      hartree                      50    351μs    0.0%  7.01μs   5.47KiB    0.0%     112B
+      tmpB                         50    119μs    0.0%  2.37μs   1.56KiB    0.0%    32.0B
+    Ekin                           50    945μs    0.1%  18.9μs    512KiB    0.1%  10.2KiB
+    Ecou                           50    649μs    0.0%  13.0μs    508KiB    0.1%  10.2KiB
+    Eexc                           50    128μs    0.0%  2.56μs   1.56KiB    0.0%    32.0B
+  update density                   50   22.4ms    1.4%   448μs   5.66MiB    0.6%   116KiB
+  density computation              50   13.8ms    0.9%   275μs   1.56KiB    0.0%    32.0B
+  aufbau                           50   5.83ms    0.4%   117μs   1.43MiB    0.2%  29.2KiB
+Create basis                        1   70.5ms    4.4%  70.5ms    240MiB   25.6%   240MiB
+Init Solver                         1   12.7ms    0.8%  12.7ms   17.7MiB    1.9%  17.7MiB
+Loop footer                        50   10.9ms    0.7%   218μs   59.2MiB    6.3%  1.18MiB
+Loop header                        50   4.54ms    0.3%  90.8μs   1.56KiB    0.0%    32.0B
+init Discretization                 1    446μs    0.0%   446μs   4.78MiB    0.5%  4.78MiB
+Create mesh                         1   31.5μs    0.0%  31.5μs   7.38KiB    0.0%  7.38KiB
+Make Solution                       1   20.2μs    0.0%  20.2μs   1.59KiB    0.0%  1.59KiB
+─────────────────────────────────────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────────────────────────────────────
+                                                Time                    Allocations      
+                                       ───────────────────────   ────────────────────────
+           Tot / % measured:                 265s /  99.9%            248GiB / 100.0%    
+
+Section                        ncalls     time    %tot     avg     alloc    %tot      avg
+─────────────────────────────────────────────────────────────────────────────────────────
+PerformStep                        50     265s  100.0%   5.29s    248GiB   99.9%  4.96GiB
+  Prepare eigenvalue problem       50     249s   93.9%   4.97s    244GiB   98.1%  4.87GiB
+  Find orbital                     50    11.7s    4.4%   234ms   1.23GiB    0.5%  25.1MiB
+  compute energy                   50    2.88s    1.1%  57.6ms   2.22GiB    0.9%  45.4MiB
+    Etot                           50    1.47s    0.6%  29.5ms   1.17GiB    0.5%  23.9MiB
+    Eexc                           50    1.38s    0.5%  27.5ms   1.04GiB    0.4%  21.4MiB
+    Ehar                           50   26.2ms    0.0%   525μs   5.77MiB    0.0%   118KiB
+    Ekin                           50   1.03ms    0.0%  20.5μs    512KiB    0.0%  10.2KiB
+    Ecou                           50    748μs    0.0%  15.0μs    508KiB    0.0%  10.2KiB
+  update density                   50    1.39s    0.5%  27.8ms   1.03GiB    0.4%  21.2MiB
+  density computation              50   17.9ms    0.0%   358μs   1.56KiB    0.0%    32.0B
+  aufbau                           50   8.28ms    0.0%   166μs   1.43MiB    0.0%  29.2KiB
+Create basis                        1   85.9ms    0.0%  85.9ms    240MiB    0.1%   240MiB
+Loop footer                        50   24.8ms    0.0%   495μs   59.2MiB    0.0%  1.18MiB
+Init Solver                         1   13.8ms    0.0%  13.8ms   17.6MiB    0.0%  17.6MiB
+Loop header                        50   4.66ms    0.0%  93.2μs   1.56KiB    0.0%    32.0B
+init Discretization                 1   1.40ms    0.0%  1.40ms   4.78MiB    0.0%  4.78MiB
+Create mesh                         1   37.5μs    0.0%  37.5μs   7.38KiB    0.0%  7.38KiB
+Make Solution                       1   17.8μs    0.0%  17.8μs   1.59KiB    0.0%  1.59KiB
 ─────────────────────────────────────────────────────────────────────────────────────────

@@ -1,53 +1,33 @@
+## TO DO :
+
+- Implémentation des grilels spatiales de Susi      DONE
+- Revoir la gestion des Polynômes   
+    --> Supression coeff Log                        DONE
+    --> Ajout Static Array
+        (   dans une deuxième temps pour 
+            benchmarker proprement)       
+    --> Cleaner les structures pour conserver
+        seulement ce qui est nécessaire
+    --> Vérifier la génération des polynomes de Legendre
+        en particulier les coefficients     
+- Revoir le gestion des calculs dans les matrices fem
+    --> Voir pour des méthodes de quadrature
+
+
+
+
+
 
 ## PROBLEM
 
 - si Rmin ≠ 0 -> problème dans le calcul du relèvement 
-
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
 
-- problème sur la normalisation par 1/sqrt(4Pi) des U ??
-
-- corriger les cells_to_indices
 
 ## UPDGRADE CODE
 
-#### PRIORITE
-
-- Fichier pour analyser le calcul des éléments des matrices
-    --> analyser la création des élements
-        --> coder à la main les premiers éléments polynomes de Legendre intégrés
-        --> stratégie rationnel pour les autres cas de figure ?
-    --> analyser la création des matrices et repérés les problèmes numériques précisément
-
 - Implémenter une nouvelle manière de "normaliser" pour améliorer le conditionnement et réduire les erreurs numériques
 
-- Revoir la gestion des Polynômes
-    --> encore besoin des polynomes de Laurent ? 
-    --> Encore besoin des coeffs log ?
-    --> Ajout des Static Array et cleaning Polynomial pour aller plus vite !
-    --> utilisation d'une bibliothèque annexe ? 
+- Utilisation du multi-threading dans le code
 
-#### MOINS PRIORITE CAR NON CRITIQUE
-
-- C'est très long de générer la base, il faudrait pouvoir améliorer cela, potentiellement avec du mutli-threading --> déjà améliorations -> à investiguer plus pour le tensor_fill_indices
-
-- Réfléchir aux partie de codes qui pourrait etre parallélisé
-        --> la création des matrices                DONE MAIS CA MARCHE PAS TROP, A ETUDIER EN DETAILS
-        --> la résolution des problèmes aux valeurs propres DONE
-
-- Utilisation des sparse array pour le tenseur ? 
-    -> ca semblerait très utile, mais faut bien faire attention à la fin pour le problème aux valeurs propres
-    -> Il faut trouver une bibliothèque pour cela
-    --> Idée : stocker le tenseur dans une matrice sparse
-        --> les opérations pourront elles etre préservées ?
-
-
-## TO THINK NUMERICAL METHOD
-
-- Etudier les méthodes de résolution des problèmes linéaires (les différentes méthodes et les préconditionneurs).
-
-- Réfléchir à améliorer le conditionnnement
-
-## TODO DFT
-
-- Tester LSDA
+- Améliorer le conditionnement pour utilsier d'autres solver aux valeurs propres

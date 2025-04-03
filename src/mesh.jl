@@ -1,12 +1,9 @@
-#=
-    Mesh structure contains sorted points
+######################################
+#          MESH STRUCTURE
+######################################
 
-=#
-
-struct Mesh{T} 
-
+struct Mesh{T<:Real} 
     points::Vector{T}   
-
     function Mesh(points::AbstractVector{T})  where T <: Real
         _points = union(sort(points))
         new{T}(_points)
@@ -25,7 +22,7 @@ end
 @inline Base.length(m::Mesh) = length(m.points)
 @inline Base.size(m::Mesh) = size(m.points)
 
-@inline function findindex(m, x)
+@inline function findindex(m::Mesh, x::Real)
     if x ≤ m[end]
         return searchsortedlast(m.points, x)
     else
@@ -37,19 +34,19 @@ end
 @inline Base.iterate(m::Mesh, state = 1) = state > length(m) ? nothing : (m[state],state+1)
 
 ######################################
-# LINEAR MESH
+#           LINEAR MESH
 ######################################
 
-linmesh(a, b, n; T = Float64) = Mesh(T.(LinRange(a,b,n)))
+linmesh(a::Real, b::Real, n::Int; T::Type = Float64) = Mesh(T.(LinRange(a,b,n)))
 
 ######################################
-# GEOMETRIC MESH
+#           GEOMETRIC MESH
 ######################################
 
-function geometricrange(a,b,n; T = Float64, s)
+function geometricrange(a::Real ,b::Real ,n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
     R[1] = a
-    hn = (one(T)-T(s))/(one(T) - T(s)^n)*(b-a)
+    hn = (one(T)-T(s))/(one(T) - T(s)^(n-1))*(b-a)
     H = zeros(T,n-1)
     H[end] = hn
     for i ∈ n-1:-1:2
@@ -61,4 +58,39 @@ function geometricrange(a,b,n; T = Float64, s)
     R
 end
 
-geometricmesh(a,b,n; T = Float64, s) = Mesh(geometricrange(a,b,n; T = T, s = s))
+geometricmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(geometricrange(a,b,n; T = T, s = s))
+
+
+######################################
+#           POLYNOMIAL MESH
+######################################
+
+function polynomialrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
+    R = zeros(T,n)
+    R[1] = T(a)
+    R[end] = T(b)
+    for i ∈ 2:n-1
+        R[i] = ((i-1)/(n-1))^s * (T(b)-T(a)) + T(a)  
+    end
+    R
+end
+
+polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(polynomialrange(a,b,n; T = T, s = s))
+
+
+######################################
+#          EXPONENTIAL MESH
+######################################
+
+function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
+    R = zeros(T,n)
+    R[1] = T(a)
+    R[end] = T(b)
+    for i ∈ 2:n-1
+        pow = ((i-1)/(n-1))^s
+        R[i] = (1 + b-a)^pow - 1 + a
+    end
+    R
+end
+
+expmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(exprange(a,b,n; T = T, s = s))

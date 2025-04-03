@@ -16,12 +16,12 @@ isLSDA(::ExchangeCorrelation) = false
 
 struct SlaterXα <: ExchangeCorrelation end
 
-exc(::SlaterXα, rho) = - 3/4 * (3/π)^(1/3) * rho^(4/3)
-vxc(::SlaterXα, rho) = - (3/π)^(1/3) * rho^(1/3)
+exc(::SlaterXα, rho::Real) = - 3/4 * (3/π)^(1/3) * rho^(4/3)
+vxc(::SlaterXα, rho::Real) = - (3/π)^(1/3) * rho^(1/3)
 
-exc(xa::SlaterXα, rhoUP, rhoDOWN) = 0.5 * (exc(xa,rhoUP) + exc(xa,rhoDOWN))
-vxcUP(xa::SlaterXα, rhoUP, rhoDOWN) = 0.5 *vxc(xa,rhoUP)
-vxcDOWN(xa::SlaterXα, rhoUP, rhoDOWN)  = 0.5 *vxc(xa,rhoDOWN)
+exc(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real) = 0.5 * (exc(xa,rhoUP) + exc(xa,rhoDOWN))
+vxcUP(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real) = 0.5 *vxc(xa,rhoUP)
+vxcDOWN(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real)  = 0.5 *vxc(xa,rhoDOWN)
 
 ## LSDA MODEL
 
