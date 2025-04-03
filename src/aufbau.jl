@@ -7,13 +7,22 @@ function convert_index(discretization::LDADiscretization, idx::Int)
     return (l,k)
 end
 
+function convert_index(discretization::LSDADiscretization, idx::Int)
+    @unpack lₕ, nₕ  = discretization
+    σ       = div(idx-1, (lₕ+1)*nₕ)+1
+    idxσ    = rem(idx-1, (lₕ+1)*nₕ)
+    l = rem(idxσ, lₕ+1)
+    k = div(idxσ,lₕ+1)+1
+    return (l,k,σ)
+end
+
 function degeneracy(discretization::LDADiscretization, idx::Int)
     l,_ = convert_index(discretization::LDADiscretization, idx)
     return 4 * l + 2
 end
 
-function degeneracy(::LSDADiscretization, idx::Int)
-    l = rem(idx - 1, size(ϵ, 1)) 
+function degeneracy(discretization::LSDADiscretization, idx::Int)
+    l,_ = convert_index(discretization, idx)
     return 2 * l + 1
 end
 
