@@ -110,7 +110,7 @@ end
 #                          Initialization
 #####################################################################
 
-init_density(kd::LSDADiscretization)                 = fill(zero(kd.elT), kd.Nₕ, kd.Nₕ, 2)  
+init_density(kd::LSDADiscretization)                 = fill(one(kd.elT), kd.Nₕ, kd.Nₕ, 2)  
 init_orbitals(kd::LSDADiscretization)                = zeros(kd.elT, kd.Nₕ, kd.nₕ, kd.lₕ+1, 2)
 init_orbitals_energy(kd::LSDADiscretization)         = zeros(kd.elT, kd.lₕ+1, kd.nₕ, 2)
 init_occupation_number(kd::LSDADiscretization)       = zeros(kd.elT, kd.lₕ+1, kd.nₕ, 2)
