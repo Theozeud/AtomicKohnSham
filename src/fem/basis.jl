@@ -18,6 +18,7 @@ struct PolynomialBasis{ T<:Real,
     matrix_fill_indices::Vector{CartesianIndex{2}}      # Vector of indices filled in fem matrices
     tensor_fill_indices::Vector{CartesianIndex{3}}      # Vector of indices filled in fem tensors
     max_length_intersection::Tuple{Int,Int}             # Maximal number of common mesh two polynomials of the basis can share
+    precomputations::BasisPrecomputations{T}            # Structure which store computations used many times
 
     function PolynomialBasis(generators::AbstractGenerator, 
                              mesh::Mesh, 
@@ -30,7 +31,8 @@ struct PolynomialBasis{ T<:Real,
                              invshifts::Vector{Tuple{T,T}}, 
                              matrix_fill_indices::Vector{CartesianIndex{2}}, 
                              tensor_fill_indices::Vector{CartesianIndex{3}},
-                             max_length_intersection::Tuple{Int,Int}) where T <: Real
+                             max_length_intersection::Tuple{Int,Int},
+                             precomputations::BasisPrecomputations) where T <: Real
         new{eltype(generators), 
             typeof(generators), 
             typeof(mesh),
@@ -45,7 +47,8 @@ struct PolynomialBasis{ T<:Real,
                                     invshifts, 
                                     matrix_fill_indices, 
                                     tensor_fill_indices,
-                                    max_length_intersection)
+                                    max_length_intersection,
+                                    precomputations)
     end
 
     function PolynomialBasis(generators::AbstractGenerator, 
@@ -55,7 +58,7 @@ struct PolynomialBasis{ T<:Real,
                              indices_generators::Dict, 
                              cells_to_indices::Dict{Int,Vector{Int}}, 
                              normalisation::Vector{<:Real},
-                             max_length_intersection::Tuple{Int,Int})
+                             max_length_intersection::Int)
         
         T = eltype(generators)
         shifts    = Vector{Tuple{T,T}}(undef, length(mesh)-1)
@@ -84,6 +87,8 @@ struct PolynomialBasis{ T<:Real,
                 end
             end
         end 
+        
+        precomputations = BasisPrecomputations(mesh, generators)
 
         new{eltype(generators), 
             typeof(generators),
@@ -99,7 +104,8 @@ struct PolynomialBasis{ T<:Real,
                                     invshifts, 
                                     matrix_fill_indices, 
                                     tensor_fill_indices,
-                                    max_length_intersection)
+                                    max_length_intersection,
+                                    precomputations)
     end
 end
 
@@ -125,23 +131,26 @@ end
 
 
 struct BasisPrecomputations{T <: Real}
-    flags::Svector{3,Bool}
+    flags::Vector{Bool}
     monom_overdeg1::Matrix{T}
     monom_overdeg2::Matrix{T}
     productgenerators::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
 
     function BasisPrecomputations(mesh::Mesh{TM}, generators::AbstractGenerator{TG}) where{TM,TG}
         T = promote_type(TM,TG)
-
-        flags = @
-        degmax(generators)
-
+        flags = [false, false, false]
+        deg = 2*degmax(generators)
+        monom_overdeg1 = fill(zero(T), deg, length(mesh)-1) 
+        monom_overdeg2 = fill(zero(T), deg, length(mesh)-1)
         productgenerators = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
-
-        new{T}()
+        new{T}(flags,monom_overdeg1, monom_overdeg2,  productgenerators)
     end
 end
 
+function compute_monom_overdeg1(basis::PolynomialBasis)
+     
+
+end
 
 
 #####################################################################
