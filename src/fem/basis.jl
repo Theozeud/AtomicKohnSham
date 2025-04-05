@@ -1,4 +1,6 @@
-##########################       PolynomialBasis      ##########################
+#####################################################################
+#                           POLYNOMIAL BASIS
+#####################################################################
 
 struct PolynomialBasis{ T<:Real, 
                         generatorsType <: AbstractGenerator, 
@@ -121,8 +123,30 @@ end
     (c1,c0)
 end
 
-########################       Evaluation tools       ########################
 
+struct BasisPrecomputations{T <: Real}
+    flags::Svector{3,Bool}
+    monom_overdeg1::Matrix{T}
+    monom_overdeg2::Matrix{T}
+    productgenerators::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
+
+    function BasisPrecomputations(mesh::Mesh{TM}, generators::AbstractGenerator{TG}) where{TM,TG}
+        T = promote_type(TM,TG)
+
+        flags = @
+        degmax(generators)
+
+        productgenerators = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
+
+        new{T}()
+    end
+end
+
+
+
+#####################################################################
+#                          EVALUATION TOOLS
+#####################################################################
 function (pb::PolynomialBasis)(i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
