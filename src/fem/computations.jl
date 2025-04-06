@@ -26,10 +26,6 @@ end
 
 abstract type AbstractWeight end
 
-default_method(::AbstractWeight) = ExactIntegration()
-default_method(method::IntegrationMethod, ::AbstractWeight) = method
-default_method(::NoSelectedMethod, weight::AbstractWeight) = default_method(weight)
-
 struct NoWeight <: AbstractWeight end   # w(x) = 1     
 struct InvX <: AbstractWeight end       # w(x) = 1/x
 struct InvX2 <: AbstractWeight end      # w(x) = 1/x^2  
@@ -40,13 +36,17 @@ end
 
 (weight::FunWeight)(args...; kwargs...) = weight.f(args...; kwargs...)
 
-default_method(::FunWeight) = QuadratureIntegration()
 
+default_method(::AbstractWeight) = ExactIntegration()
+default_method(method::IntegrationMethod, ::AbstractWeight) = method
+default_method(::NoSelectedMethod, weight::AbstractWeight) = default_method(weight)
+default_method(::FunWeight) = QuadratureIntegration()
 
 has_singularity(::NoWeight, domain::Tuple{T,T}) where T <: Real = false
 has_singularity(::InvX,  domain::Tuple{T,T}) where T <: Real    = domain[1] ≤ 0 ≤ domain[2]
 has_singularity(::InvX2, domain::Tuple{T,T}) where T <: Real    = domain[1] ≤ 0 ≤ domain[2]
 has_singularity(::FunWeight, domain::Tuple{T,T}) where T<: Real = false
+
 
 #####################################################################
 #                         INTEGRATION DATA
