@@ -7,10 +7,9 @@ module KohnShamResolution
     using BlockDiagonals
 
     using TensorOperations
-    using LinearOperators
-    
+
     using FastGaussQuadrature
-    using Krylov
+    using KrylovKit
     using Arpack
     using Optim
     using Integrals

@@ -109,10 +109,18 @@ function _copy_mat_to_vec!( V::AbstractVector, ir_dest::AbstractRange{Int},
     return M
 end
 
-function remove_trace!(A::AbstractMatrix, B::AbstractMatrix)
+function remove_trace!(B::AbstractMatrix)
+    trace = tr(B)/size(B,1)
+    @threads for i ∈ axes(B,1)
+        @inbounds B[i,i] -= trace
+    end
+    nothing
+end
+
+function remove_trace(A::AbstractMatrix, B::AbstractMatrix)
     A .= B
     trace = tr(B)/size(B,1)
-    @threads for i ∈ axes(M,1)
+    @threads for i ∈ axes(B,1)
         @inbounds A[i,i] -= trace
     end
     nothing
