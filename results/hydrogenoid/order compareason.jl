@@ -19,7 +19,7 @@ const proborder2 = HydrogenoidProblem(;
                             nU            = nothing)
 
 const proborder5 = HydrogenoidProblem(; 
-                            T             = Double64, 
+                            T             = Float64, 
                             z             = 1, 
                             l             = 0, 
                             Rmax          = 90, 
@@ -32,16 +32,16 @@ const proborder5 = HydrogenoidProblem(;
                             nU            = nothing)
 
 const proborder10 = HydrogenoidProblem(; 
-                            T             = Double64, 
+                            T             = Float64, 
                             z             = 1, 
                             l             = 0, 
                             Rmax          = 90, 
-                            Nmesh         = 10,
+                            Nmesh         = 5,
                             typemesh      = expmesh, 
                             typebasis     = P1IntLegendreGenerator, 
-                            optsmesh      = (s = 2.0,),  
+                            optsmesh      = (s = 1.0,),  
                             optsbasis     = (ordermax = 20, ),                           
-                            name          = "IntLeg10-expmesh",
+                            name          = "IntLeg20-expmesh",
                             nU            = nothing)
 #@time λgeo = eigvals_hydro(problinmesh)
 

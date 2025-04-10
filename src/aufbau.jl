@@ -34,7 +34,7 @@ end
 function aufbau!(cache::RCACache, solver::KohnShamSolver)
 
     @unpack model, discretization, opts, energies = solver
-    @unpack U, ϵ, n, Noccup, D, tmpD, index_aufbau, energies_prev = cache
+    @unpack U, ϵ, n, Noccup, D, tmpD, tmpD2, index_aufbau, energies_prev = cache
 
     # INIT OCCUPATION NUMBER
     fill!(n, zero(eltype(n))) 
@@ -138,7 +138,7 @@ function aufbau!(cache::RCACache, solver::KohnShamSolver)
                                                             energy_cou0, energy_cou1, 
                                                             energy_har0, energy_har1, 
                                                             energy_har01, energy_har10,
-                                                            D, tmpD, model, discretization)
+                                                            D, tmpD, tmpD2, model, discretization)
 
             # UPDATE THE OCCUPATION NUMBERS
             n[indices_degen[1]] = cache.tdegen * n1_0 + (1-cache.tdegen) * n1_1

@@ -10,7 +10,8 @@ mutable struct LDAMatrices{ T<:Real,
     M₀::Matrix{T}                   # Matrix of QᵢQⱼ
     M₋₁::typeMatrix                 # Matrix of 1/x QᵢQⱼ
     M₋₂::typeMatrix                 # Matrix of 1/x² QᵢQⱼ
-    F::Dict{Tuple{Int,Int,Int},T}   # Tensor of 1/x QᵢQⱼQₖ            
+    F::Dict{Tuple{Int,Int,Int},T}   # Tensor of 1/x QᵢQⱼQₖ 
+    S::Matrix{T}                    # √(M₀⁻¹)          
     # MATRICES COMPOSING THE HAMILTONIAN
     H::Array{T,3}                   # Hamiltonian
     Kin::typeVectorMatrix           # Kinetic Matrix
@@ -34,7 +35,8 @@ function create_cache_lda(lₕ::Int, Nₕ::Int, T::Type)
     M₀          = zeros(T, Nₕ, Nₕ)
     M₋₁         = spzeros(T, Nₕ, Nₕ)
     M₋₂         = spzeros(T, Nₕ, Nₕ)
-    F           = Dict{Tuple{Int,Int,Int},T}()   #zeros(T, Nₕ, Nₕ, Nₕ)
+    F           = Dict{Tuple{Int,Int,Int},T}()
+    S           = zeros(T, Nₕ, Nₕ)
     # MATRICES COMPOSING THE HAMILTONIAN
     H           = zeros(T, Nₕ, Nₕ, lₕ+1)    #_sp
     Kin         = _spzeros(T, Nₕ, Nₕ, lₕ+1)
@@ -49,7 +51,8 @@ function create_cache_lda(lₕ::Int, Nₕ::Int, T::Type)
     tmp_C           = zeros(T, Nₕ)
     tmp_vect        = zeros(T, Nₕ)
 
-    LDAMatrices{T, typeof(A), typeof(Hfix)}(A, M₀, M₋₁, M₋₂, F, H, Kin, Coulomb, Hfix, Hartree, Vxc),  
+    LDAMatrices{T, typeof(A), typeof(Hfix)}(A, M₀, M₋₁, M₋₂, F, S, 
+                                            H, Kin, Coulomb, Hfix, Hartree, Vxc),  
     LDACache{T}(tmp_MV, tmp_B, tmp_C, tmp_vect)
 end
 
@@ -87,7 +90,7 @@ dim(discretization::LDADiscretization) = discretization.Nₕ * (discretization.l
 function init_cache!(discretization::LDADiscretization, model::AbstractDFTModel, hartree::Real, integration_method::IntegrationMethod)
 
     @unpack lₕ, basis, matrices  = discretization
-    @unpack A, M₀, M₋₁, M₋₂, F, Kin, Coulomb, Hfix = matrices
+    @unpack A, M₀, M₋₁, M₋₂, F, S, Kin, Coulomb, Hfix = matrices
 
     # CREATION OF FEM MATRICES
     fill_stiffness_matrix!(basis, A; method = integration_method)
@@ -95,6 +98,7 @@ function init_cache!(discretization::LDADiscretization, model::AbstractDFTModel,
     fill_mass_matrix!(basis, -1, M₋₁; method = integration_method)
     lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂; method = integration_method)
     iszero(hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
+    S .= sqrt(inv(Symmetric(M₀)))
 
     # CREATION OF THE FIX PART OF THE HAMILTONIAN 
     kinetic_matrix!(discretization)
@@ -158,12 +162,12 @@ function find_orbital!( discretization::LDADiscretization,
                         ϵ::AbstractMatrix{<:Real})
 
     @unpack lₕ, nₕ, matrices = discretization
-    @unpack M₀, H = matrices
+    @unpack S, H = matrices
 
     # SOLVE THE GENERALIZED EIGENVALUE PROBLEM FOR EACH SECTION l
     for l ∈ 0:lₕ
         @views vH = H[:,:,l+1]
-        ϵ[l+1,:], U[:,:,l+1] = solve_generalized_eigenvalue_problem(vH, M₀, nₕ)        
+        ϵ[l+1,:], U[:,:,l+1] = solve_generalized_eigenvalue_problem(vH, S, nₕ)        
     end
 end
 
@@ -243,11 +247,9 @@ function hartree_matrix!(discretization::LDADiscretization, D::AbstractMatrix{<:
     @unpack Rmax, matrices, cache = discretization
     @unpack A, M₀, F, Hartree = matrices
     @unpack tmp_MV, tmp_B, tmp_C = cache
-    #@tensor tmp_B[m] = D[i,j] * F[i,j,m]
     tensor_matrix_dict!(tmp_B, D, F)
     tmp_C .= A\tmp_B
     @tensor newCrho = D[i,j] * M₀[i,j]
-    #@tensor tmp_MV[i,j] = tmp_C[k] * F[i,j,k]
     tensor_vector_dict!(tmp_MV, tmp_C, F)
     @. Hartree = tmp_MV + newCrho/Rmax * M₀
     @. Hartree .*= coeff
@@ -345,7 +347,6 @@ function compute_hartree_energy(discretization::LDADiscretization, D::AbstractMa
     @unpack Rmax, elT, matrices, cache = discretization
     @unpack A, F, M₀ = matrices
     @unpack tmp_B, tmp_C = cache
-    #@tensor tmp_B[m] = D[i,j] * F[i,j,m]
     tensor_matrix_dict!(tmp_B, D, F)
     tmp_C .= A\tmp_B
     @tensor Crho = D[i,j] * M₀[i,j]
@@ -358,10 +359,8 @@ function compute_hartree_mix_energy(discretization::LDADiscretization,
     @unpack Rmax, elT, matrices, cache = discretization
     @unpack A, F, M₀ = matrices
     @unpack tmp_B, tmp_C = cache
-    #@tensor tmp_B[m] = D0[i,j] * F[i,j,m]
     tensor_matrix_dict!(tmp_B, D0, F)
     tmp_C .= A\tmp_B
-    #@tensor tmp_B[m] = D1[i,j] * F[i,j,m]
     tensor_matrix_dict!(tmp_B, D1, F)
     @tensor Crho0 = D0[i,j] * M₀[i,j]
     @tensor Crho1 = D1[i,j] * M₀[i,j]
