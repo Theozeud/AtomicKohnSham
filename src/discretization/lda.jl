@@ -98,8 +98,8 @@ function init_cache!(discretization::LDADiscretization, model::AbstractDFTModel,
     fill_mass_matrix!(basis, -1, M₋₁; method = integration_method)
     lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂; method = integration_method)
     iszero(hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
-    S .= sqrt(inv(M₀))
-    
+    S .= sqrt(inv(Symmetric(M₀)))
+
     # CREATION OF THE FIX PART OF THE HAMILTONIAN 
     kinetic_matrix!(discretization)
     coulomb_matrix!(discretization, model)
