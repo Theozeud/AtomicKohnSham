@@ -7,46 +7,50 @@ using LinearAlgebra
 using KohnShamResolution:   init, loopheader!, loopfooter!, makesolution,
                             prepare_eigenvalue_problem!, find_orbital!, aufbau!, density!, update_density!,
                             compute_total_energy, compute_kinetic_energy, compute_coulomb_energy, compute_hartree_energy, isthereExchangeCorrelation, compute_exchangecorrelation_energy,
-                            tensor_matrix_dict! 
+                            tensor_matrix_dict!, compute_density 
 
 
 
 to = TimerOutput()
 
-# Creation of the model
-z = 8
-N = 8
-KM = SlaterXα(z, N)
 
-# Choice of the method
-method = CDA(0.3)
-
-# Discretization 
-lₕ = 1
-nₕ = 2
-Nₕ = 80
+#####################################################################
+#                               PARAMETERS
+#####################################################################
+model = ReducedHartreeFock(1, 1)
+method = ODA(0.3)
+lh = 0
+nh = 1
+Nh = 20
 Rmin = 0
-Rmax = 80
+Rmax = 100
+ordermax = 20
 
-# INITIALIZATION 
+#####################################################################
+#                           INITIALIZATION
+#####################################################################
 
-@timeit to "Create mesh" m = linmesh(Rmin, Rmax, Nₕ)
+@timeit to "Create mesh" m = expmesh(Rmin, Rmax, Nh; s = 1.5)
 
-@timeit to "Create basis" basis = P1IntLegendreGenerator(m; ordermax = 5)
+@timeit to "Create basis" basis = P1IntLegendreGenerator(m; ordermax = ordermax)
 
-@timeit to "init Discretization" discretization = LDADiscretization(lₕ, basis, m, nₕ)
+@timeit to "init Discretization" discretization = LDADiscretization(lh, basis, m, nh)
 
-@timeit to "Init Solver" solver = KohnShamResolution.init(KM, discretization, method; scftol = 1e-3, hartree = false, logconfig = LogConfig(orbitals_energy = true))
+@timeit to "Init Solver" solver = KohnShamResolution.init(model, discretization, method; scftol = 1e-3, hartree = true, logconfig = LogConfig(orbitals_energy = true))
 
-# SOLVE FUNCTION
-for i ∈ 1:50
+
+#####################################################################
+#                               SOLVE
+#####################################################################
+
+for i ∈ 1:10
 
     @timeit to "Loop header" loopheader!(solver)
 
 
     @timeit to "PerformStep" begin
 
-        @unpack model, opts, energies, cache = solver
+        @unpack opts, energies, cache = solver
         @unpack D, Dprev, U, ϵ, n = cache
     
         # STEP 1 : PREPARE THE EIGENVALUE PROBLEM
@@ -69,7 +73,6 @@ for i ∈ 1:50
                 @timeit to "Ekin" energies[:Ekin] = compute_kinetic_energy(discretization, U, n)
                 @timeit to "Ecou" energies[:Ecou] = compute_coulomb_energy(discretization, U, n)
                 @timeit to "Ehar" energies[:Ehar] = compute_hartree_energy(discretization, D)
-                @timeit to "Eexc" !isthereExchangeCorrelation(model) || (energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D))
             end
         end
 
@@ -84,9 +87,26 @@ end
 
 @timeit to "Make Solution" makesolution(solver, "")
 
+
+
+
+#####################################################################
+#                    PRINT TIME DATAS IN A FILE
+#####################################################################
+
 original_stdout = stdout
-output_file = open("tests/Performance/solver/lda_cda.txt", "a")
+output_file = open("tests/Performance/solver/oda-rHF-hydro.txt", "a")
 redirect_stdout(output_file)
+
+println()
+println("==============================================")
+println("PERFORMANCE PARAMETERS")
+println("Nh = $Nh")
+println("lh = $lh")
+println("ordermax = $ordermax")
+println("Method = ODA")
+println("Number of basis function : $(length(basis))")
+println("==============================================")
 
 print(to)
 
