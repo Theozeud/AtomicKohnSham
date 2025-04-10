@@ -7,7 +7,8 @@ using LinearAlgebra
 using KohnShamResolution:   init, loopheader!, loopfooter!, makesolution,
                             prepare_eigenvalue_problem!, find_orbital!, aufbau!, density!, update_density!,
                             compute_total_energy, compute_kinetic_energy, compute_coulomb_energy, compute_hartree_energy, isthereExchangeCorrelation, compute_exchangecorrelation_energy,
-                            tensor_matrix_dict!, compute_density 
+                            tensor_matrix_dict!, compute_density,
+                            init_cache!, create_cache_method, init_energies, SolverOptions
 
 
 
@@ -36,7 +37,37 @@ ordermax = 20
 
 @timeit to "init Discretization" discretization = LDADiscretization(lh, basis, m, nh)
 
-@timeit to "Init Solver" solver = KohnShamResolution.init(model, discretization, method; scftol = 1e-3, hartree = true, logconfig = LogConfig(orbitals_energy = true))
+@timeit to "Init Solver" begin 
+
+        # Set the data type as the one of the discretization basis
+        T = discretization.elT
+
+        # Init Cache of the Discretisation
+        @timeit to "Init Cache discretization" init_cache!(discretization, model, true, ExactIntegration())
+    
+        # Init Cache of the Method
+        @timeit to "Create Cache Method" cache = create_cache_method(method, discretization)
+    
+        # Init Energies 
+        @timeit to "Init Energies" energies = init_energies(discretization, model)
+          
+        #  SolverOptions
+        @timeit to "Solver Options" opts = SolverOptions(T(1e-10), 
+                                                        100, 
+                                                        ExactIntegration(), 
+                                                        ExactIntegration(), 
+                                                        T(true), 
+                                                        eps(T),
+                                                        UInt8(0))
+    
+        # Init log parameters
+        niter = 0
+        stopping_criteria = zero(T)
+        
+        @timeit to "Create logbook" logbook = LogBook(logconfig, T)
+        
+        solver = KohnShamSolver(niter, stopping_criteria, discretization, model, method, cache, opts, energies, logbook)
+end
 
 
 #####################################################################
@@ -50,7 +81,6 @@ for i ∈ 1:10
 
     @timeit to "PerformStep" begin
 
-        @unpack opts, energies, cache = solver
         @unpack D, Dprev, U, ϵ, n = cache
     
         # STEP 1 : PREPARE THE EIGENVALUE PROBLEM

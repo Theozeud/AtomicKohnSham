@@ -1,4 +1,5 @@
-using KohnShamResolution: LDADiscretization, tensor_matrix_dict!, tensor_vector_dict!
+using KohnShamResolution: LDADiscretization, tensor_matrix_dict!, tensor_vector_dict!, 
+AbstractDFTModel, fill_stiffness_matrix!, fill_mass_matrix!, fill_mass_tensor!, kinetic_matrix!, coulomb_matrix!
 
 using SparseArrays
 function symmetrize_sparse!(A::SparseMatrixCSC{Float64,Int})
@@ -48,4 +49,31 @@ function hartree_matrix2!(discretization::LDADiscretization, D::AbstractMatrix{<
 end
 
 
-hartree_matrix2!(solver.discretization, solver.cache.D)
+#hartree_matrix2!(solver.discretization, solver.cache.D)
+
+
+
+
+function init_cache2!(discretization::LDADiscretization, model::AbstractDFTModel, hartree::Real, integration_method::IntegrationMethod)
+
+    @unpack lₕ, basis, matrices  = discretization
+    @unpack A, M₀, M₋₁, M₋₂, F, S, Kin, Coulomb, Hfix = matrices
+
+    # CREATION OF FEM MATRICES
+    @time fill_stiffness_matrix!(basis, A; method = integration_method)
+    @time fill_mass_matrix!(basis, M₀; method = integration_method)
+    @time fill_mass_matrix!(basis, -1, M₋₁; method = integration_method)
+    lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂; method = integration_method)
+    @time iszero(hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
+    @time S .= sqrt(inv(Symmetric(M₀)))
+
+    # CREATION OF THE FIX PART OF THE HAMILTONIAN 
+    @time kinetic_matrix!(discretization)
+    @time coulomb_matrix!(discretization, model)
+    for l ∈ 1:lₕ+1
+        @time Hfix[l] .= Kin[l] .+ Coulomb
+    end
+    nothing
+end
+
+@time init_cache2!(discretization, model, true, ExactIntegration())
