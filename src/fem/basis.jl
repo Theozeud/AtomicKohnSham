@@ -1,4 +1,51 @@
 #####################################################################
+#                               PRECOMPUTATIONS
+#####################################################################
+
+struct BasisPrecomputations{T <: Real}
+    productG::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
+    productdG::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
+    product3G::Dict{Tuple{Int,Int,Int},LaurentPolynomial{T}}
+    function BasisPrecomputations(generators::AbstractGenerator{TG}, mesh::Mesh{TM}, invϕ::Vector{Tuple{Ts,Ts}}) where {TM,TG,Ts<:Real}
+
+        # SET THE TYPE OF DATAS
+        T = promote_type(TM,TG)
+
+        @unpack polynomials, derivpolynomials = generators
+        deg = 2*degmax(generators)+1
+
+
+        # PRECOMPUTE MONOM OVER DEG 1 && OVER DEG 2
+        #=
+        monom_overdeg1 = fill(zero(T), deg, length(mesh)-1) 
+        monom_overdeg2 = fill(zero(T), deg, length(mesh)-1)
+        @inbounds for i ∈ 1:length(mesh)-1
+            @inbounds for k ∈ 1:deg
+                monom_overdeg1[k,i] = _integration_monome_over_deg1(k-1, invϕ[i][1], invϕ[i][2], generators.binf, generators.bsup)
+                monom_overdeg2[k,i] = _integration_monome_over_deg2(k-1, invϕ[i][1], invϕ[i][2], generators.binf, generators.bsup)
+            end
+        end
+        =#
+
+        # PRECOMPUTE PRODUCT OF GENERATORS AND THEIR DERIVATIVES
+        productG = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
+        productdG = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
+        product3G = Dict{Tuple{Int,Int,Int},LaurentPolynomial{T}}()
+        @inbounds for i ∈ eachindex(generators)
+            @inbounds for j ∈ i:length(generators)
+                productG[(i,j)]     = polynomials[i] * polynomials[j]
+                productdG[(i,j)]    = derivpolynomials[i] * derivpolynomials[j]
+                @inbounds for k ∈ j:length(generators)
+                    product3G[(i,j,k)]    = productG[(i,j)] * polynomials[k]
+                end
+            end
+        end
+
+        new{T}(productG, productdG, product3G)
+    end
+end
+
+#####################################################################
 #                           POLYNOMIAL BASIS
 #####################################################################
 
@@ -58,7 +105,7 @@ struct PolynomialBasis{ T<:Real,
                              indices_generators::Dict, 
                              cells_to_indices::Dict{Int,Vector{Int}}, 
                              normalisation::Vector{<:Real},
-                             max_length_intersection::Int)
+                             max_length_intersection::Tuple{Int,Int})
         
         T = eltype(generators)
         shifts    = Vector{Tuple{T,T}}(undef, length(mesh)-1)
@@ -88,7 +135,7 @@ struct PolynomialBasis{ T<:Real,
             end
         end 
         
-        precomputations = BasisPrecomputations(mesh, generators)
+        precomputations = BasisPrecomputations(generators, mesh, invshifts)
 
         new{eltype(generators), 
             typeof(generators),
@@ -111,7 +158,6 @@ end
 
 @inline Base.eltype(::PolynomialBasis{T, TB, TM}) where {T,TB,TM} = T
 
-
 @inline Base.length(pb::PolynomialBasis) = pb.size
 @inline Base.eachindex(pb::PolynomialBasis) = 1:pb.size
 
@@ -130,28 +176,48 @@ end
 end
 
 
-struct BasisPrecomputations{T <: Real}
-    flags::Vector{Bool}
-    monom_overdeg1::Matrix{T}
-    monom_overdeg2::Matrix{T}
-    productgenerators::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
-
-    function BasisPrecomputations(mesh::Mesh{TM}, generators::AbstractGenerator{TG}) where{TM,TG}
-        T = promote_type(TM,TG)
-        flags = [false, false, false]
-        deg = 2*degmax(generators)
-        monom_overdeg1 = fill(zero(T), deg, length(mesh)-1) 
-        monom_overdeg2 = fill(zero(T), deg, length(mesh)-1)
-        productgenerators = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
-        new{T}(flags,monom_overdeg1, monom_overdeg2,  productgenerators)
+function getprod(pb::PolynomialBasis, i::Int, j::Int)
+    if i ≤ j
+        return pb.precomputations.productG[(i,j)]
+    else
+        return pb.precomputations.productG[(j,i)]
     end
 end
 
-function compute_monom_overdeg1(basis::PolynomialBasis)
-     
 
+function sort_triplet(a::Int, b::Int, c::Int)::Tuple{Int, Int, Int}
+    if a ≤ b
+        if b ≤ c
+            return (a, b, c)
+        elseif a ≤ c
+            return (a, c, b)
+        else
+            return (c, a, b)
+        end
+    else
+        if a ≤ c
+            return (b, a, c)
+        elseif b ≤ c
+            return (b, c, a)
+        else
+            return (c, b, a)
+        end
+    end
 end
 
+
+function getprod(pb::PolynomialBasis, i::Int, j::Int, k::Int)
+    (a,b,c) = sort_triplet(i,j,k)
+    return pb.precomputations.product3G[(a,b,c)]
+end
+
+function getdprod(pb::PolynomialBasis, i::Int, j::Int)
+    if i ≤ j
+        return pb.precomputations.productdG[(i,j)]
+    else
+        return pb.precomputations.productdG[(j,i)]
+    end
+end
 
 #####################################################################
 #                          EVALUATION TOOLS

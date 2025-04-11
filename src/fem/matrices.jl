@@ -1,38 +1,3 @@
-# UTILS FOR INTERSECTION
-function find_intersection!(I::Vector{Int}, A::Union{NTuple{N,Int},Int}, B::Union{NTuple{M,Int},Int}) where {N,M}
-    count = 0
-    for a ∈ A
-        if a ∈ B
-            count += 1
-            I[count] = a
-        end
-    end
-    count
-end
-
-
-function find_intersection_indices!(I::Vector{NTuple{2,Int}}, A::Union{NTuple{N,Int},Int}, B::Union{NTuple{M,Int},Int}) where {N,M}
-    count = 0
-    for a ∈ A
-        if a ∈ B
-            count += 1
-            I[count] = (findfirst(==(a),A),findfirst(==(a),B))
-        end
-    end
-    count
-end
-    
-function find_intersection_indices!(I::Vector{NTuple{3,Int}}, A::Union{NTuple{N,Int},Int}, B::Union{NTuple{M,Int},Int}, C::Union{NTuple{P,Int},Int}) where {N,M,P}
-    count = 0
-    for a ∈ A
-        if a ∈ B && a ∈ C
-            count += 1
-            I[count] = (findfirst(==(a),A),findfirst(==(a),B),findfirst(==(a),C))
-        end
-    end
-    count
-end
-
 #####################################################################
 #                          OVERLAP MATRIX
 #####################################################################
@@ -76,19 +41,24 @@ function fill_mass_matrix!( pb::PolynomialBasis,
                             A::AbstractMatrix{<:Real};
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
-    @unpack generators, mesh = pb
-    J = fill((0,0),pb.max_length_intersection[1])
+    @unpack generators, mesh, precomputations = pb
+    J = fill(0,2,pb.max_length_intersection[1])
     for I ∈ pb.matrix_fill_indices
         count = find_intersection_indices!(J,pb.indices_cells[I[1]],pb.indices_cells[I[2]])
-        @views Jv = J[1:count]
-        for (i,j) ∈ Jv
+        for c ∈ 1:count
+            i = J[1,c]
+            j = J[2,c]
             P = getgenerator(pb, I[1], i)
             Q = getgenerator(pb, I[2], j)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
             (a,b) = getmesh(pb, I[1], i)
+            iP = pb.indices_generators[I[1]][i]
+            iQ = pb.indices_generators[I[2]][j]
+            prod = getprod(pb, iP, iQ)
             intdata = IntegrationData(weight,
                                       (P,Q),
+                                      prod,
                                       ϕ,
                                       invϕ,
                                       a,
@@ -136,18 +106,23 @@ end
 
 function fill_stiffness_matrix!(pb::PolynomialBasis, A::AbstractMatrix{<:Real}; method::IntegrationMethod = ExactIntegration())
     @unpack mesh = pb
-    J = fill((0,0),pb.max_length_intersection[1])
+    J = fill(0,2,pb.max_length_intersection[1])
     for I ∈ pb.matrix_fill_indices
         count = find_intersection_indices!(J,pb.indices_cells[I[1]],pb.indices_cells[I[2]])
-        @views Jv = J[1:count]
-        for (i,j) ∈ Jv
+        for c ∈ 1:count
+            i = J[1,c]
+            j = J[2,c]
             P = getderivgenerator(pb, I[1], i)
             Q = getderivgenerator(pb, I[2], j)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
             (a,b) = getmesh(pb, I[1], i)
+            iP = pb.indices_generators[I[1]][i]
+            iQ = pb.indices_generators[I[2]][j]
+            prod = getdprod(pb, iP, iQ)
             intdata = IntegrationData(NoWeight(),
                                       (P,Q),
+                                      prod,
                                       ϕ,
                                       invϕ,
                                       a,
@@ -189,6 +164,7 @@ function fill_mass_vector!(pb::PolynomialBasis, A::AbstractMatrix{<:Real}; weigh
             (a,b) = getmesh(pb, I[1], i)
             intdata = IntegrationData(weight,
                                       (P,),
+                                      P,   
                                       ϕ,
                                       invϕ,
                                       a,
@@ -226,19 +202,26 @@ function fill_mass_tensor!( pb::PolynomialBasis,
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
     @unpack mesh = pb
-    J = fill((0,0,0),pb.max_length_intersection[2])
+    J = fill(0,3,pb.max_length_intersection[2])
     for I ∈ pb.tensor_fill_indices
         count = find_intersection_indices!(J, pb.indices_cells[I[1]],pb.indices_cells[I[2]], pb.indices_cells[I[3]])
-        @views Jv = J[1:count]
-        for (i,j,k) ∈ Jv
+        for c ∈ 1:c
+            i = J[1,c]
+            j = J[2,c]
+            k = J[3,c]
             P = getgenerator(pb, I[1], i)
             Q = getgenerator(pb, I[2], j)
             L = getgenerator(pb, I[3], k)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
             (a,b) = getmesh(pb, I[1], i)
+            iP = pb.indices_generators[I[1]][i]
+            iQ = pb.indices_generators[I[2]][j]
+            iL = pb.indices_generators[I[3]][k]
+            prod = getprod(pb, iP, iQ, iL)
             intdata = IntegrationData(weight,
                                       (P,Q,L),
+                                      prod,
                                       ϕ,
                                       invϕ,
                                       a,
@@ -275,19 +258,26 @@ function fill_mass_tensor!( pb::PolynomialBasis,
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
     @unpack mesh = pb
-    J = fill((0,0,0),pb.max_length_intersection[2])
+    J = fill(0,3,pb.max_length_intersection[2])
     for I ∈ pb.tensor_fill_indices
         count = find_intersection_indices!(J, pb.indices_cells[I[1]],pb.indices_cells[I[2]], pb.indices_cells[I[3]])
-        @views Jv = J[1:count]
-        for (i,j,k) ∈ Jv
+        for c ∈ 1:count
+            i = J[1,c]
+            j = J[2,c]
+            k = J[3,c]
             P = getgenerator(pb, I[1], i)
             Q = getgenerator(pb, I[2], j)
             L = getgenerator(pb, I[3], k)
             ϕ = getshift(pb, I[1], i)
             invϕ = getinvshift(pb, I[1], i)
             (a,b) = getmesh(pb, I[1], i)
+            iP = pb.indices_generators[I[1]][i]
+            iQ = pb.indices_generators[I[2]][j]
+            iL = pb.indices_generators[I[3]][k]
+            prod = getprod(pb, iP, iQ, iL)
             intdata = IntegrationData(weight,
                                       (P,Q,L),
+                                      prod,
                                       ϕ,
                                       invϕ,
                                       a,

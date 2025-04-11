@@ -67,6 +67,7 @@ Structure holding all the data necessary to compute the integral
 # Fields
 - `weight::weightType`: The weight function `w(x)`.
 - `P::Tuple{Vararg{LaurentPolynomial{T}}}`: Polynomials `Pᵢ`.
+- `Q`::LaurentPolynomial{T} : Polynomials `Q = ∏ᵢPᵢ``
 - `ϕ::Tuple{T, T}`: Coefficients `(α, β)` defining the affine map `ϕ(x) = α * x + β`.
 - `invϕ::Tuple{T, T}`: Coefficients of the inverse affine map of `ϕ`.
 - `a::T`: Lower bound of the integration domain.
@@ -81,9 +82,13 @@ Structure holding all the data necessary to compute the integral
 - `methodType` : Type of the method to perform the computation of the integral.
 
 """
-struct IntegrationData{weightType <: AbstractWeight, T<:Real, polynomialType <: Tuple{Vararg{LaurentPolynomial{<:Real}}}, methodType<:IntegrationMethod}
+struct IntegrationData{ weightType <: AbstractWeight, T<:Real, 
+                        polynomialsType <: Tuple{Vararg{LaurentPolynomial{<:Real}}}, 
+                        polynomialType <: LaurentPolynomial{<:Real},
+                        methodType<:IntegrationMethod}
     weight::weightType              
-    P::polynomialType
+    P::polynomialsType
+    Q::polynomialType
     ϕ::Tuple{T,T}
     invϕ::Tuple{T,T}
     a::T
@@ -94,6 +99,7 @@ struct IntegrationData{weightType <: AbstractWeight, T<:Real, polynomialType <: 
 
     function IntegrationData(weight::AbstractWeight, 
                              P::Tuple{Vararg{LaurentPolynomial{<:Real}}},
+                             Q::LaurentPolynomial{<:Real},
                              ϕ::Tuple{<:Real,<:Real},
                              invϕ::Tuple{<:Real,<:Real},
                              a::Real,
@@ -105,8 +111,10 @@ struct IntegrationData{weightType <: AbstractWeight, T<:Real, polynomialType <: 
         new{typeof(weight),
             typeof(a),
             typeof(P),
+            typeof(Q),
             typeof(method)}(weight,
                             P,
+                            Q,
                             ϕ,
                             invϕ,
                             a,
@@ -121,6 +129,7 @@ end
 function IntegrationData(intdata::IntegrationData; 
                          weight::AbstractWeight = intdata.weight,
                          P::Tuple{Vararg{LaurentPolynomial{<:Real}}} = intdata.P,
+                         Q::LaurentPolynomial{<:Real} = intdata.Q,
                          ϕ::Tuple{<:Real,<:Real} = intdata.ϕ,
                          invϕ::Tuple{<:Real,<:Real} = intdata.invϕ,
                          a::Real = intdata.a,
@@ -131,6 +140,7 @@ function IntegrationData(intdata::IntegrationData;
 
     IntegrationData(weight,
                     P,
+                    Q,
                     ϕ,
                     invϕ,
                     a,
@@ -201,7 +211,7 @@ function singularity_swsp(::InvX, intdata::IntegrationData)
 
     R = find_polynomial_factor(P[I], 1, -ϕ[2])
     newP = Base.setindex(P, R, I)
-    newintdata = IntegrationData(intdata; weight = NoWeight(), P = newP)
+    newintdata = IntegrationData(intdata; weight = NoWeight(), P = newP, Q = reduce(*,newP))
     ϕ[1]*swsp(method, NoWeight(), newintdata)
 end
 
@@ -216,7 +226,7 @@ function singularity_swsp(::InvX2, intdata::IntegrationData)
     RI = find_polynomial_factor(P[I], 1, -ϕ[2])
     RK = find_polynomial_factor(P[K], 1, -ϕ[2])
     newP = Base.setindex(Base.setindex(P, RI, I), RK, K)
-    newintdata = IntegrationData(intdata; weight = NoWeight(), P = newP)
+    newintdata = IntegrationData(intdata; weight = NoWeight(), P = newP, Q = reduce(*,newP))
     ϕ[1]^2*swsp(method, NoWeight(), newintdata)
 end
 
@@ -224,17 +234,17 @@ end
 #               EXACT SHIFTED WEIGHTED SCALAR PRODUCT
 #####################################################################
 
+@memoize memoize_integrate(p::LaurentPolynomial, a::Real, b::Real) = integrate(p, a, b)
 @memoize memoize_scalar_product(p::LaurentPolynomial, q::LaurentPolynomial, a::Real, b::Real) = scalar_product(p, q, a, b)
 @memoize memoize_scalar_product(p::LaurentPolynomial, q::LaurentPolynomial, l::LaurentPolynomial, a::Real, b::Real) = scalar_product(p, q*l, a, b)
 
 function swsp(::ExactIntegration, ::NoWeight, intdata::IntegrationData)
-    @unpack P, binf, bsup, invϕ = intdata
-    invϕ[1] * memoize_scalar_product(P..., binf, bsup)
+    @unpack Q, binf, bsup, invϕ = intdata
+    invϕ[1] * integrate(Q, binf, bsup)
 end
 
 function swsp(::ExactIntegration, ::InvX, intdata::IntegrationData)
-    @unpack P, invϕ, binf, bsup = intdata
-    Q = reduce(*, P)
+    @unpack Q, invϕ, binf, bsup = intdata
     val = zero(eltype(Q))
     for k ∈ eachindex(Q)
         val += Q[k] * _integration_monome_over_deg1(k, invϕ[1], invϕ[2], binf, bsup)
@@ -243,8 +253,7 @@ function swsp(::ExactIntegration, ::InvX, intdata::IntegrationData)
 end
 
 function swsp(::ExactIntegration, ::InvX2, intdata::IntegrationData)
-    @unpack P, invϕ, binf, bsup = intdata
-    Q = reduce(*, P)
+    @unpack Q, invϕ, binf, bsup = intdata
     val = zero(eltype(Q))
     for k ∈ eachindex(Q)
         val += Q[k] * _integration_monome_over_deg2(k, invϕ[1], invϕ[2], binf, bsup)
@@ -259,8 +268,7 @@ end
 
 function swsp(quadra::QuadratureIntegration, weight::FunWeight, intdata::IntegrationData)
     @unpack x, w, fx, fx2 = quadra
-    @unpack ϕ, invϕ, P, a, b, binf, bsup = intdata
-    Q = reduce(*, P)
+    @unpack ϕ, invϕ, Q, a, b, binf, bsup = intdata
     #g = x -> ϕ[1]*x+ϕ[2]
     #f = x -> weight(x) * Q(g(x))
     #return approximate_integral(f, (a,b); method = QuadGKJL(), reltol = 100*eps(Float64), abstol =  100*eps(Float64))
