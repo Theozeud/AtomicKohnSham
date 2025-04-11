@@ -9,6 +9,7 @@ end
 
 name(::Quadratic) = "Quadratic" 
 
+
 struct CacheQuadratic{densityType <: AbstractArray} <: SCFCache
 
     Nf::Int             # Number of fully occupied orbitals
@@ -62,9 +63,8 @@ end
 #                        Initialization
 #####################################################################
 
-function init_method(::Quadratic, solver::KohnShamSolver)
+function create_cache_method(method::Quadratic, discretization::KohnShamDiscretization)
 
-    @unpack discretization, Noccup, D = solver
     @unpack M₀, elT = discreztization
 
     # INIT OCCUPATIONS COUNT
@@ -114,21 +114,168 @@ end
 #                        Performstep
 #####################################################################
 
-function performstep!(solver::KhonShamSolver, method::Quadratic)
-    # STEP 1 : SOLVE THE LINEAR SYSTEM
-    solve_system!(solver, method)
+function performstep!(cache::CacheQuadratic, ::Quadratic, solver::KohnShamSolver)
+    # STEP 1 : PREPARE THE LINEAR SYSTEM
+    prepare_linear_system!(cache)
 
-    # STEP 2 : COMPUTE NEW Ω AND M
-    update_density!(solver, method)
+    # STEP 2 : SOLVE THE LINEAR SYSTEM
+    solve_linear_system!(cache, method)
 
-    # STEP 3 : UPDATE ENERGY
+    # STEP 3 : COMPUTE NEW Ω AND M
+    update_density!(cache)
+
+    # STEP 4 : UPDATE ENERGY
     update_energy!(solver)
 end
 
 #####################################################################
-#                  Solving of the linear system
+#                        LINEAR SYSTEM
+#####################################################################
+function prepare_linear_system!(cache::CacheQuadratic)
+    @unpack Nf, Np, Nv,
+            ΓM, Ω, A, M, B, FA, FM  = cache
+
+    @unpack tmp1 = cache
+
+    _, slicep, _ = slice_orbitals(Nf, Np, Nv)
+
+    # COMPUTE FA
+
+
+    # COMPUTE FM
+    _mul!(FM, Ω', FA, Ω, tmp1)
+
+    # COMPUTE B
+    _commutator!(B, FM, ΓM, tmp1)
+    @views Bpp = B[slicep, slicep]
+    remove_trace!(Bpp)
+    _copy_mat_to_vec!(vecB, axes(vecB,1), B, axes(B,1), axes(B,2))
+
+end
+
+
+function linearsystem(  cache::CacheQuadratic, 
+                        X::AbstractVector)
+
+    @unpack Nf, Np, Nv,
+            ΓM, Ω, A, M, FM  = cache
+
+    @unpack tmp1, tmp2, tmpQM, tmpd, tmpX, vecX = cache
+    
+    _, slicep, _ = slice_orbitals(Nf, Np, Nv)
+
+    # CONVERT X INTO (A,M)
+    X_to_AM!(A, M, X, Nf, Np, Nv)
+
+    # COMPUTE Q(M)
+    remove_trace!(QM, M)
+
+    # COMPUTE d = Ω × ([A,ΓM] + Q(M)) × Ω'
+    _commutator!(tmp2, A, ΓM, tmp1)
+    @views tmp2pp = tmp2[slicep,slicep]
+    @. tmp2pp += tmpQM
+    _mul!(tmpd, Ω, tmp2, Ω', tmp1)
+
+    # COMPUTE GM = Ω' × (J(d) + Q_xc(DM)) × Ω
+
+
+    # COMPUTE Z = [FM,A] + GM
+    _commutator!(tmpZ, FM, A, tmp1)
+    mul!(tmp1, tmpZ, ΓM)
+    @. tmpZ += GM
+
+    # COMPUTE   X = 0.5 × ([FM,A]ΓM + FM[A,ΓM]) + GM×ΓM + FM×Q(M) 
+    _commutator!(tmp2, A, ΓM, tmp1)
+    mul!(tmpX, FM, tmp2)
+    @. tmpX += tmp1
+    @. tmpX *= 1/2
+    mul!(tmp1, GM, ΓM)
+    @. tmpX += tmp1
+    @views tmp1_p = tmp1[:,slicep]
+    @views FM_p   = FM[:,slicep]
+    @views tmpX_p = tmpX[:,slicep]
+    mul!(tmp1_v,FM_v,tmpQM)
+    @. tmpX_v += tmp1_v
+
+    # OUTPUT
+    tmp1 .= tmpX .- tmpX'
+    @views Zpp = Z[slicep, slicep]
+    remove_trace!(Zpp)
+    AM_to_X!(vecX, tmp1, Zpp, Nf, Np, Nv)
+    vecX
+end
+
+function solve_linear_system!(cache::CacheQuadratic, method::Quadratic)
+
+    @unpack vecX, vecB, A, M, Nf, Np, Nv = cache
+
+    L(X::AbstractVector) = linearsystem(cache, X; method.opts...)
+
+    sol = linsolve(L, vecB)
+
+    vecX .= sol[1]
+
+    X_to_AM!(A, M, vecX, Nf, Np, Nv)
+end
+
+
+#####################################################################
+#                     UPDATE DENSITY MATRIX
 #####################################################################
 
+function update_density!(cache::CacheQuadratic)
+    @unpack Ω, Γdiag, M, A, tmp1 = cache
+    # UPDATE Ω
+    mul!(tmp1, Ω, exp(A))
+    Ω .= tmp1
+    # UPDATE Λ 
+    block(Γdiag)[2] .+= M
+end
+
+#####################################################################
+#          CONVERSION BETWEEN MATRIX AND VECTOR REPRESENTATIONS
+#####################################################################
+
+
+function X_to_AM!(A::AbstractMatrix, M::AbstractMatrix, X::AbstractVector, Nf::Int, Np::Int, Nv::Int) 
+    slicef, slicep, slicev = slice_orbitals(Nf, Np, Nv)
+    slicevf, slicevp, slicepf, slicepp = vec_slice_orbitals(Nf, Np, Nv)
+
+    _copy_vec_to_mat!(A, slicev, slicef, X, slicevf)
+    _copy_vec_to_mat!(A, slicev, slicep, X, slicevp)
+    _copy_vec_to_mat!(A, slicep, slicef, X, slicepf)
+    _copy_vec_to_mat!(M, axes(M,1), axes(M,2), X, slicepp)
+
+    LinearAlgebra._copy_adjtrans!(A, slicef, slicev, A, slicev, slicef, antiadjoint)
+    LinearAlgebra._copy_adjtrans!(A, slicep, slicev, A, slicev, slicep, antiadjoint)
+    LinearAlgebra._copy_adjtrans!(A, slicef, slicep, A, slicep, slicef, antiadjoint)
+    nothing
+end
+
+
+function AM_to_X!(X::AbstractVector, A::AbstractMatrix, M::AbstractMatrix, Nf::Int, Np::Int, Nv::Int)
+    slicef, slicep, slicev = slice_orbitals(Nf, Np, Nv)
+    slicevf, slicevp, slicepf, slicepp = vec_slice_orbitals(Nf, Np, Nv)
+
+    _copy_mat_to_vec!(X, slicevf, A, slicev, slicef)
+    _copy_mat_to_vec!(X, slicevp, A, slicev, slicep,)
+    _copy_mat_to_vec!(X, slicepf, A, slicep, slicef)
+    _copy_mat_to_vec!(X, slicepp, M, axes(M,1), axes(M,2),)
+    nothing
+end
+
+
+
+
+
+
+
+
+
+
+
+
+#=
 function solve_system!(solver::KohnShamSolver, method::Quadratic)
     
     @unpack Nf, Np, Nv,
@@ -199,47 +346,4 @@ function solve_system!(solver::KohnShamSolver, method::Quadratic)
 
     # SOLVE THE LINEAR SYSTEM
 end
-
-#####################################################################
-#                     Update of variables
-#####################################################################
-
-function update_density!(solver::KohnShamSolver, ::Quadratic)
-    @unpack Ω, Λ, M, A, Nf, Np = cache
-    # UPDATE Ω
-    Ω .= Ω * exp(A)
-    # UPDATE Λ 
-    @. Λ += M
-end
-
-#####################################################################
-#          CONVERSION BETWEEN MATRIX AND VECTOR REPRESENTATIONS
-#####################################################################
-
-
-function X_to_AM!(A::AbstractMatrix, M::AbstractMatrix, X::AbstractVector, Nf::Int, Np::Int, Nv::Int) 
-    slicef, slicep, slicev = slice_orbitals(Nf, Np, Nv)
-    slicevf, slicevp, slicepf, slicepp = vec_slice_orbitals(Nf, Np, Nv)
-
-    _copy_vec_to_mat!(A, slicev, slicef, X, slicevf)
-    _copy_vec_to_mat!(A, slicev, slicep, X, slicevp)
-    _copy_vec_to_mat!(A, slicep, slicef, X, slicepf)
-    _copy_vec_to_mat!(M, axes(M,1), axes(M,2), X, slicepp)
-
-    LinearAlgebra._copy_adjtrans!(A, slicef, slicev, A, slicev, slicef, antiadjoint)
-    LinearAlgebra._copy_adjtrans!(A, slicep, slicev, A, slicev, slicep, antiadjoint)
-    LinearAlgebra._copy_adjtrans!(A, slicef, slicep, A, slicep, slicef, antiadjoint)
-    nothing
-end
-
-
-function AM_to_X!(X::AbstractVector, A::AbstractMatrix, M::AbstractMatrix, Nf::Int, Np::Int, Nv::Int)
-    slicef, slicep, slicev = slice_orbitals(Nf, Np, Nv)
-    slicevf, slicevp, slicepf, slicepp = vec_slice_orbitals(Nf, Np, Nv)
-
-    _copy_mat_to_vec!(X, slicevf, A, slicev, slicef)
-    _copy_mat_to_vec!(X, slicevp, A, slicev, slicep,)
-    _copy_mat_to_vec!(X, slicepf, A, slicep, slicef)
-    _copy_mat_to_vec!(X, slicepp, M, axes(M,1), axes(M,2),)
-    nothing
-end
+=#

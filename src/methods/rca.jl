@@ -20,6 +20,8 @@ mutable struct RCACache{dataType <: Real,
     Dprev::densityType                          # Density Matrix at previous time
     tmpD::densityType                           # Storage for extra Density Matrix 
                                                 # (usefull for degeneracy)
+    tmpD2::densityType                          # Storage for extra Density Matrix 
+                                                # (usefull to kill allocation in ODA)
 
     U::orbitalsType                             # Coefficient of orbitals at current time
     ϵ::orbitalsenergyType                       # Orbitals energy at current time
@@ -42,6 +44,7 @@ function create_cache_method(method::RCAMethod, discretization::KohnShamDiscreti
     D                   = init_density(discretization)
     Dprev               = init_density(discretization)
     tmpD                = init_density(discretization)
+    tmpD2               = init_density(discretization)
     U                   = init_orbitals(discretization)
     ϵ                   = init_orbitals_energy(discretization)
     n                   = init_occupation_number(discretization)
@@ -57,7 +60,7 @@ function create_cache_method(method::RCAMethod, discretization::KohnShamDiscreti
         typeof(D), 
         typeof(U), 
         typeof(ϵ), 
-        typeof(n)}(t, D, Dprev, tmpD, U, ϵ, n, Noccup, false, tdegen, index_aufbau, energies_prev)
+        typeof(n)}(t, D, Dprev, tmpD, tmpD2, U, ϵ, n, Noccup, false, tdegen, index_aufbau, energies_prev)
 end
 
 
@@ -219,7 +222,7 @@ name(::ODA) = "ODA"
 
 function update_density!(cache::RCACache, m::ODA, solver::KohnShamSolver)
 
-    @unpack D, Dprev, energies_prev= cache
+    @unpack D, Dprev, tmpD, energies_prev= cache
     @unpack discretization, model, energies = solver
 
     if solver.niter > 0
@@ -246,13 +249,13 @@ function update_density!(cache::RCACache, m::ODA, solver::KohnShamSolver)
                                                     energies[:Ecou], energies_prev[:Ecou], 
                                                     energies[:Ehar], energies_prev[:Ehar], 
                                                     energy_har01, energy_har10,
-                                                    D, Dprev, model, discretization)
+                                                    D, Dprev, tmpD, model, discretization)
 
         # UPDATE THE DENSITY
-        D .= cache.t * D + (1 - cache.t) * Dprev
+        t = cache.t
+        @. D = t * D + (1 - t) * Dprev
 
         # UPDATE THE ENERGIES
-        t = cache.t
         energies[:Ekin] = t*energies[:Ekin] + (1-t)*energies_prev[:Ekin]
         energies[:Ecou] = t*energies[:Ecou] + (1-t)*energies_prev[:Ecou]
         energies[:Ehar] = t^2*energies[:Ehar] + (1-t)^2*energies_prev[:Ehar] + t*(1-t) * (energy_har01 + energy_har10)

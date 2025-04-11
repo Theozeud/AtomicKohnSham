@@ -1,4 +1,4 @@
-struct SolverOptions{T, 
+struct SolverOptions{T <: Real, 
                     intexcType <: IntegrationMethod, 
                     intfemType <: IntegrationMethod}
     scftol::T                               # SCF tolerance

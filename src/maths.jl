@@ -8,15 +8,11 @@ function solve_linear_problem(A::AbstractMatrix{<:Real}, b::AbstractVector{<:Rea
 end
 
 # Solve Generalized Eigenvalue problem
-function solve_generalized_eigenvalue_problem(A::AbstractMatrix{<:Real}, B::AbstractMatrix{<:Real}, n::Int)
-    #C = sqrt(inv(B))
+function solve_generalized_eigenvalue_problem(A::AbstractMatrix{<:Real}, S::AbstractMatrix{<:Real}, n::Int)
     #λ, U = real.(eigs(A,B; which = :SR, nev = n))
-    #λ, U
-    C = sqrt(inv(B))
-    λ, U = eigen(C*A*C)
     #λ, U = eigen(A,B)
-    λ[1:n], C*U[:,1:n]
- 
+    λ, U = eigen(Symmetric(S*A*S))
+    λ[1:n], S*U[:,1:n]
 end
 
 # Approximate integral
@@ -109,10 +105,18 @@ function _copy_mat_to_vec!( V::AbstractVector, ir_dest::AbstractRange{Int},
     return M
 end
 
-function remove_trace!(A::AbstractMatrix, B::AbstractMatrix)
+function remove_trace!(B::AbstractMatrix)
+    trace = tr(B)/size(B,1)
+    @threads for i ∈ axes(B,1)
+        @inbounds B[i,i] -= trace
+    end
+    nothing
+end
+
+function remove_trace(A::AbstractMatrix, B::AbstractMatrix)
     A .= B
     trace = tr(B)/size(B,1)
-    @threads for i ∈ axes(M,1)
+    @threads for i ∈ axes(B,1)
         @inbounds A[i,i] -= trace
     end
     nothing
@@ -129,4 +133,34 @@ function _spzeros(T::Type, n::Int, m::Int, p::Int)
         A[i] = spzeros(T, n, m)
     end
     A
+end
+
+function symmetrize_sparse!(A::SparseMatrixCSC{Float64,Int})
+    @assert size(A, 1) == size(A, 2) "Matrix must be square"
+    n = size(A, 1)
+    for j in 1:n
+        for idx in A.colptr[j]:(A.colptr[j+1]-1)
+            i = A.rowval[idx]
+            if i != j  # skip diagonal
+                # Find symmetric entry (i, j) and (j, i)
+                # locate position of (j, i)
+                @views Av = A.rowval[A.colptr[i]:(A.colptr[i+1]-1)]
+                k = findfirst(x -> x == j, Av)
+                if k !== nothing
+                    k = k + A.colptr[i] - 1
+                    avg = (A.nzval[idx] + A.nzval[k]) / 2
+                    A.nzval[idx] = avg
+                    A.nzval[k] = avg
+                end
+            end
+        end
+    end
+    return A
+end
+
+function scale_sparse!(A::SparseMatrixCSC{T}, coeff::T) where T
+    @inbounds for i in eachindex(A.nzval)
+        A.nzval[i] *= coeff
+    end
+    return A
 end
