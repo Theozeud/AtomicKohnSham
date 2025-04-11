@@ -64,7 +64,7 @@ ordermax = 20
         niter = 0
         stopping_criteria = zero(T)
         
-        @timeit to "Create logbook" logbook = LogBook(logconfig, T)
+        @timeit to "Create logbook" logbook = LogBook(LogConfig(), T)
         
         solver = KohnShamSolver(niter, stopping_criteria, discretization, model, method, cache, opts, energies, logbook)
 end
