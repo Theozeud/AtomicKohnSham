@@ -1,4 +1,53 @@
-##########################       PolynomialBasis      ##########################
+#####################################################################
+#                               PRECOMPUTATIONS
+#####################################################################
+
+struct BasisPrecomputations{T <: Real}
+    productG::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
+    productdG::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
+    product3G::Dict{Tuple{Int,Int,Int},LaurentPolynomial{T}}
+    function BasisPrecomputations(generators::AbstractGenerator{TG}, mesh::Mesh{TM}, invϕ::Vector{Tuple{Ts,Ts}}) where {TM,TG,Ts<:Real}
+
+        # SET THE TYPE OF DATAS
+        T = promote_type(TM,TG)
+
+        @unpack polynomials, derivpolynomials = generators
+        deg = 2*degmax(generators)+1
+
+
+        # PRECOMPUTE MONOM OVER DEG 1 && OVER DEG 2
+        #=
+        monom_overdeg1 = fill(zero(T), deg, length(mesh)-1) 
+        monom_overdeg2 = fill(zero(T), deg, length(mesh)-1)
+        @inbounds for i ∈ 1:length(mesh)-1
+            @inbounds for k ∈ 1:deg
+                monom_overdeg1[k,i] = _integration_monome_over_deg1(k-1, invϕ[i][1], invϕ[i][2], generators.binf, generators.bsup)
+                monom_overdeg2[k,i] = _integration_monome_over_deg2(k-1, invϕ[i][1], invϕ[i][2], generators.binf, generators.bsup)
+            end
+        end
+        =#
+
+        # PRECOMPUTE PRODUCT OF GENERATORS AND THEIR DERIVATIVES
+        productG = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
+        productdG = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
+        product3G = Dict{Tuple{Int,Int,Int},LaurentPolynomial{T}}()
+        @inbounds for i ∈ eachindex(generators)
+            @inbounds for j ∈ i:length(generators)
+                productG[(i,j)]     = polynomials[i] * polynomials[j]
+                productdG[(i,j)]    = derivpolynomials[i] * derivpolynomials[j]
+                @inbounds for k ∈ j:length(generators)
+                    product3G[(i,j,k)]    = productG[(i,j)] * polynomials[k]
+                end
+            end
+        end
+
+        new{T}(productG, productdG, product3G)
+    end
+end
+
+#####################################################################
+#                           POLYNOMIAL BASIS
+#####################################################################
 
 struct PolynomialBasis{ T<:Real, 
                         generatorsType <: AbstractGenerator, 
@@ -16,6 +65,7 @@ struct PolynomialBasis{ T<:Real,
     matrix_fill_indices::Vector{CartesianIndex{2}}      # Vector of indices filled in fem matrices
     tensor_fill_indices::Vector{CartesianIndex{3}}      # Vector of indices filled in fem tensors
     max_length_intersection::Tuple{Int,Int}             # Maximal number of common mesh two polynomials of the basis can share
+    precomputations::BasisPrecomputations{T}            # Structure which store computations used many times
 
     function PolynomialBasis(generators::AbstractGenerator, 
                              mesh::Mesh, 
@@ -28,7 +78,8 @@ struct PolynomialBasis{ T<:Real,
                              invshifts::Vector{Tuple{T,T}}, 
                              matrix_fill_indices::Vector{CartesianIndex{2}}, 
                              tensor_fill_indices::Vector{CartesianIndex{3}},
-                             max_length_intersection::Tuple{Int,Int}) where T <: Real
+                             max_length_intersection::Tuple{Int,Int},
+                             precomputations::BasisPrecomputations) where T <: Real
         new{eltype(generators), 
             typeof(generators), 
             typeof(mesh),
@@ -43,7 +94,8 @@ struct PolynomialBasis{ T<:Real,
                                     invshifts, 
                                     matrix_fill_indices, 
                                     tensor_fill_indices,
-                                    max_length_intersection)
+                                    max_length_intersection,
+                                    precomputations)
     end
 
     function PolynomialBasis(generators::AbstractGenerator, 
@@ -82,6 +134,8 @@ struct PolynomialBasis{ T<:Real,
                 end
             end
         end 
+        
+        precomputations = BasisPrecomputations(generators, mesh, invshifts)
 
         new{eltype(generators), 
             typeof(generators),
@@ -97,12 +151,12 @@ struct PolynomialBasis{ T<:Real,
                                     invshifts, 
                                     matrix_fill_indices, 
                                     tensor_fill_indices,
-                                    max_length_intersection)
+                                    max_length_intersection,
+                                    precomputations)
     end
 end
 
 @inline Base.eltype(::PolynomialBasis{T, TB, TM}) where {T,TB,TM} = T
-
 
 @inline Base.length(pb::PolynomialBasis) = pb.size
 @inline Base.eachindex(pb::PolynomialBasis) = 1:pb.size
@@ -121,8 +175,53 @@ end
     (c1,c0)
 end
 
-########################       Evaluation tools       ########################
 
+function getprod(pb::PolynomialBasis, i::Int, j::Int)
+    if i ≤ j
+        return pb.precomputations.productG[(i,j)]
+    else
+        return pb.precomputations.productG[(j,i)]
+    end
+end
+
+
+function sort_triplet(a::Int, b::Int, c::Int)::Tuple{Int, Int, Int}
+    if a ≤ b
+        if b ≤ c
+            return (a, b, c)
+        elseif a ≤ c
+            return (a, c, b)
+        else
+            return (c, a, b)
+        end
+    else
+        if a ≤ c
+            return (b, a, c)
+        elseif b ≤ c
+            return (b, c, a)
+        else
+            return (c, b, a)
+        end
+    end
+end
+
+
+function getprod(pb::PolynomialBasis, i::Int, j::Int, k::Int)
+    (a,b,c) = sort_triplet(i,j,k)
+    return pb.precomputations.product3G[(a,b,c)]
+end
+
+function getdprod(pb::PolynomialBasis, i::Int, j::Int)
+    if i ≤ j
+        return pb.precomputations.productdG[(i,j)]
+    else
+        return pb.precomputations.productdG[(j,i)]
+    end
+end
+
+#####################################################################
+#                          EVALUATION TOOLS
+#####################################################################
 function (pb::PolynomialBasis)(i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])

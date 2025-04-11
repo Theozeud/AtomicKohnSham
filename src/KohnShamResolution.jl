@@ -69,6 +69,7 @@ module KohnShamResolution
     include("fem/generators.jl")
     include("fem/basis.jl")
     include("fem/computations.jl")
+    include("fem/utils.jl")
     include("fem/matrices.jl")
     include("fem/integration_formula.jl")
 
@@ -108,7 +109,6 @@ module KohnShamResolution
     export LDADiscretization, LSDADiscretization
     include("discretization/lda.jl")
     include("discretization/lsda.jl")
-    #include("discretization/old_lsda.jl")
 
     export DFTProblem
     include("problem.jl")

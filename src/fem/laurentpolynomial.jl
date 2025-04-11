@@ -114,15 +114,15 @@ function Base.show(io::IO, p::LaurentPolynomial)
     print(io, str)
 end
 
-function (p::LaurentPolynomial)(x)
-    y = 0
+function (p::LaurentPolynomial)(x::T) where T
+    y = zero(T)
     if degmax(p) ≥ 0
         y = p[end]
         for i ∈ degmax(p)-1:-1:0
             y = y*x + p[i]
         end
     end
-    z = 0
+    z = zero(T)
     invx = inv(x)
     if degmin(p) < 0
         z = p[begin] * invx
@@ -275,10 +275,34 @@ function integrate(p::LaurentPolynomial{T}) where T
     LaurentPolynomial(new_coeffs, p.degmin+1)
 end
 
+function eval_integrate(p::LaurentPolynomial, x::T) where T
+    y = zero(T)
+    if degmax(p) ≥ 0
+        y = p[end]/(degmax(p)+1)
+        for i ∈ degmax(p)-1:-1:0
+            y = y*x + p[i]/(i+1)
+        end
+    end
+    y = y*x
+    z = zero(T)
+    invx = inv(x)
+    if degmin(p) < -1
+        z = p[begin] * invx
+        for i ∈ degmin(p)+1:-2
+            z = (z + p[i]/(i+1)) * invx
+        end
+    end
+    w = zero(T)
+    if degmin(p) ≤ -1
+        w = p[-1]*log(x)
+    end
+    z+y+w
+end
+
 
 function integrate(p::LaurentPolynomial, a::Real, b::Real)
-    int_p = integrate(p)
-    int_p(b) - int_p(a)
+    @assert iszero(p[-1]) "Can not integrate X^-1"
+    return eval_integrate(p,b) - eval_integrate(p,a)
 end
 
 function deriv(p::LaurentPolynomial)

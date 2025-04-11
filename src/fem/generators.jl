@@ -53,7 +53,9 @@ end
 @inline Base.getindex(p1ilg::P1IntLegendreGenerator, n::Int) =  p1ilg.polynomials[n] 
 @inline getpolynomial(p1ilg::P1IntLegendreGenerator) = p1ilg.polynomials
 @inline getderivpolynomial(p1ilg::P1IntLegendreGenerator) = p1ilg.derivpolynomials
+@inline Base.length(p1ilg::P1IntLegendreGenerator) = length(p1ilg.polynomials)
 
+degmax(p1ilg::P1IntLegendreGenerator) = p1ilg.ordermax
 
 function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
     # CREATE GENERATORS
