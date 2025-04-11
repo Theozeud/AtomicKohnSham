@@ -70,6 +70,7 @@ module KohnShamResolution
     include("fem/generators.jl")
     include("fem/basis.jl")
     include("fem/computations.jl")
+    include("fem/utils.jl")
     include("fem/matrices.jl")
     include("fem/integration_formula.jl")
 
