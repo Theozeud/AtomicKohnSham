@@ -1,19 +1,27 @@
 ## TO DO :
 
-- Implémentation des grilels spatiales de Susi      DONE
 - Revoir la gestion des Polynômes   
-    --> Supression coeff Log                        DONE
     --> Ajout Static Array
         (   dans une deuxième temps pour 
             benchmarker proprement)       
-    --> Cleaner les structures pour conserver
-        seulement ce qui est nécessaire
     --> Vérifier la génération des polynomes de Legendre
         en particulier les coefficients     
-- Revoir le gestion des calculs dans les matrices fem
-    --> Voir pour des méthodes de quadrature
 
 
+## TO LOOK AT :
+
+- Unifier LDA et LDSA en une seule structure 
+    --> identifier les abstractions à faire
+
+- Utilisation de Libxc pour les méthodes d'échanges corrélations
+    --> voir comment faire pour 
+
+- Regarder ce qui peut etre parallélisé et utilisation du GPU
+
+- Résolution du problème linéaire, surtout pour la méthode quadratique
+    --> LinSolve ?
+
+- Mieux organiser le code
 
 
 
@@ -22,12 +30,6 @@
 
 - si Rmin ≠ 0 -> problème dans le calcul du relèvement 
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
-
-
-## UPDGRADE CODE
-
 - Implémenter une nouvelle manière de "normaliser" pour améliorer le conditionnement et réduire les erreurs numériques
 
-- Utilisation du multi-threading dans le code
 
-- Améliorer le conditionnement pour utilsier d'autres solver aux valeurs propres
