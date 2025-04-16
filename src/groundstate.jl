@@ -119,14 +119,6 @@ function register!(solver::KohnShamSolver)
 
     # STORE THE STOPPING CRITERIA 
     !stopping_criteria || push!(solver.logbook.stopping_criteria_log, solver.stopping_criteria)   
-    
-    #=
-    # STORE THE ORBITALS ENERGY
-    orbitals_energy ?   push!(solver.logbook.orbitals_energy_log, copy(solver.ϵ))              : nothing     
-    
-    # STORE THE OCCUPATION NUMBERS
-    occupation_number ? push!(solver.logbook.occupation_number_log, copy(solver.n))          : nothing    
-    =#
 
     # STORE THE TOTAL ENERGY
     !energy || push!(solver.logbook.energy_log, solver.energies[:Etot])
