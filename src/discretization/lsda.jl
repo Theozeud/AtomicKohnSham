@@ -80,6 +80,7 @@ end
 
 Base.eltype(discretization::LSDADiscretization) = discretization.elT
 dim(discretization::LSDADiscretization) = discretization.Nₕ * (discretization.lₕ + 1)
+multiplicity(::LSDADiscretization) = 1
 
 #####################################################################
 #                          Init Cache

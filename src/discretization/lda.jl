@@ -82,6 +82,7 @@ end
 
 Base.eltype(discretization::LDADiscretization) = discretization.elT
 dim(discretization::LDADiscretization) = discretization.Nₕ * (discretization.lₕ + 1)
+multiplicity(::LDADiscretization) = 2
 
 #####################################################################
 #                          Init Cache
@@ -118,7 +119,7 @@ init_density(kd::LDADiscretization)                 = zeros(kd.elT, kd.Nₕ, kd.
 init_orbitals(kd::LDADiscretization)                = zeros(kd.elT, kd.Nₕ, kd.nₕ, kd.lₕ+1)
 init_orbitals_energy(kd::LDADiscretization)         = zeros(kd.elT, kd.lₕ+1, kd.nₕ)
 init_occupation_number(kd::LDADiscretization)       = zeros(kd.elT, kd.lₕ+1, kd.nₕ)
-init_density_matrix(kd::LDADiscretization)          = BlockDiagonal([zeros(kd.elT, kd.Nₕ, kd.Nₕ) for i ∈ 1:kd.lₕ+1])
+init_density_matrix(kd::LDADiscretization)          = zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.lₕ+1)
 
 function init_energies(kd::LDADiscretization, model::KohnShamExtended)
     @unpack elT = kd
@@ -130,6 +131,8 @@ function init_energies(kd::LDADiscretization, model::KohnShamExtended)
     d
 end
 
+init_operator(kd::LDADiscretization)        = zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.lₕ+1)
+init_single_operator(kd::LDADiscretization) = zeros(kd.elT, kd.Nₕ, kd.Nₕ)
 
 #####################################################################
 #               Find Orbital : Solve the eigen problems
@@ -477,4 +480,33 @@ function density_matrix!(   discretization::LDADiscretization,
         end
     end
     nothing
+end
+
+
+
+#####################################################################
+#                          TYPES ORBITALS
+#####################################################################
+
+multiplicity(::LDADiscretization, l::Int) = 4l+2
+
+function orbitals_repartion(kd::LDADiscretization, n::AbstractMatrix{<:Real})
+    @unpack lₕ, nₕ, Nₕ = kd
+    repart_orbitals = zeros(Int, 3, lₕ+1)
+    for l ∈ 1:lₕ+1
+        Nf = 0
+        Np = 0
+        mult = multiplicity(kd, l-1)
+        for k ∈ 1:nₕ
+            if n[l, k] == mult
+                Nf += 1
+            elseif n[l,k] > 0
+                Np += 1
+            end
+        end
+        repart_orbitals[1,i] = Nf
+        repart_orbitals[2,i] = Np
+        repart_orbitals[3,i] = Nₕ - Nf - Np
+    end
+    repart_orbitals
 end
