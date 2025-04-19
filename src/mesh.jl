@@ -22,6 +22,8 @@ end
 @inline Base.length(m::Mesh) = length(m.points)
 @inline Base.size(m::Mesh) = size(m.points)
 
+@inline iterators(m::Mesh) = firstindex(m):lastindex(m)-1
+
 @inline function findindex(m::Mesh, x::Real)
     if x ≤ m[end]
         return searchsortedlast(m.points, x)
