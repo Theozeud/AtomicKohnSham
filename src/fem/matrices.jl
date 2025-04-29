@@ -61,7 +61,7 @@ function fill_mass_matrix!( pb::PolynomialBasis,
             Ig = cells_to_generators[k]
             @views vA = A[Ib, Ib]
             @views vK = K[Ig, Ig]
-            @. vA += vK
+            @. vA += vK * invshifts[k][1] / invshifts[1][1]
         end
     else
         @inbounds for k ∈ iterators(mesh)
@@ -112,7 +112,7 @@ function fill_stiffness_matrix!( pb::PolynomialBasis,
         Ig = cells_to_generators[k]
         @views vA = A[Ib, Ib]
         @views vK = K[Ig, Ig]
-        @. vA += vK
+        @. vA += vK * shifts[k][1]^2 * invshifts[k][1] / invshifts[1][1]
     end
     nothing
 end

@@ -30,6 +30,18 @@ function SparseArrays.sparse(ps::PolySet)
     PolySet(sparseps)
 end
 
+function evaluate(ps::PolySet, x::Number)
+    NewT = promote_type(typeof(x), eltype(ps))
+    y = zeros(NewT, size(ps,1))
+    evaluate!(y, ps, x)
+end
+
+
+function evaluate(ps::PolySet, x::AbstractVector)
+    NewT = promote_type(eltype(x), eltype(ps))
+    y = zeros(NewT, size(ps,1), length(x))
+    evaluate!(y, ps, x)
+end
 
 """
     evaluate!(y::AbstractVector, ps::PolySet, x::Number)
@@ -206,23 +218,21 @@ function fill_upper_diagonals!(A::AbstractArray, vals::Base.AbstractVecOrTuple)
     end
 end
 
-
-
-
-function factorize(ps::PolySet{TP}, coeffs::Vector{T}) where {TP,T}
+function factorize(ps::PolySet{TP}, racine::T) where {TP,T}
     NewT = promote_type(TP,T)
-    N = findlast(!iszero, coeffs)
-    @assert !isnothing(N) "You can not factorize a polynomial by the null polynomial."
-    degP = maxdeg(ps) - N +1
-    @assert degP ≥ 0 "You can not factorise a polynomial by a polynomial with a strictly higher degree."
-    P = allocate_polyset(NewT, npolys(ps),degP+1)
-    M = zeros(NewT, maxdeg(ps)+1 , maxdeg(ps)+1)
-    @views vcoeffs = coeffs[1:N]
-    fill_upper_diagonals2!(M, vcoeffs)
-    @show size(P.coeffs)
-    ps.coeffs / M
-
+    y = evaluate(ps, racine)
+    idx = findall(iszero,y)
+    qs = allocate_polyset(NewT, npolys(ps), maxdeg(ps)-1)
+    @views vps = ps.coeffs[idx,:]
+    @views vqs = qs.coeffs[idx,:]
+    M = zeros(NewT,maxdeg(ps)+1,maxdeg(ps)+1)
+    fill_upper_diagonals!(M,[-racine,1])
+    @views vc = (vps/M)[:,1:end-1]
+    vqs .= vc
+    qs
 end
+
+
 
 
 

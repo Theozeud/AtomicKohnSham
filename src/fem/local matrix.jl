@@ -42,15 +42,15 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
                                             ps::PolySet,
                                             basis::PolynomialBasis)
     # FACTORIZED POLYNOMIALS
-    generators_factorized = factorise(basis.generators, [-eldata.ϕ[2],1])
+    generators_factorized = factorize(basis.generators.polynomials, eldata.ϕ[2])
     # COMPUTE PRODUCT
     if eldata.s == :M
-        newps = mul(generators_factorized, basis.generators)
-        fill_local_matrix!(K, method, NoWeight(), neweldata, newps, basis)
+        newps = mul(generators_factorized, basis.generators.polynomials)
+        fill_local_matrix!(K, method, NoWeight(), eldata, newps, basis)
         K .*= eldata.ϕ[1]
     elseif eldata.s == :T
         newps = mul(generators_factorized, basis.cache.prodMG)
-        fill_local_matrix!(K, method, NoWeight(), neweldata, newps, basis)
+        fill_local_matrix!(K, method, NoWeight(), eldata, newps, basis)
         K .*= eldata.ϕ[1]
     end
 end
@@ -59,13 +59,14 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
                                             method::IntegrationMethod, 
                                             ::InvX2, 
                                             eldata::ElementData, 
-                                            cache::BasisCache)
+                                            ps::PolySet,
+                                            basis::PolynomialBasis)
     # FACTORIZED POLYNOMIALS
-    generators_factorized = factorise(basis.generators,[-eldata.ϕ[2],1])
+    generators_factorized = factorize(basis.generators.polynomials, eldata.ϕ[2])
     # COMPUTE PRODUCT
     if eldata.s == :M
         newps = mul(generators_factorized, generators_factorized)
-        fill_local_matrix!(K, method, NoWeight(), neweldata, newps, basis)
+        fill_local_matrix!(K, method, NoWeight(), eldata, newps, basis)
         K .*= eldata.ϕ[1]^2
     elseif eldata.s == :T
         _newps = mul(generators_factorized, generators_factorized)
