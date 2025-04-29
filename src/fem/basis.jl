@@ -14,8 +14,7 @@ struct BasisCache{  prodMType <: PolySet,
     cacheT::Vector{T}
     evalM::Matrix{T}
 
-    function BasisCache(generators::AbstractGenerator{TG}; 
-                        tensor_alloc::Bool = false) where {TG}
+    function BasisCache(generators::AbstractGenerator{TG}) where {TG}
 
         @unpack polynomials, derivpolynomials = generators
         
@@ -24,7 +23,7 @@ struct BasisCache{  prodMType <: PolySet,
         # ALL PRODUCT Pi'Pj'
         prodMdG = pairwiseproduct(derivpolynomials)
         # ALL PRODUCT PiPjPk
-        prodTG = tensor_alloc ? mul(prodMG, polynomials) : allocate_polyset(TG,0,-1)
+        prodTG = mul(prodMG, polynomials)
 
         # LOCAL MATRIX/TENSOR
         K = zeros(TG, size(polynomials,1), size(polynomials,1))
@@ -33,7 +32,7 @@ struct BasisCache{  prodMType <: PolySet,
         # CACHE
         cacheM = zeros(TG, size(prodMG,2))
         cacheT = zeros(TG, size(prodTG,2))
-        evalM = zeros(TG,1,1)
+        evalM  = zeros(TG,size(prodMG,1),100)
 
         new{typeof(prodMG),
             typeof(prodTG),
@@ -135,7 +134,7 @@ struct PolynomialBasis{ T<:Real,
             invshifts[i] = shift(T, generators.binf, generators.bsup, mesh[i], mesh[i+1])
         end
         
-        cache = BasisCache(generators; tensor_alloc = true)
+        cache = BasisCache(generators)
 
         new{eltype(generators), 
             typeof(generators),

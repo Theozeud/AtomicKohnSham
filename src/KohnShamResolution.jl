@@ -29,19 +29,14 @@ module KohnShamResolution
     export Mesh, linmesh, geometricmesh, polynomialmesh, expmesh
     include("mesh.jl")
 
-    ############        LAURENT POLYNOMIAL        ############
-    export AbstractPolynomial
 
-    abstract type AbstractPolynomial{T} end
-    @inline Base.eltype(::AbstractPolynomial{T}) where T = T
+    ############               POLYSET               ############ 
+    
+    export PolySet, Legendre, IntLegendre
 
-    export LaurentPolynomial
-    export Polynomial, Monomial, RandMonomial, RandPolynomial, RootsPolynomial
-    export deg, degmax, degmin, ismonomial, iszero
-    export integrate, deriv, scalar_product, normL2, elag!, diveucl
-    include("fem/laurentpolynomial.jl")
+    export evaluate!, integrate!, allocate_polyset, mul, npolys, maxdeg
 
-    export Legendre, intLegendre
+    include("fem/polynomial.jl")
     include("fem/legendre polynomial.jl")
 
 
@@ -54,9 +49,7 @@ module KohnShamResolution
 
     export mass_matrix, sparse_mass_matrix, 
            stiffness_matrix, sparse_stiffness_matrix,
-           weight_mass_matrix, sparse_weight_mass_matrix,
-           weight_mass_vector, sparse_weight_mass_vector,
-           weight_mass_3tensor
+           mass_tensor
     
     export IntegrationMethod, ExactIntegration, QuadratureIntegration
 
@@ -71,6 +64,7 @@ module KohnShamResolution
     include("fem/computations.jl")
     include("fem/utils.jl")
     include("fem/matrices.jl")
+    include("fem/local matrix.jl")
     include("fem/integration_formula.jl")
 
 
