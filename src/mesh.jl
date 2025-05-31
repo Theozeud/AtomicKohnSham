@@ -1,7 +1,20 @@
-######################################
+#-------------------------------------
 #          MESH STRUCTURE
-######################################
+#-------------------------------------
+"""
+    struct Mesh{T<:Real}
 
+A simple 1D mesh data structure holding real-valued mesh points. The input vector is
+sorted and deduplicated to ensure strict monotonicity.
+
+# Fields
+- `points::Vector{T}`: Sorted vector of unique real numbers.
+
+# Example
+```julia
+m = Mesh([0.0, 0.5, 1.0])
+m[2]  # returns 0.5
+"""
 struct Mesh{T<:Real} 
     points::Vector{T}   
     function Mesh(points::AbstractVector{T})  where T <: Real
@@ -16,13 +29,12 @@ end
 @inline Base.lastindex(m::Mesh) = lastindex(m.points)
 @inline Base.getindex(m::Mesh, n::Int) = m.points[n]
 @inline Base.getindex(m::Mesh, ur::UnitRange{Int64}) = m.points[ur]
-@inline Base.setindex!(m::Mesh{T}, val::T, n::Int) where T = m.points[n] = val
 @inline Base.first(m::Mesh) = m[firstindex(m)]
 @inline Base.last(m::Mesh) = m[lastindex(m)]
 @inline Base.length(m::Mesh) = length(m.points)
 @inline Base.size(m::Mesh) = size(m.points)
 
-@inline iterators(m::Mesh) = firstindex(m):lastindex(m)-1
+@inline cellrange(m::Mesh) = firstindex(m):lastindex(m)-1
 
 @inline function findindex(m::Mesh, x::Real)
     if x ≤ m[end]

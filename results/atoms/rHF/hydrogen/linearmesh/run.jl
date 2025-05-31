@@ -8,10 +8,10 @@ using DoubleFloats
 
 problem = AtomProblem(;
                 T               = Float64, 
-                lh              = 0,
-                nh              = 1, 
+                lh              = 1,
+                nh              = 2, 
                 method          = ODA(0.4), 
-                model           = ReducedHartreeFock(1, 1),  
+                model           = SlaterXα(10, 10),  
                 Rmax            = 100, 
                 Nmesh           = 10,
                 typemesh        = expmesh, 

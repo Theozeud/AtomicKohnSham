@@ -10,13 +10,13 @@ struct ExactIntegration <: IntegrationMethod end
 struct QuadratureIntegration{T <: Real} <: IntegrationMethod 
     x::Vector{T}
     w::Vector{T}
-    fx::Vector{T}
-    fx2::Vector{T}
+    shiftx::Vector{T}
+    wx::Vector{T}
     function QuadratureIntegration()
         x, w = gausslegendre(100)
-        fx = similar(x)
-        fx2 = similar(fx)
-        new{eltype(x)}(x,w,fx,fx2)
+        wx = similar(x)
+        shiftx = similar(wx)
+        new{eltype(x)}(x,w,shiftx,wx)
     end
 end
 

@@ -1,13 +1,3 @@
-## TO DO :
-
-- Revoir la gestion des Polynômes   
-    --> Ajout Static Array
-        (   dans une deuxième temps pour 
-            benchmarker proprement)       
-    --> Vérifier la génération des polynomes de Legendre
-        en particulier les coefficients     
-
-
 ## TO LOOK AT :
 
 - Unifier LDA et LDSA en une seule structure 
@@ -16,20 +6,21 @@
 - Utilisation de Libxc pour les méthodes d'échanges corrélations
     --> voir comment faire pour 
 
-- Regarder ce qui peut etre parallélisé et utilisation du GPU
+- Regarder ce qui peut etre parallélisé
 
 - Résolution du problème linéaire, surtout pour la méthode quadratique
     --> LinSolve ?
 
 - Mieux organiser le code
+--> Mettre chacune des méthodes dans des fichiers différents
+--> Réfléchir à la logique des étapes du code
+notes : 
+    - un bloc sur la base de discrétisation
+    
 
 
 
 
 ## PROBLEM
-
-- si Rmin ≠ 0 -> problème dans le calcul du relèvement 
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
-- Implémenter une nouvelle manière de "normaliser" pour améliorer le conditionnement et réduire les erreurs numériques
-
 

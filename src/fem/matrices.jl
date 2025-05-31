@@ -73,7 +73,6 @@ function fill_mass_matrix!( pb::PolynomialBasis,
             @views vK = K[Ig, Ig]
             @. vA += vK
         end
-
     end
     nothing
 end
@@ -143,41 +142,29 @@ function fill_mass_tensor!( pb::PolynomialBasis,
                             A::AbstractArray{<:Real};
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
-    @unpack mesh = pb
-    J = fill(0,3,pb.max_length_intersection[2])
-    for I ∈ pb.tensor_fill_indices
-        count = find_intersection_indices!(J, pb.indices_cells[I[1]],pb.indices_cells[I[2]], pb.indices_cells[I[3]])
-        for c ∈ 1:c
-            i = J[1,c]
-            j = J[2,c]
-            k = J[3,c]
-            P = getgenerator(pb, I[1], i)
-            Q = getgenerator(pb, I[2], j)
-            L = getgenerator(pb, I[3], k)
-            ϕ = getshift(pb, I[1], i)
-            invϕ = getinvshift(pb, I[1], i)
-            (a,b) = getmesh(pb, I[1], i)
-            iP = pb.indices_generators[I[1]][i]
-            iQ = pb.indices_generators[I[2]][j]
-            iL = pb.indices_generators[I[3]][k]
-            prod = getprod(pb, iP, iQ, iL)
-            intdata = IntegrationData(weight,
-                                      (P,Q,L),
-                                      prod,
-                                      ϕ,
-                                      invϕ,
-                                      a,
-                                      b,
-                                      pb.generators.binf,
-                                      pb.generators.bsup,
-                                      method)
-            @inbounds A[I[1], I[2], I[3]] += swsp(intdata)
+    @unpack generators, mesh, cache, shifts, invshifts, cells_to_indices, cells_to_generators = pb
+    @unpack T = cache
+    fill!(A, 0)
+    if typeof(weight) == NoWeight
+        eldata = getelement(pb, firstindex(mesh),:T)
+        _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
+        @inbounds for k ∈ iterators(mesh)
+            Ib = cells_to_indices[k]
+            Ig = cells_to_generators[k]
+            @views vA = A[Ib, Ib, Ib]
+            @views vT = T[Ig, Ig, Ig]
+            @. vA += vT * invshifts[k][1] / invshifts[1][1]
         end
-        @inbounds A[I[3], I[1], I[2]]  = A[I[1], I[2], I[3]]
-        @inbounds A[I[2], I[3], I[1]]  = A[I[1], I[2], I[3]]
-        @inbounds A[I[2], I[1], I[3]]  = A[I[1], I[2], I[3]]
-        @inbounds A[I[3], I[2], I[1]]  = A[I[1], I[2], I[3]]
-        @inbounds A[I[1], I[3], I[2]]  = A[I[1], I[2], I[3]]
+    else
+        @inbounds for k ∈ iterators(mesh)
+            eldata = getelement(pb, k,:T)
+            _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
+            Ib = cells_to_indices[k]
+            Ig = cells_to_generators[k]
+            @views vA = A[Ib, Ib, Ib]
+            @views vT = T[Ig, Ig, Ig]
+            @. vA += vT
+        end
     end
     nothing
 end
@@ -201,28 +188,41 @@ function fill_mass_tensor!( pb::PolynomialBasis,
                             method::IntegrationMethod = default_method(weight))
     @unpack generators, mesh, cache, shifts, invshifts, cells_to_indices, cells_to_generators = pb
     @unpack T = cache
-    fill!(A, 0)
+    empty!(A)  # Réinitialise proprement le dictionnaire
+
     if typeof(weight) == NoWeight
-        eldata = getelement(pb, firstindex(mesh),:T)
-        _fill_local_matrix!(T, method, weight, eldata, cache.prodMG, pb)
+        eldata = getelement(pb, firstindex(mesh), :T)
+        _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
         @inbounds for k ∈ iterators(mesh)
             Ib = cells_to_indices[k]
             Ig = cells_to_generators[k]
-            @views vA = A[Ib, Ib]
-            @views vK = K[Ig, Ig]
-            @. vA += vK
+            scaling = invshifts[k][1] / invshifts[1][1]
+            for (ii, i) in enumerate(Ib), (jj, j) in enumerate(Ib), (kk, k3) in enumerate(Ib)
+                key = (i, j, k3)
+                val = T[Ig[ii], Ig[jj], Ig[kk]] * scaling
+                if haskey(A, key)
+                    A[key] += val
+                else
+                    A[key] = val
+                end
+            end
         end
     else
         @inbounds for k ∈ iterators(mesh)
-            eldata = getelement(pb, k,:M)
-            _fill_local_matrix!(K, method, weight, eldata, cache.prodMG, pb)
+            eldata = getelement(pb, k, :T)
+            _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
             Ib = cells_to_indices[k]
             Ig = cells_to_generators[k]
-            @views vA = A[Ib, Ib]
-            @views vK = K[Ig, Ig]
-            @. vA += vK
+            for (ii, i) in enumerate(Ib), (jj, j) in enumerate(Ib), (kk, k3) in enumerate(Ib)
+                key = (i, j, k3)
+                val = T[Ig[ii], Ig[jj], Ig[kk]]
+                if haskey(A, key)
+                    A[key] += val
+                else
+                    A[key] = val
+                end
+            end
         end
-
     end
-    nothing
+    return nothing
 end

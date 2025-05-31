@@ -195,6 +195,23 @@ end
 #####################################################################
 #                          EVALUATION TOOLS
 #####################################################################
+function (pb::PolynomialBasis)(I::AbstractVector{<:Int}, X::AbstractVector{T}) where T
+    NewT = promote_type(eltype(pb), T)
+    evaluations = zeros(NewT, length(I), length(X))
+    evaluate!(evaluations, pb, I, X)
+    evaluations
+end
+
+function evaluate!( evaluations::AbstractVecOrMat, 
+                    pb::PolynomialBasis, 
+                    I::AbstractVector{<:Int}, 
+                    X::AbstractVector{T}) where T
+
+    
+
+end
+
+
 function (pb::PolynomialBasis)(i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])

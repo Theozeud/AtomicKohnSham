@@ -131,22 +131,22 @@ end
 
 function fill_local_matrix!(K::AbstractArray, 
                             quadra::QuadratureIntegration, 
-                            ::FunWeight, 
+                            weight::FunWeight, 
                             eldata::ElementData, 
                             ps::PolySet,
                             basis::PolynomialBasis)
     @unpack x, w, shiftx, wx = quadra
-    @unpack cacheEval = cache
+    @unpack evalM = basis.cache
     @unpack binf, bsup, invϕ = eldata
     # RESCALING ON [-1,1]
     @. shiftx = (bsup - binf)/2*x + (bsup + binf)/2
     # EVALUATE POLYNOMIALS
-    evaluate!(cacheEval, ps, shiftx)
+    evaluate!(evalM, ps, shiftx)
     # SHIFT invϕ
-    @. shiftx = invϕ[1] * fx + invϕ[2]
+    @. shiftx = invϕ[1] * shiftx + invϕ[2]
     # COMPUTATION
     @. wx  = weight(shiftx) * w
     Kreshape = reshape(K,length(K),1)
-    mul!(Kreshape, cacheEval, wx)
+    mul!(Kreshape, evalM, wx)
     Kreshape .*= eldata.invϕ[1]
 end
