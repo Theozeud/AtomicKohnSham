@@ -41,15 +41,45 @@ mutable struct KohnShamSolver{  discretizationType <: KohnShamDiscretization,
     energies::Dict{Symbol,dataType}             # Storages of the energies
     logbook::logbookType                        # LogBook
     
-    function KohnShamSolver(niter::Int, 
-                            stopping_criteria::Real, 
+    function KohnShamSolver(model::AbstractDFTModel, 
                             discretization::KohnShamDiscretization, 
-                            model::AbstractDFTModel, 
-                            method::SCFMethod,
-                            cache::SCFCache,
-                            opts::SolverOptions,  
-                            energies::Dict{Symbol,<:Real}, 
-                            logbook::LogBook)
+                            method::SCFMethod; 
+                            scftol::Real, 
+                            maxiter::Int = 100,
+                            exc_integration_method::IntegrationMethod = ExactIntegration(),
+                            fem_integration_method::IntegrationMethod = ExactIntegration(),
+                            hartree::Real = 1, 
+                            degen_tol::Real = eps(eltype(discretization.basis)),
+                            logconfig = LogConfig(),
+                            verbose::Int = 3)
+    
+        # Set the data type as the one of the discretization basis
+        T = discretization.elT
+        
+        # Init Cache of the Discretisation
+        init_cache!(discretization, model, hartree, fem_integration_method)
+        
+        # Init Cache of the Method
+        cache = create_cache_method(method, discretization)
+        
+        # Init Energies 
+        energies = init_energies(discretization, model)
+        
+        #  SolverOptions
+        opts = SolverOptions(T(scftol), 
+                    maxiter, 
+                    exc_integration_method, 
+                    fem_integration_method, 
+                    T(hartree), 
+                    T(degen_tol),
+                    UInt8(verbose))
+        
+        # Init log parameters
+        niter = 0
+        stopping_criteria = zero(T)
+        
+        logbook = LogBook(logconfig, T)
+
         new{typeof(discretization),
             typeof(model),
             typeof(method),
