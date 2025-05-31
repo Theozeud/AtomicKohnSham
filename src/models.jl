@@ -1,8 +1,6 @@
 #--------------------------------------------------------------------
 #                         MODEL STRUCTURE
 #--------------------------------------------------------------------
-
-# RAJOUTER LE TERME DE HARTREE
 """
     KSEModel(; z::Real, N::Real, hartree::Real = 0, exc::ExchangeCorrelation = NoExchangeCorrelation())
 
@@ -19,10 +17,16 @@ Encodes physical and modeling parameters for atomic or ionic simulations.
 """
 struct KSEModel{T <: Real, 
                 TEXCH <: ExchangeCorrelation}
-    z::T
-    N::T
-    hartree::T
-    exc::TEXCH
+                
+    z::T                # Charge of the nucleus
+    N::T                # Number of electrons
+
+    hartree::T          # Coefficient multiply to the Hartree Matrix : 
+                        # 0 -> no hartree term, 
+                        # 1-> full hartree term
+
+    exc::TEXCH          # Exchange-correlation functional
+
     function KSEModel(; z::Real, 
                         N::Real, 
                         hartree::Real = 1, 
