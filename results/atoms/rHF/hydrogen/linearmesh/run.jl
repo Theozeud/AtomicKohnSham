@@ -4,27 +4,30 @@ using KohnShamResolution
 # LOG CONFIG
 logconfig = LogConfig(orbitals_energy = true, occupation_number = true, energy = true)
 
+using DoubleFloats
+
 problem = AtomProblem(;
                 T               = Float64, 
-                lh              = 0, 
-                method          = ODA(0.8), 
-                model           = ReducedHartreeFock(1, 1), 
-                Rmax            = 80, 
-                Nmesh           = 40,
-                typemesh        = geometricmesh, 
-                optsmesh        = (s = 0.9,), 
+                lh              = 0,
+                nh              = 1, 
+                method          = ODA(0.4), 
+                model           = ReducedHartreeFock(1, 1),  
+                Rmax            = 100, 
+                Nmesh           = 10,
+                typemesh        = expmesh, 
+                optsmesh        = (s = 1.5,), 
                 typebasis       = P1IntLegendreGenerator, 
-                optsbasis       = (ordermax = 5,), 
+                optsbasis       = (ordermax = 20,), 
                 typediscre      = LDADiscretization,
                 name            = "test", 
-                scftol          = 1e-10,
-                maxiter         = 80,
+                scftol          = 1e-13,
+                maxiter         = 60,
                 hartree         = true,
-                degen_tol       = 1e-3,
-                logconfig       = logconfig)
-
+                degen_tol       = 1e-2,
+                logconfig       = logconfig,
+                verbose         = 1)
 
 # RESOLUTION
 @time sol = groundstate(problem)
 
-plot_stopping_criteria([sol])
+plot_stopping_criteria([sol]) 

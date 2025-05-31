@@ -1,87 +1,69 @@
-struct SolverOptions{T}
-    scftol::T                       # SCF tolerance
-    maxiter::Int                    # Maximum of iteration done
-    quad_method                     # Method to use for quadrature of integrals
-    quad_reltol::T                  # Relativ tolerance for the quadrature of integrals
-    quad_abstol::T                  # Absolute tolerance for the quadrature of integrals
-    hartree::T                      # Coefficient multiply to the Hartree Matrix : 
-                                    # 0 -> no hartree term, 1-> full hartree term
-    degen_tol::T                    # Tolerance to consider dengenescence of orbitals energy
+struct SolverOptions{T <: Real, 
+                    intexcType <: IntegrationMethod, 
+                    intfemType <: IntegrationMethod}
+    scftol::T                               # SCF tolerance
+    maxiter::Int                            # Maximum of iteration done
+
+    exc_integration_method::intexcType      # Integration method to compute integrals 
+                                            # involving exchange correlation
+    fem_integration_method::intfemType      # Integration method to compute integrals
+                                            # for fem's matrices
+
+    hartree::T                              # Coefficient multiply to the Hartree Matrix : 
+                                            # 0 -> no hartree term, 
+                                            # 1-> full hartree term
+
+    degen_tol::T                            # Tolerance to consider degenescence of orbitals energy
+
+    verbose::UInt8                          # Say how many details are printed at the end 
+                                            # of each iterations :
+                                            # 0 : Zero details
+                                            # 1 : Iterations
+                                            # 2 : Computations                
 end
 
 
-mutable struct KhonShamSolver{  discretizationType <: KohnShamDiscretization,
+mutable struct KohnShamSolver{  discretizationType <: KohnShamDiscretization,
                                 modelType <: AbstractDFTModel,
                                 methodType <: SCFMethod,
+                                cacheType <: SCFCache,
                                 optsType <: SolverOptions,
                                 logbookType <: LogBook,
-                                dataType <: Real,
-                                densityType <: AbstractArray,
-                                orbitalsType <: AbstractArray,
-                                orbitalsenergyType <: AbstractArray,
-                                occupationType <: AbstractArray}
+                                dataType <: Real}
                             
     niter::Int                                  # Number of iterations
     stopping_criteria::dataType                 # Current stopping criteria
     discretization::discretizationType          # Discretization parameters
     model::modelType                            # Model
     method::methodType                          # Iterative method
+    cache::cacheType                            # Cache associated to the method
     opts::optsType                              # Solver options
-    D::densityType                              # Density Matrix at current time
-    Dprev::densityType                          # Density Matrix at previous time
-    tmpD::densityType                           # Storage for extra Density Matrix (usefull for degeneracy)
-    U::orbitalsType                             # Coefficient of orbitals at current time
-    ϵ::orbitalsenergyType                       # Orbitals energy at current time
-    n::occupationType                           # Occupation number at current time 
-    energy::dataType                            # Total energy at current time
-    energy_prev::dataType                       # Total energy at previous time
-    energy_kin::dataType                        # Kinetic energy at current time
-    energy_cou::dataType                        # Coulomb energy at current time
-    energy_har::dataType                        # Hartree energy at current time
-    energy_kin_prev::dataType                   # Kinetic energy at previoustime
-    energy_cou_prev::dataType                   # Coulomb energy at previous time
-    energy_har_prev::dataType                   # Hartree energy at previous time
-    energy_exc::dataType                        # Exchange-correlation energy at current time
-    energy_kincor::dataType                     # Kinetic-correlation energy at current time (exists for the LSDA model)
+    energies::Dict{Symbol,dataType}             # Storages of the energies
     logbook::logbookType                        # LogBook
-    flag_degen::Bool                            # Flag to know if there is a degeneracy
-
-    function KhonShamSolver(niter::Int, 
+    
+    function KohnShamSolver(niter::Int, 
                             stopping_criteria::Real, 
                             discretization::KohnShamDiscretization, 
                             model::AbstractDFTModel, 
-                            method::SCFMethod, 
-                            opts::SolverOptions, 
-                            D::AbstractArray, 
-                            Dprev::AbstractArray,
-                            tmpD::AbstractArray,
-                            U::AbstractArray, 
-                            ϵ::AbstractArray, 
-                            n::AbstractArray, 
-                            energy::Real, 
-                            energy_prev::Real,
-                            energy_kin::Real, 
-                            energy_cou::Real, 
-                            energy_har::Real, 
-                            energy_kin_prev::Real, 
-                            energy_cou_prev::Real, 
-                            energy_har_prev::Real,
-                            energy_exc::Real, 
-                            energy_kincor::Real, 
-                            logbook::LogBook,
-                            flag_degen::Bool)
+                            method::SCFMethod,
+                            cache::SCFCache,
+                            opts::SolverOptions,  
+                            energies::Dict{Symbol,<:Real}, 
+                            logbook::LogBook)
         new{typeof(discretization),
             typeof(model),
             typeof(method),
+            typeof(cache),
             typeof(opts),
             typeof(logbook),
-            typeof(energy),
-            typeof(D),
-            typeof(U),
-            typeof(ϵ),
-            typeof(n)}(niter, stopping_criteria, discretization, model, method, opts, D, Dprev, tmpD, U, ϵ, n, 
-            energy, energy_prev, energy_kin, energy_cou, energy_har, 
-            energy_kin_prev, energy_cou_prev, energy_har_prev,
-            energy_exc, energy_kincor, logbook, flag_degen)
+            typeof(stopping_criteria)}( niter, 
+                                        stopping_criteria, 
+                                        discretization, 
+                                        model, 
+                                        method, 
+                                        cache, 
+                                        opts,
+                                        energies,
+                                        logbook)
     end
 end

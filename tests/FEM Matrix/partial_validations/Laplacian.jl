@@ -173,8 +173,8 @@ end
 ##############################################
 prob = LaplacianProblem(name = "problem", 
                         T = Float64,
-                        typebasis = ShortP1IntLegendreBasis,
-                        optsbasis = (ordermax = 5,),
+                        typebasis = P1IntLegendreGenerator,
+                        optsbasis = (ordermax = 2,),
                         typemesh = linmesh,
                         optsmesh = (;),
                         Rmax = 100,

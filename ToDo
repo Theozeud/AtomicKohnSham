@@ -1,53 +1,35 @@
+## TO DO :
+
+- Revoir la gestion des Polynômes   
+    --> Ajout Static Array
+        (   dans une deuxième temps pour 
+            benchmarker proprement)       
+    --> Vérifier la génération des polynomes de Legendre
+        en particulier les coefficients     
+
+
+## TO LOOK AT :
+
+- Unifier LDA et LDSA en une seule structure 
+    --> identifier les abstractions à faire
+
+- Utilisation de Libxc pour les méthodes d'échanges corrélations
+    --> voir comment faire pour 
+
+- Regarder ce qui peut etre parallélisé et utilisation du GPU
+
+- Résolution du problème linéaire, surtout pour la méthode quadratique
+    --> LinSolve ?
+
+- Mieux organiser le code
+
+
+
 
 ## PROBLEM
 
 - si Rmin ≠ 0 -> problème dans le calcul du relèvement 
-
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
-
-- problème sur la normalisation par 1/sqrt(4Pi) des U ??
-
-- corriger les cells_to_indices
-
-## UPDGRADE CODE
-
-#### PRIORITE
-
-- Fichier pour analyser le calcul des éléments des matrices
-    --> analyser la création des élements
-        --> coder à la main les premiers éléments polynomes de Legendre intégrés
-        --> stratégie rationnel pour les autres cas de figure ?
-    --> analyser la création des matrices et repérés les problèmes numériques précisément
-
 - Implémenter une nouvelle manière de "normaliser" pour améliorer le conditionnement et réduire les erreurs numériques
 
-- Revoir la gestion des Polynômes
-    --> encore besoin des polynomes de Laurent ? 
-    --> Encore besoin des coeffs log ?
-    --> Ajout des Static Array et cleaning Polynomial pour aller plus vite !
-    --> utilisation d'une bibliothèque annexe ? 
 
-#### MOINS PRIORITE CAR NON CRITIQUE
-
-- C'est très long de générer la base, il faudrait pouvoir améliorer cela, potentiellement avec du mutli-threading --> déjà améliorations -> à investiguer plus pour le tensor_fill_indices
-
-- Réfléchir aux partie de codes qui pourrait etre parallélisé
-        --> la création des matrices                DONE MAIS CA MARCHE PAS TROP, A ETUDIER EN DETAILS
-        --> la résolution des problèmes aux valeurs propres DONE
-
-- Utilisation des sparse array pour le tenseur ? 
-    -> ca semblerait très utile, mais faut bien faire attention à la fin pour le problème aux valeurs propres
-    -> Il faut trouver une bibliothèque pour cela
-    --> Idée : stocker le tenseur dans une matrice sparse
-        --> les opérations pourront elles etre préservées ?
-
-
-## TO THINK NUMERICAL METHOD
-
-- Etudier les méthodes de résolution des problèmes linéaires (les différentes méthodes et les préconditionneurs).
-
-- Réfléchir à améliorer le conditionnnement
-
-## TODO DFT
-
-- Tester LSDA

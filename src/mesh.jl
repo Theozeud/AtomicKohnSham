@@ -1,12 +1,9 @@
-#=
-    Mesh structure contains sorted points
+######################################
+#          MESH STRUCTURE
+######################################
 
-=#
-
-struct Mesh{T} 
-
+struct Mesh{T<:Real} 
     points::Vector{T}   
-
     function Mesh(points::AbstractVector{T})  where T <: Real
         _points = union(sort(points))
         new{T}(_points)
@@ -25,7 +22,7 @@ end
 @inline Base.length(m::Mesh) = length(m.points)
 @inline Base.size(m::Mesh) = size(m.points)
 
-@inline function findindex(m, x)
+@inline function findindex(m::Mesh, x::Real)
     if x ≤ m[end]
         return searchsortedlast(m.points, x)
     else
@@ -37,16 +34,16 @@ end
 @inline Base.iterate(m::Mesh, state = 1) = state > length(m) ? nothing : (m[state],state+1)
 
 ######################################
-# LINEAR MESH
+#           LINEAR MESH
 ######################################
 
-linmesh(a, b, n; T = Float64) = Mesh(T.(LinRange(a,b,n)))
+linmesh(a::Real, b::Real, n::Int; T::Type = Float64) = Mesh(T.(LinRange(a,b,n)))
 
 ######################################
-# GEOMETRIC MESH
+#           GEOMETRIC MESH
 ######################################
 
-function geometricrange(a,b,n; T = Float64, s)
+function geometricrange(a::Real ,b::Real ,n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
     R[1] = a
     hn = (one(T)-T(s))/(one(T) - T(s)^(n-1))*(b-a)
@@ -61,60 +58,39 @@ function geometricrange(a,b,n; T = Float64, s)
     R
 end
 
-geometricmesh(a,b,n; T = Float64, s) = Mesh(geometricrange(a,b,n; T = T, s = s))
-
-#####################
-## FOLLOWING CAN BE REMOVED ???
+geometricmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(geometricrange(a,b,n; T = T, s = s))
 
 
-#=
 ######################################
-# LOG MESH
+#           POLYNOMIAL MESH
 ######################################
 
-function LogRange(a,b,n; z = 1, T = Float64)
-    X = T.(range(0,1,n))
-    Z = exp.(T(z) .* X)
-    x = first(Z)
-    y = last(Z)
-    @. (T(b)-T(a))/(y-x) * (Z - x) + T(a) 
-end
-
-function logmesh(a, b, n; z = 1, T = Float64)
-    Mesh(LogRange(a, b, n; z = z, T = T))
-end
-
-# Mesh adapt to x->Cx*e^(-x)
-# For that, one have to solve y = Cxe^(-x), i.e
-# (-x)e^(-x) = -y/C with y < C/e
-# Using th Lambert W function, this gives
-# x = -W(-y/C, -1) ou x = -W(-y/C, 0)
-
-using LambertW
-
-function LinearExpRange(a, b, n; T = Float64, coeff = one(T))
-    @assert a < b
-    ta = Base.convert(T, a)
-    tb = Base.convert(T, b)
-    eval_a = coeff * ta * exp(-ta)
-    eval_b = coeff * tb * exp(-tb)
-    if ta ≤ tb ≤ 1
-        Y1 = T.(range(eval_a, eval_b, n))
-        return lambertw.(-Y1 ./coeff, 0)
-    elseif ta < 1 < tb
-        eval_one = coeff*exp(-one(T))
-        n1 = Int(round(n * (eval_one-eval_a)/(2*eval_one-eval_a - eval_b)))
-        n2 = n - n1
-        Y1 = T.(range(eval_a, eval_one, n1))
-        Y2 = T.(range(eval_one, eval_b, n2 + 1))
-        return reduce(vcat, (-lambertw.(-Y1 ./coeff, 0), -lambertw.(-Y2[2:end] ./coeff, -1)))
-    elseif 1 ≤ a ≤ b
-        Y2 = T.(range(eval_b, eval_a, n))
-        return lambertw.(Y2, -1)
+function polynomialrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
+    R = zeros(T,n)
+    R[1] = T(a)
+    R[end] = T(b)
+    for i ∈ 2:n-1
+        R[i] = ((i-1)/(n-1))^s * (T(b)-T(a)) + T(a)  
     end
+    R
 end
 
-function linearexpmesh(a, b, n; T = Float64, coeff = one(T))
-    mesh(LinearExpRange(a, b, n; T = T, coeff = coeff))
+polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(polynomialrange(a,b,n; T = T, s = s))
+
+
+######################################
+#          EXPONENTIAL MESH
+######################################
+
+function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
+    R = zeros(T,n)
+    R[1] = T(a)
+    R[end] = T(b)
+    for i ∈ 2:n-1
+        pow = ((i-1)/(n-1))^s
+        R[i] = (1 + b-a)^pow - 1 + a
+    end
+    R
 end
-=#
+
+expmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(exprange(a,b,n; T = T, s = s))

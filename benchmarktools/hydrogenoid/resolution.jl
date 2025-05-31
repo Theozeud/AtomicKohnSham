@@ -20,14 +20,14 @@ function eigen_hydro(problem)
     basis = typebasis(mesh, T; optsbasis...)
     A   = Symmetric(stiffness_matrix(basis))
     M₀  = Symmetric(mass_matrix(basis))
-    M₋₁ = Symmetric(weight_mass_matrix(basis, -1))
+    M₋₁ = Symmetric(mass_matrix(basis, -1))
     if l == 0
         H       = T(0.5) * A  -  z*M₋₁
         Λ, U    = eigen(H, M₀)
         nU      = L2normalization(U, M₀)
         return  HydrogenoidSolution(problem, Λ, nU)
     else
-        M₋₂     = Symmetric(weight_mass_matrix(basis, -2))
+        M₋₂     = Symmetric(mass_matrix(basis, -2))
         H       = T(0.5) * (A + l*(l+1) * M₋₂)  - z * M₋₁
         Λ, U    = eigen(H, M₀)
         nU      = L2normalization(U, M₀)
@@ -42,13 +42,13 @@ function eigvals_hydro(problem)
     basis = typebasis(mesh, T; optsbasis...)
     A   = Symmetric(stiffness_matrix(basis))
     M₀  = Symmetric(mass_matrix(basis))
-    M₋₁ = Symmetric(weight_mass_matrix(basis, -1))
+    M₋₁ = Symmetric(mass_matrix(basis, -1))
     if l == 0
         H = T(0.5) * A  -  z * M₋₁
         Λ =  eigvals(inv(M₀) * H)
         return HydrogenoidSolution(problem, Λ, [1])
     else
-        M₋₂ = Symmetric(weight_mass_matrix(basis, -2))
+        M₋₂ = Symmetric(mass_matrix(basis, -2))
         H = T(0.5) * (A + l*(l+1) * M₋₂) -  z * M₋₁
         Λ =  eigvals(inv(M₀) * H)
         return HydrogenoidSolution(problem, Λ, [1])
