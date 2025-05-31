@@ -1,40 +1,49 @@
 #-------------------------------------
-#          MESH STRUCTURE
+#            MESH STRUCTURE
 #-------------------------------------
-"""
-    struct Mesh{T<:Real}
-
-A simple 1D mesh data structure holding real-valued mesh points. The input vector is
-sorted and deduplicated to ensure strict monotonicity.
-
-# Fields
-- `points::Vector{T}`: Sorted vector of unique real numbers.
-
-# Example
-```julia
-m = Mesh([0.0, 0.5, 1.0])
-m[2]  # returns 0.5
-"""
-struct Mesh{T<:Real} 
-    points::Vector{T}   
-    function Mesh(points::AbstractVector{T})  where T <: Real
-        _points = union(sort(points))
-        new{T}(_points)
+struct Mesh{T <: Real,
+            S <: AbstractString,
+            P <: AbstractVector,
+            T <: NamedTuple} 
+    name::S
+    points::P
+    params::T
+    function Mesh(points::AbstractVector{T}, name::Abstractstring = "", params::NamedTuple = NamedTuple{}())  where T <: Real
+        new{T, typeof(name), typeof(points), typeof(params)}(points, name, params)
     end
+end
+
+#-------------------------------------
+#                   API
+#-------------------------------------
+
+function Base.show(io::IO, m::Mesh)
+    println(io, "Mesh: \"", m.name, "\"")
+    if !isempty(m.params)
+        println(io, "Parameters:")
+        for (k,v) in pairs(m.params)
+            println(io, "  $k => $v")
+        end
+    end
+    println(io, "  Number of points: ", length(m.points))
+    println(io, "  First point: ", first(m.points))
+    println(io, "  Last point: ", last(m.points))
+    println(io, "  Points: ", m.points)
 end
 
 @inline Base.eltype(::Mesh{T}) where T = T
 @inline Base.eachindex(m::Mesh) = eachindex(m.points)
 @inline Base.firstindex(m::Mesh) = firstindex(m.points)
 @inline Base.lastindex(m::Mesh) = lastindex(m.points)
+@inline Base.first(m::Mesh) = first(m.points)
+@inline Base.last(m::Mesh) = last(m.points)
 @inline Base.getindex(m::Mesh, n::Int) = m.points[n]
 @inline Base.getindex(m::Mesh, ur::UnitRange{Int64}) = m.points[ur]
-@inline Base.first(m::Mesh) = m[firstindex(m)]
-@inline Base.last(m::Mesh) = m[lastindex(m)]
 @inline Base.length(m::Mesh) = length(m.points)
 @inline Base.size(m::Mesh) = size(m.points)
-
+@inline Base.iterate(m::Mesh, state = 1) = state > length(m) ? nothing : (m[state],state+1)
 @inline cellrange(m::Mesh) = firstindex(m):lastindex(m)-1
+
 
 @inline function findindex(m::Mesh, x::Real)
     if x ≤ m[end]
@@ -44,18 +53,17 @@ end
     end
 end
 
-   
-@inline Base.iterate(m::Mesh, state = 1) = state > length(m) ? nothing : (m[state],state+1)
 
-######################################
+#-------------------------------------
 #           LINEAR MESH
-######################################
+#-------------------------------------
 
-linmesh(a::Real, b::Real, n::Int; T::Type = Float64) = Mesh(T.(LinRange(a,b,n)))
+linmesh(a::Real, b::Real, n::Int; T::Type = Float64) = Mesh(T.(LinRange(a,b,n)), "Linear Mesh")
 
-######################################
+
+#-------------------------------------
 #           GEOMETRIC MESH
-######################################
+#-------------------------------------
 
 function geometricrange(a::Real ,b::Real ,n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
@@ -72,12 +80,12 @@ function geometricrange(a::Real ,b::Real ,n::Int; T::Type = Float64, s::Real)
     R
 end
 
-geometricmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(geometricrange(a,b,n; T = T, s = s))
+geometricmesh(a::Real, b::Real ,n::Int; T = Float64, s::Real) = Mesh(geometricrange(a,b,n; T = T, s = s), "Geometric Mesh", (s = s,))
 
 
-######################################
+#-------------------------------------
 #           POLYNOMIAL MESH
-######################################
+#-------------------------------------
 
 function polynomialrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
@@ -89,12 +97,12 @@ function polynomialrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R
 end
 
-polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(polynomialrange(a,b,n; T = T, s = s))
+polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(polynomialrange(a,b,n; T = T, s = s), "Polynomial Mesh", (s = s,))
 
 
-######################################
+#-------------------------------------
 #          EXPONENTIAL MESH
-######################################
+#-------------------------------------
 
 function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
@@ -107,4 +115,4 @@ function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R
 end
 
-expmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(exprange(a,b,n; T = T, s = s))
+expmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(exprange(a,b,n; T = T, s = s), "Exponential Mesh", (s = s,))
