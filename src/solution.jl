@@ -1,17 +1,33 @@
 #--------------------------------------------------------------------
 #                  STRUCTURE OF THE SOLUTION
 #--------------------------------------------------------------------
+"""
+    KSESolution(solver::KSESolver, name::String) -> KSESolution
 
-const L_QUANTUM_LABELS = ("s", "p", "d", "f", "g", "h", "i")
-const SPIN_LABELS = ("↑", "↓")
+Constructs a solution object from a fully converged (or stopped) Kohn–Sham solver. 
+This structure stores the result of a self-consistent field (SCF) computation, 
+including metadata such as convergence status, final energies, iteration logs, 
+and algorithm-specific data.
 
-struct KSESolution{ problemType <: DFTProblem, 
-                    optsType <: SolverOptions, 
+# Arguments
+- `solver::KSESolver`: The SCF solver after a call to `solve!`.
+- `name::String`: Name or label for the solution (can be empty if unused).
+
+# Fields
+- `success::String`: Convergence status — either `"SUCCESS"` if convergence occurred before reaching `maxiter`, 
+                                            or   `"MAXITERS"` if the iteration limit was reached.
+- `solveropts::SolverOptions`: Options that were used in the solver (e.g., tolerance, integration method).
+- `niter::Int`: Number of SCF iterations performed.
+- `stopping_criteria::T`: Final convergence metric value (e.g., norm of residual density).
+- `energies::Dict{Symbol, T}`: Energies computed (total, kinetic, Hartree, etc.).
+- `datas::SCFSolution`: Struct with detailed solution data, whose fields depend on the SCF algorithm used.
+- `log::LogBook`: Object that records iteration history and diagnostics.
+- `name::String`: Name of the solution (can be used for identification, labeling results, etc.).
+"""
+struct KSESolution{ optsType <: SolverOptions, 
                     T <: Real, 
                     solutionType <: SCFSolution,
                     logbookType <: LogBook}
-
-    problem::problemType                # Problem solved
 
     success::String                     # Print the final state of the solver
                                         #        Can be : SUCCESS or MAXITERS
@@ -31,21 +47,16 @@ struct KSESolution{ problemType <: DFTProblem,
 
     function KSESolution(solver::KSESolver, name::String)
 
-        # CREATION OF A PROBLEM STRUCTURE TO STORE THE PROBLEM SOLVED
-        problem = DFTProblem(solver.model, solver.discretization, solver.method)
-
         # FLAG ON THE SUCCESS (OR NOT) OF THE MINIMIZATION
         success = solver.niter == solver.opts.maxiter ? "MAXITERS" : "SUCCESS"
 
         # DATAS
         datas = makesolution(solver.cache, solver.method, solver)
 
-        new{typeof(problem),
-            typeof(solver.opts),
+        new{typeof(solver.opts),
             typeof(solver.stopping_criteria),
             typeof(datas),
-            typeof(solver.logbook)}(problem, 
-                                    success, 
+            typeof(solver.logbook)}(success, 
                                     solver.opts, 
                                     solver.niter, 
                                     solver.stopping_criteria, 
@@ -71,6 +82,8 @@ end
 #--------------------------------------------------------------------
 #                  DISPLAY A SUMMARY OF THE SOLUTION
 #--------------------------------------------------------------------
+const L_QUANTUM_LABELS = ("s", "p", "d", "f", "g", "h", "i")
+const SPIN_LABELS = ("↑", "↓")
 
 function Base.show(io::IO, sol::KSESolution)
     printstyled(io, "Name : " * (sol.name) * "\n"; bold = true)
