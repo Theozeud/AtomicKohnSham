@@ -58,3 +58,10 @@ struct AtomProblem{ T <: Real,
             typeof(optsbasis), typemesh, typebasis}(lh, nh, alg, model, Rmax, Nmesh, optsmesh, optsbasis, name, kwargs)
     end
 end
+
+datatype(::AtomProblem{T, A, M, S, OM, OB, meshType, basisType}) where {T, A, M, S, OM, OB, meshType, basisType} =
+    T
+typemesh(::AtomProblem{T, A, M, S, OM, OB, meshType, basisType}) where {T, A, M, S, OM, OB, meshType, basisType} =
+    meshType
+typebasis(::AtomProblem{T, A, M, S, OM, OB, meshType, basisType}) where {T, A, M, S, OM, OB, meshType, basisType} =
+    basisType 
