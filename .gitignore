@@ -1,3 +1,4 @@
 /Manifest.toml
 *.ipynb
 .vscode/settings.json
+*.json
