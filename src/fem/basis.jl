@@ -60,7 +60,7 @@ end
 
 
 """
-    struct PolynomialBasis{T<:Real, 
+    struct FEMBasis{T<:Real, 
                            generatorsType <: AbstractGenerator, 
                            meshType <: Mesh, 
                            dictType <: Dict,
@@ -102,11 +102,11 @@ The basis is constructed from a set of polynomial generators and adapted locally
   A cache structure used to store intermediate values for efficient computation.
 
 """
-struct PolynomialBasis{ T<:Real, 
+struct FEMBasis{ T<:Real, 
                         generatorsType <: AbstractGenerator, 
                         meshType <: Mesh, 
                         dictType <: Dict,
-                        cacheType <: BasisCache} <: Basis
+                        cacheType <: BasisCache}
     generators::generatorsType                         
     mesh::meshType                                      
     size::Int                                          
@@ -118,7 +118,7 @@ struct PolynomialBasis{ T<:Real,
     invshifts::Vector{Tuple{T,T}}                       
     cache::cacheType                                    
 
-    function PolynomialBasis(generators::AbstractGenerator, 
+    function FEMBasis(generators::AbstractGenerator, 
                              mesh::Mesh, 
                              size::Int, 
                              indices_cells::Dict, 
@@ -153,19 +153,19 @@ struct PolynomialBasis{ T<:Real,
     end
 end
 
-@inline Base.eltype(::PolynomialBasis{T}) where {T} = T
-@inline Base.length(pb::PolynomialBasis) = pb.size
-@inline Base.eachindex(pb::PolynomialBasis) = 1:pb.size
+@inline Base.eltype(::FEMBasis{T}) where {T} = T
+@inline Base.length(pb::FEMBasis) = pb.size
+@inline Base.eachindex(pb::FEMBasis) = 1:pb.size
 
-@inline getgenerator(pb::PolynomialBasis, i::Int, j::Int) = getpolynomial(pb.generators, pb.indices_generators[i][j])
-@inline getderivgenerator(pb::PolynomialBasis, i::Int, j::Int)= getderivpolynomial(pb.generators, pb.indices_generators[i][j])
-@inline getshift(pb::PolynomialBasis, i::Int, j::Int) = pb.shifts[pb.indices_cells[i][j]]
-@inline getinvshift(pb::PolynomialBasis, i::Int, j::Int) = pb.invshifts[pb.indices_cells[i][j]]
-@inline getmesh(pb::PolynomialBasis,i::Int, j::Int) = (pb.mesh[pb.indices_cells[i][j]], pb.mesh[pb.indices_cells[i][j]]+1)
+@inline getgenerator(pb::FEMBasis, i::Int, j::Int) = getpolynomial(pb.generators, pb.indices_generators[i][j])
+@inline getderivgenerator(pb::FEMBasis, i::Int, j::Int)= getderivpolynomial(pb.generators, pb.indices_generators[i][j])
+@inline getshift(pb::FEMBasis, i::Int, j::Int) = pb.shifts[pb.indices_cells[i][j]]
+@inline getinvshift(pb::FEMBasis, i::Int, j::Int) = pb.invshifts[pb.indices_cells[i][j]]
+@inline getmesh(pb::FEMBasis,i::Int, j::Int) = (pb.mesh[pb.indices_cells[i][j]], pb.mesh[pb.indices_cells[i][j]]+1)
 
 
-function Base.show(io::IO, basis::PolynomialBasis)
-    println(io, "PolynomialBasis with $(basis.size) functions")
+function Base.show(io::IO, basis::FEMBasis)
+    println(io, "FEMBasis with $(basis.size) functions")
     println(io, "  Mesh type:        $(typeof(basis.mesh))")
     println(io, "  Generators type:  $(typeof(basis.generators))")
     println(io, "  Cells:            $(length(basis.shifts)) total")
@@ -181,7 +181,7 @@ end
 end
 
 
-function getelement(pb::PolynomialBasis, k::Int, s::Symbol)
+function getelement(pb::FEMBasis, k::Int, s::Symbol)
     @unpack generators, mesh, shifts, invshifts = pb
     ElementData(shifts[k], 
                 invshifts[k], 
@@ -195,7 +195,7 @@ end
 #####################################################################
 #                          EVALUATION TOOLS
 #####################################################################
-function (pb::PolynomialBasis)(I::AbstractVector{<:Int}, X::AbstractVector{T}) where T
+function (pb::FEMBasis)(I::AbstractVector{<:Int}, X::AbstractVector{T}) where T
     NewT = promote_type(eltype(pb), T)
     evaluations = zeros(NewT, length(I), length(X))
     evaluate!(evaluations, pb, I, X)
@@ -203,7 +203,7 @@ function (pb::PolynomialBasis)(I::AbstractVector{<:Int}, X::AbstractVector{T}) w
 end
 
 function evaluate!( evaluations::AbstractVecOrMat, 
-                    pb::PolynomialBasis, 
+                    pb::FEMBasis, 
                     I::AbstractVector{<:Int}, 
                     X::AbstractVector{T}) where T
 
@@ -212,7 +212,7 @@ function evaluate!( evaluations::AbstractVecOrMat,
 end
 
 
-function (pb::PolynomialBasis)(i::Int, x::T) where T
+function (pb::FEMBasis)(i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
     if isnothing(j)
@@ -226,7 +226,7 @@ function (pb::PolynomialBasis)(i::Int, x::T) where T
     return y
 end
 
-function (pb::PolynomialBasis)(coeffs::AbstractVector, x::T) where T
+function (pb::FEMBasis)(coeffs::AbstractVector, x::T) where T
     @assert length(coeffs) == pb.size
     newT = promote_type(eltype(pb),T)
     y = zero(newT)
@@ -237,7 +237,7 @@ function (pb::PolynomialBasis)(coeffs::AbstractVector, x::T) where T
     y
 end
 
-function eval_derivative(pb::PolynomialBasis, i::Int, x::T) where T
+function eval_derivative(pb::FEMBasis, i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
     if isnothing(j)

@@ -7,7 +7,7 @@ function _fill_local_matrix!(K::AbstractArray,
                             weight::AbstractWeight, 
                             eldata::ElementData, 
                             ps::PolySet,
-                            basis::PolynomialBasis)
+                            basis::FEMBasis)
 
     @unpack a, b = eldata
 
@@ -40,7 +40,7 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
                                             ::InvX, 
                                             eldata::ElementData, 
                                             ps::PolySet,
-                                            basis::PolynomialBasis)
+                                            basis::FEMBasis)
     # FACTORIZED POLYNOMIALS
     generators_factorized = factorize(basis.generators.polynomials, eldata.ϕ[2])
     # COMPUTE PRODUCT
@@ -60,7 +60,7 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
                                             ::InvX2, 
                                             eldata::ElementData, 
                                             ps::PolySet,
-                                            basis::PolynomialBasis)
+                                            basis::FEMBasis)
     # FACTORIZED POLYNOMIALS
     generators_factorized = factorize(basis.generators.polynomials, eldata.ϕ[2])
     # COMPUTE PRODUCT
@@ -85,7 +85,7 @@ function fill_local_matrix!(K::AbstractArray,
                             ::NoWeight, 
                             eldata::ElementData, 
                             ps::PolySet,
-                            basis::PolynomialBasis)
+                            basis::FEMBasis)
     @unpack binf, bsup = eldata
     Kreshape = reshape(K,length(K),1)
     integrate!(Kreshape, ps, binf, bsup)
@@ -97,7 +97,7 @@ function fill_local_matrix!(K::AbstractArray,
                             ::InvX, 
                             eldata::ElementData, 
                             ps::PolySet,
-                            basis::PolynomialBasis)
+                            basis::FEMBasis)
     cach = getcache(basis.cache, eldata.s)
     @unpack binf, bsup, invϕ = eldata
     @inbounds for i ∈ eachindex(cach)
@@ -113,7 +113,7 @@ function fill_local_matrix!(K::AbstractArray,
                             ::InvX2, 
                             eldata::ElementData, 
                             ps::PolySet,
-                            basis::PolynomialBasis)
+                            basis::FEMBasis)
     cach = getcache(basis.cache, eldata.s)
     @unpack binf, bsup, invϕ = eldata
     @inbounds for i ∈ eachindex(cach)
@@ -134,7 +134,7 @@ function fill_local_matrix!(K::AbstractArray,
                             weight::FunWeight, 
                             eldata::ElementData, 
                             ps::PolySet,
-                            basis::PolynomialBasis)
+                            basis::FEMBasis)
     @unpack x, w, shiftx, wx = quadra
     @unpack evalM = basis.cache
     @unpack binf, bsup, invϕ = eldata

@@ -2,7 +2,7 @@
 #                          OVERLAP MATRIX
 #####################################################################
 
-function mass_matrix(pb::PolynomialBasis; weight::AbstractWeight = NoWeight(), method::IntegrationMethod = default_method(weight))
+function mass_matrix(pb::FEMBasis; weight::AbstractWeight = NoWeight(), method::IntegrationMethod = default_method(weight))
     @unpack generators, mesh, size = pb
     T = eltype(pb)
     A = zeros(T, size, size)
@@ -10,7 +10,7 @@ function mass_matrix(pb::PolynomialBasis; weight::AbstractWeight = NoWeight(), m
     A
 end
 
-function sparse_mass_matrix(pb::PolynomialBasis; weight::AbstractWeight = NoWeight(), method::IntegrationMethod = default_method(weight))
+function sparse_mass_matrix(pb::FEMBasis; weight::AbstractWeight = NoWeight(), method::IntegrationMethod = default_method(weight))
     @unpack generators, mesh, size = pb
     T = eltype(pb)
     A = spzeros(T, size, size)
@@ -18,7 +18,7 @@ function sparse_mass_matrix(pb::PolynomialBasis; weight::AbstractWeight = NoWeig
     A
 end
 
-function mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
+function mass_matrix(pb::FEMBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
         mass_matrix(pb; weight = InvX(), method = default_method(method, InvX()))
@@ -27,7 +27,7 @@ function mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = No
     end
 end
 
-function sparse_mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
+function sparse_mass_matrix(pb::FEMBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
         sparse_mass_matrix(pb; weight = InvX(), method = default_method(method, InvX()))
@@ -36,7 +36,7 @@ function sparse_mass_matrix(pb::PolynomialBasis, n::Int; method::IntegrationMeth
     end
 end
 
-function fill_mass_matrix!(pb::PolynomialBasis, n::Int, A::AbstractArray{<:Real}; method::IntegrationMethod = NoSelectedMethod())
+function fill_mass_matrix!(pb::FEMBasis, n::Int, A::AbstractArray{<:Real}; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
         fill_mass_matrix!(pb, A; weight = InvX(), method = default_method(method, InvX()))
@@ -46,7 +46,7 @@ function fill_mass_matrix!(pb::PolynomialBasis, n::Int, A::AbstractArray{<:Real}
     nothing
 end
 
-function fill_mass_matrix!( pb::PolynomialBasis, 
+function fill_mass_matrix!( pb::FEMBasis, 
                             A::AbstractMatrix{<:Real};
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
@@ -82,7 +82,7 @@ end
 #                          STIFFNESS MATRIX
 #####################################################################
 
-function stiffness_matrix(pb::PolynomialBasis; method::IntegrationMethod = ExactIntegration())
+function stiffness_matrix(pb::FEMBasis; method::IntegrationMethod = ExactIntegration())
     @unpack size = pb
     T = eltype(pb)
     A = zeros(T, size, size)
@@ -90,7 +90,7 @@ function stiffness_matrix(pb::PolynomialBasis; method::IntegrationMethod = Exact
     A
 end
 
-function sparse_stiffness_matrix(pb::PolynomialBasis; method::IntegrationMethod = ExactIntegration())
+function sparse_stiffness_matrix(pb::FEMBasis; method::IntegrationMethod = ExactIntegration())
     @unpack size = pb
     T = eltype(pb)
     A = spzeros(T, size, size)
@@ -98,7 +98,7 @@ function sparse_stiffness_matrix(pb::PolynomialBasis; method::IntegrationMethod 
     A
 end
 
-function fill_stiffness_matrix!( pb::PolynomialBasis, 
+function fill_stiffness_matrix!( pb::FEMBasis, 
                                 A::AbstractMatrix{<:Real};
                                 method::IntegrationMethod = ExactIntegration())
     @unpack generators, mesh, cache, shifts, invshifts, cells_to_indices, cells_to_generators = pb
@@ -122,14 +122,14 @@ end
 #                          MASS TENSOR
 #####################################################################
 
-function mass_tensor(pb::PolynomialBasis; weight::AbstractWeight = NoWeight(), method::IntegrationMethod = default_method(weight))
+function mass_tensor(pb::FEMBasis; weight::AbstractWeight = NoWeight(), method::IntegrationMethod = default_method(weight))
     T = eltype(pb)
     A = zeros(T, pb.size, pb.size, pb.size)
     fill_mass_tensor!(pb, A; weight = weight, method = method)
     A
 end
 
-function mass_tensor(pb::PolynomialBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
+function mass_tensor(pb::FEMBasis, n::Int; method::IntegrationMethod = NoSelectedMethod())
     @assert n == -1 || n == -2 "n must be -1 or -2"
     if n == -1
         mass_tensor(pb; weight = InvX(), method = default_method(method, InvX()))
@@ -138,7 +138,7 @@ function mass_tensor(pb::PolynomialBasis, n::Int; method::IntegrationMethod = No
     end
 end
 
-function fill_mass_tensor!( pb::PolynomialBasis, 
+function fill_mass_tensor!( pb::FEMBasis, 
                             A::AbstractArray{<:Real};
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
@@ -169,7 +169,7 @@ function fill_mass_tensor!( pb::PolynomialBasis,
     nothing
 end
 
-function fill_mass_tensor!(pb::PolynomialBasis, 
+function fill_mass_tensor!(pb::FEMBasis, 
                            n::Int, 
                            A::Union{AbstractArray{<:Real},Dict{Tuple{Int64, Int64, Int64}, <:Real}};
                            method::IntegrationMethod = NoSelectedMethod())
@@ -182,7 +182,7 @@ function fill_mass_tensor!(pb::PolynomialBasis,
     nothing
 end
 
-function fill_mass_tensor!( pb::PolynomialBasis,
+function fill_mass_tensor!( pb::FEMBasis,
                             A::Dict{Tuple{Int64, Int64, Int64}, <:Real};
                             weight::AbstractWeight = NoWeight(),
                             method::IntegrationMethod = default_method(weight))
