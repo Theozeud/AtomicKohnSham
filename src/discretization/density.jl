@@ -1,7 +1,7 @@
 #--------------------------------------------------------------------
 #                             Density
 #--------------------------------------------------------------------
-function density!(  discretization::LDADiscretization, 
+function density!(  discretization::KSEDiscretization, 
                     U::AbstractArray{<:Real}, 
                     n::AbstractMatrix{<:Real}, 
                     D::AbstractMatrix{<:Real})
@@ -28,7 +28,7 @@ function density!(  discretization::LDADiscretization,
 end
 
 
-function density!(  discretization::LDADiscretization, 
+function density!(  discretization::KSEDiscretization, 
                     Γ::BlockDiagonal{<:Real, <:AbstractMatrix{<:Real}},
                     D::AbstractMatrix{<:Real})
     @unpack lₕ, Nₕ, elT  = discretization
@@ -50,13 +50,13 @@ function density!(  discretization::LDADiscretization,
 end
 
 
-function compute_density(discretization::LDADiscretization, D::AbstractMatrix{<:Real}, x::Real)
+function compute_density(discretization::KSEDiscretization, D::AbstractMatrix{<:Real}, x::Real)
     @unpack basis, cache = discretization
     @unpack tmp_vect, tmp_C = cache
     localisation_x = findindex(basis.mesh, x)
     I = basis.cells_to_indices[localisation_x]
     @views eval_basis = tmp_C[I]
-    evaluate!(eval_basis, basis.)
+    evaluate!(eval_basis, basis)
     #=
     @inbounds for (n,i) ∈ enumerate(I)
     eval_basis[n] = basis(i,x)
@@ -73,7 +73,7 @@ end
 #                          Density Matrix
 #--------------------------------------------------------------------
 
-function density_matrix!(   discretization::LDADiscretization, 
+function density_matrix!(   discretization::KSEDiscretization, 
                             U::AbstractArray{<:Real}, 
                             n::AbstractMatrix{<:Real}, 
                             Γ::BlockDiagonal{<:Real, <:AbstractMatrix{<:Real}})

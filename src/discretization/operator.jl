@@ -1,7 +1,7 @@
 #--------------------------------------------------------------------
 #                          Kinetic Matrix
 #--------------------------------------------------------------------
-function kinetic_matrix!(discretization::LDADiscretization)
+function kinetic_matrix!(discretization::KSEDiscretization)
     @unpack A, M₋₂, Kin = discretization.matrices
     for l ∈ 0:discretization.lₕ
         #@views vkin = Kin[l+1,:,:]
@@ -14,7 +14,7 @@ end
 #--------------------------------------------------------------------
 #                          Coulomb Matrix
 #--------------------------------------------------------------------
-function coulomb_matrix!(discretization::LDADiscretization, model::KohnShamExtended)
+function coulomb_matrix!(discretization::KSEDiscretization, model::KSEModel)
     @unpack M₋₁, Coulomb = discretization.matrices
     Coulomb .= - model.z .* M₋₁
     nothing
@@ -42,7 +42,7 @@ function tensor_vector_dict!(B::AbstractMatrix{<:Real}, D::AbstractVector{<:Real
 end
 
 
-function hartree_matrix!(discretization::LDADiscretization, D::AbstractMatrix{<:Real}, coeff::Real = true)
+function hartree_matrix!(discretization::KSEDiscretization, D::AbstractMatrix{<:Real}, coeff::Real = true)
     @unpack Rmax, matrices, cache = discretization
     @unpack A, M₀, F, Hartree = matrices
     @unpack tmp_MV, tmp_B, tmp_C = cache
@@ -60,8 +60,8 @@ end
 #--------------------------------------------------------------------
 #                   Exchange Correlation Matrix
 #--------------------------------------------------------------------
-function exchange_corr_matrix!( discretization::LDADiscretization, 
-                                model::KohnShamExtended, 
+function exchange_corr_matrix!( discretization::KSEDiscretization, 
+                                model::KSEModel, 
                                 D::AbstractMatrix{<:Real})
     @unpack matrices, basis = discretization
     @unpack Vxc = matrices

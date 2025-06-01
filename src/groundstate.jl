@@ -4,7 +4,7 @@
 """
     groundstate(model::KSEModel, 
                 discretization::KSEDiscretization, 
-                method::SCFAlgorithms; 
+                method::SCFAlgorithm; 
                 name::String = "", kwargs...) -> KSESolution
 
 Computes the ground state solution of a Kohn–Sham model using a specified discretization and SCF method.
@@ -14,7 +14,7 @@ This function creates a `KSESolver` object with the given model, discretization,
 # Arguments
 - `model::KSEModel`: The Kohn–Sham extended model.
 - `discretization::KSEDiscretization`: Discretization of the radial Kohn–Sham equations.
-- `method::SCFAlgorithms`: Self-consistent field (SCF) method to solve the nonlinear problem (e.g., `ODA()`, `Quadratic()`).
+- `method::SCFAlgorithm`: Self-consistent field (SCF) method to solve the nonlinear problem (e.g., `ODA()`, `Quadratic()`).
 - `name::String` (optional): Name for the simulation, stored in the output.
 - `kwargs`: Additional keyword arguments forwarded to `KSESolver`.
 
@@ -23,7 +23,7 @@ This function creates a `KSESolver` object with the given model, discretization,
 """
 function groundstate(model::KSEModel, 
                      discretization::KSEDiscretization, 
-                     method::SCFAlgorithms; 
+                     method::SCFAlgorithm; 
                      name::String = "", kwargs...)
     solver = KSESolver(model, discretization, method; kwargs...)
     solve!(solver)

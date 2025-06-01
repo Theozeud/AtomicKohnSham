@@ -2,7 +2,7 @@
 #                         TOTAL ENERGY
 #--------------------------------------------------------------------
 function compute_total_energy( discretization::KSEDiscretization, 
-                                model::KohnShamExtended,
+                                model::KSEModel,
                                 D::AbstractMatrix{<:Real}, 
                                 n::AbstractMatrix{<:Real},
                                 ϵ::AbstractMatrix{<:Real})

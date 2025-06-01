@@ -17,7 +17,7 @@ Encodes physical and modeling parameters for atomic or ionic simulations.
 """
 struct KSEModel{T <: Real, 
                 TEXCH <: ExchangeCorrelation}
-                
+
     z::T                # Charge of the nucleus
     N::T                # Number of electrons
 
@@ -73,9 +73,9 @@ Creates a `KSEModel` with the specified nuclear charge `z` and number of electro
 # Returns
 - `KSEModel` using the Slater Xα exchange functional.
 """
-SlaterXα(;z::Real, N::Real) = KSEModel(z = z, N = N, exc = SlaterXα())
+SlaterXα(z::Real, N::Real) = KSEModel(z = z, N = N, exc = SlaterXα())
 
 
 
 # MUST BE RENAMED IN SOMETHING LIKE PERDEW 
-LSDA(;z::Real, N::Real) = KSEModel(z = z, N = N, exc = LSDA())
+LSDA(z::Real, N::Real) = KSEModel(z = z, N = N, exc = LSDA())

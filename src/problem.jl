@@ -31,6 +31,7 @@ struct AtomProblem{ T <: Real,
                     S <: AbstractString,
                     OM <: NamedTuple,
                     OB <: NamedTuple,
+                    OS <: NamedTuple,
                     meshType <: Mesh,
                     basisType <: FEMBasis
                     }
@@ -47,7 +48,7 @@ struct AtomProblem{ T <: Real,
 
     function AtomProblem(;T, lh, nh, alg, model, Rmax, Nmesh,typemesh, optsmesh, typebasis, optsbasis, name = "", kwargs...)
         new{T, typeof(alg), typeof(model), typeof(name), typeof(optsmesh),
-            typeof(optsbasis), typemesh, typebasis}(lh, nh, alg, model, Rmax, Nmesh, optsmesh, optsbasis, name, kwargs)
+            typeof(optsbasis), typeof(kwargs), typemesh, typebasis}(lh, nh, alg, model, Rmax, Nmesh, optsmesh, optsbasis, name, kwargs)
     end
 
     function AtomProblem(prob; 
@@ -55,13 +56,14 @@ struct AtomProblem{ T <: Real,
         typemesh = prob.typemesh, optsmesh = prob.optsmesh, typebasis = prob.typebasis, 
         optsbasis = prob.optsbasis, name = prob.name, kwargs = prob.solveropts) 
         new{T, typeof(alg), typeof(model), typeof(name), typeof(optsmesh),
-            typeof(optsbasis), typemesh, typebasis}(lh, nh, alg, model, Rmax, Nmesh, optsmesh, optsbasis, name, kwargs)
+            typeof(optsbasis), typeof(kwargs), typemesh, typebasis}(lh, nh, alg, model, Rmax, Nmesh, optsmesh, optsbasis, name, kwargs)
     end
 end
 
-datatype(::AtomProblem{T, A, M, S, OM, OB, meshType, basisType}) where {T, A, M, S, OM, OB, meshType, basisType} =
+
+datatype(::AtomProblem{T, A, M, S, OM, OB, OS, meshType, basisType}) where {T, A, M, S, OM, OB, OS, meshType, basisType} =
     T
-typemesh(::AtomProblem{T, A, M, S, OM, OB, meshType, basisType}) where {T, A, M, S, OM, OB, meshType, basisType} =
+typemesh(::AtomProblem{T, A, M, S, OM, OB, OS, meshType, basisType}) where {T, A, M, S, OM, OB, OS, meshType, basisType} =
     meshType
-typebasis(::AtomProblem{T, A, M, S, OM, OB, meshType, basisType}) where {T, A, M, S, OM, OB, meshType, basisType} =
+typebasis(::AtomProblem{T, A, M, S, OM, OB, OS, meshType, basisType}) where {T, A, M, S, OM, OB, OS, meshType, basisType} =
     basisType 

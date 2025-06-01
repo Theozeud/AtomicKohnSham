@@ -2,7 +2,7 @@
 #                          Quadratic Method
 #####################################################################
 
-struct Quadratic{typeMethod, typeOpts<:NamedTuple} <: SCFAlgorithms 
+struct Quadratic{typeMethod, typeOpts<:NamedTuple} <: SCFAlgorithm
     method::typeMethod  # Method  to solve the linear system
     opts::typeOpts      # Options to solve the linear system
 end

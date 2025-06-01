@@ -110,15 +110,15 @@ function Base.show(io::IO, sol::KSESolution)
 end
 
 
-function display_occupation_number(io::IO, ::LDADiscretization, occupation_number)
+function display_occupation_number(io::IO, ::KSEDiscretization, occupation_number)
     printstyled(io, "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n"; bold = true, color = :blue)
 end
 
-
+#=
 function display_occupation_number(io::IO, ::LSDADiscretization, occupation_number)
     printstyled(io, "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n"; bold = true, color = :blue)
 end
-
+=#
 
 #--------------------------------------------------------------------
 #                  POST-PROCESSING COMPUTATIONS
@@ -130,7 +130,7 @@ function eigenvector(sol::KSESolution, n::Int, l::Int, σ::Int, x)
     eigenvector(sol.problem.discretization, sol, n, l, σ, x)
 end
 
-function eigenvector(discretization::LDADiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, x)
+function eigenvector(discretization::KSEDiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, x)
     @assert 0 ≤ l ≤ n-1
     tmp = discretization.basis(sol.orbitals[l+1,:, n-l], x)
     if iszero(x) && tmp ≈ zero(tmp)
@@ -140,6 +140,7 @@ function eigenvector(discretization::LDADiscretization, sol::KSESolution, n::Int
     end
 end
 
+#=
 function eigenvector(discretization::LSDADiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, x)
     @assert 0 ≤ l ≤ n-1
     tmp = discretization.basis(sol.orbitals[l+1,:, n-l,σ], x)
@@ -149,7 +150,7 @@ function eigenvector(discretization::LSDADiscretization, sol::KSESolution, n::In
         return  1/sqrt(4π * x) * tmp 
     end
 end
-
+=#
 
 # COMPUTE DENSITY
 

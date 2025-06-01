@@ -5,7 +5,7 @@ function find_minima_oda(energy_kin0::Real, energy_kin1::Real,
                          energy_har0::Real, energy_har1::Real, 
                          energy_har01::Real, energy_har10::Real,
                          D0::AbstractArray{<:Real}, D1::AbstractArray{<:Real}, tmpD::AbstractArray{<:Real}, 
-                         model::AbstractDFTModel, discretization::KohnShamDiscretization)
+                         model::KSEModel, discretization::KSEDiscretization)
     
     T = discretization.elT
 

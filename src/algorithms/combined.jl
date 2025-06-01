@@ -4,7 +4,7 @@
 #                          STRUCTURE
 #####################################################################
 
-mutable struct CombinedMethod{typeMethod1 <: SCFAlgorithms, typeMethod2 <: SCFAlgorithms} <: SCFAlgorithms
+mutable struct CombinedMethod{typeMethod1 <: SCFAlgorithm, typeMethod2 <: SCFAlgorithm} <: SCFAlgorithm
     method1::typeMethod1
     method2::typeMethod2
     state::Int
@@ -16,7 +16,7 @@ mutable struct CombinedCache{typeCache1 <: SCFCache, typeCache2 <: SCFCache} <: 
     cache2::typeCache2
 end
 
-function create_cache_method(method::CombinedMethod, discretization::KohnShamDiscretization)
+function create_cache_method(method::CombinedMethod, discretization::KSEDiscretization)
     cache1 = create_cache_method(method.method1, discretization)
     cache2 = create_cache_method(method.method2, discretization)
     CombinedCache{typeof(cache1), typeof(cache2)}(cache1, cache2)
@@ -39,7 +39,7 @@ function loopheader!(cache::CombinedCache, method::CombinedMethod)
     end
 end
 
-function performstep!(cache::CombinedCache, method::CombinedMethod, solver::KohnShamSolver) 
+function performstep!(cache::CombinedCache, method::CombinedMethod, solver::KSESolver) 
     if method.state == 1
         performstep!(cache.cache1, method.method1, solver)
     else
