@@ -1,28 +1,45 @@
 #-------------------------------------
 #            MESH STRUCTURE
 #-------------------------------------
+"""
+    Mesh(points::AbstractVector{T}, name::AbstractString = "", params::NamedTuple = NamedTuple{}()) where T <: Real
+
+A container for a one-dimensional mesh used in numerical discretizations.
+
+# Arguments
+- `points::AbstractVector{T}`: The coordinates of the mesh points, typically sorted in ascending order.
+- `name::AbstractString = ""`: An optional name or identifier for the mesh.
+- `params::NamedTuple = NamedTuple{}()`:
+  A named tuple storing the parameters used to generate the mesh (e.g., domain bounds, number of points, transformation options, etc.).
+
+# Fields
+- `name::AbstractString`: Name of the mesh (for logging or reconstruction).
+- `points::AbstractVector{T}`: Coordinates of the mesh points.
+- `params::NamedTuple`: Parameters used to build the mesh, useful for reproducibility.
+"""
 struct Mesh{T <: Real,
             S <: AbstractString,
             P <: AbstractVector,
-            T <: NamedTuple} 
+            Pa <: NamedTuple} 
     name::S
     points::P
-    params::T
+    params::Pa
     function Mesh(points::AbstractVector{T}, name::AbstractString = "", params::NamedTuple = NamedTuple{}())  where T <: Real
-        new{T, typeof(name), typeof(points), typeof(params)}(points, name, params)
+        new{T, typeof(name), typeof(points), typeof(params)}(name, points, params)
     end
 end
+
 
 #-------------------------------------
 #                   API
 #-------------------------------------
-
 function Base.show(io::IO, m::Mesh)
-    println(io, "Mesh: \"", m.name, "\"")
+    printstyled(io, "Mesh: \"", m.name, "\""; bold = true)
+    println("")
     if !isempty(m.params)
-        println(io, "Parameters:")
+        println(io, "  Parameters:")
         for (k,v) in pairs(m.params)
-            println(io, "  $k => $v")
+            println(io, "     $k => $v")
         end
     end
     println(io, "  Number of points: ", length(m.points))
