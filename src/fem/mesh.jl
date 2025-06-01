@@ -8,7 +8,7 @@ struct Mesh{T <: Real,
     name::S
     points::P
     params::T
-    function Mesh(points::AbstractVector{T}, name::Abstractstring = "", params::NamedTuple = NamedTuple{}())  where T <: Real
+    function Mesh(points::AbstractVector{T}, name::AbstractString = "", params::NamedTuple = NamedTuple{}())  where T <: Real
         new{T, typeof(name), typeof(points), typeof(params)}(points, name, params)
     end
 end
