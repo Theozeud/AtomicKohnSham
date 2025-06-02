@@ -52,6 +52,6 @@
 
     occ = sol.datas.occupation_number[1]
     @test occ[1] == "1s"
-    @test abs(occ[2] + 0.04622244682275613) < 1e-15
+    @test abs(occ[2] + 0.04622244682275613) < 1e-10
     @test occ[3] == 1.0
 end

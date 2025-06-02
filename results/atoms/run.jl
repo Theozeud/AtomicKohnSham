@@ -1,4 +1,4 @@
-include("../../../../../benchmarktools/atoms/setup.jl")
+include("../../benchmarktools/atoms/setup.jl")
 using DoubleFloats
 
 
