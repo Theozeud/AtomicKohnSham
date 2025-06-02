@@ -31,7 +31,7 @@ struct KSEModel{T <: Real,
                         N::Real, 
                         hartree::Real = 1, 
                         exc::ExchangeCorrelation = NoExchangeCorrelation())
-        T = promote_type(z, N, Hartree)
+        T = promote_type(typeof(z), typeof(N), typeof(hartree))
         new{T, typeof(exc)}(T(z), T(N), T(hartree), exc)
     end
 end
@@ -79,3 +79,16 @@ SlaterXα(z::Real, N::Real) = KSEModel(z = z, N = N, exc = SlaterXα())
 
 # MUST BE RENAMED IN SOMETHING LIKE PERDEW 
 LSDA(z::Real, N::Real) = KSEModel(z = z, N = N, exc = LSDA())
+
+
+function typeexc(model::KSEModel)
+    if isthereExchangeCorrelation(model)
+        if model.exc isa LDA
+            return :lda
+        elseif model.exc isa LSDA
+            return :lsda
+        end
+    else
+        return :lda
+    end
+end

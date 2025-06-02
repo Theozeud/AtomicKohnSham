@@ -23,9 +23,9 @@ This function creates a `KSESolver` object with the given model, discretization,
 """
 function groundstate(model::KSEModel, 
                      discretization::KSEDiscretization, 
-                     method::SCFAlgorithm; 
+                     alg::SCFAlgorithm; 
                      name::String = "", kwargs...)
-    solver = KSESolver(model, discretization, method; kwargs...)
+    solver = KSESolver(model, discretization, alg; kwargs...)
     solve!(solver)
     KSESolution(solver, name)
 end
@@ -46,12 +46,12 @@ This function constructs the mesh, basis, and discretization from the problem sp
 """
 function groundstate(prob::AtomProblem)
     T = datatype(prob)
-    typemesh = typemesh(prob)
-    typebasis = typebasis(prob)
+    typemesh = prob.typemesh
+    typebasis = prob.typebasis
     mesh = typemesh(zero(T), prob.Rmax, prob.Nmesh; T = T, prob.optsmesh...)
     basis = typebasis(mesh, T; prob.optsbasis...)
-    discretization = LDADiscretization(prob.lh, basis, mesh, prob.nh)
-    groundstate(prob.model, discretization, prob.method; name = prob.name, prob.solveropts...)
+    discretization = KSEDiscretization(prob.lh, basis, mesh, typeexc(prob.model), prob.nh)
+    groundstate(prob.model, discretization, prob.alg; name = prob.name, prob.solveropts...)
 end
 
 
@@ -60,7 +60,7 @@ end
 #--------------------------------------------------------------------
 ##
 # QUESTION :
-#               solver.cache et solver.method pour dispatcher ??
+#               solver.cache et solver.alg pour dispatcher ??
 #                method devrait être suffisant
 ##
 
@@ -69,7 +69,7 @@ end
 function solve!(solver::KSESolver)
     while (solver.stopping_criteria > solver.opts.scftol || iszero(solver.niter)) && solver.niter < solver.opts.maxiter
         loopheader!(solver)
-        performstep!(solver.cache, solver.method, solver)
+        performstep!(solver.cache, solver.alg, solver)
         loopfooter!(solver)
         monitor(solver)
     end
@@ -79,7 +79,7 @@ end
 # LOOPHEADER
 function loopheader!(solver::KSESolver)
     # LOOPHEADER SPECIFIC FOR THE METHOD 
-    loopheader!(solver.cache, solver.method, solver)
+    loopheader!(solver.cache, solver.alg, solver)
     nothing                                         
 end 
 
@@ -96,7 +96,7 @@ function loopfooter!(solver::KSESolver)
     register!(solver)     
     
     # LOOPFOOTER SPECIFIC FOR THE METHOD
-    loopfooter!(solver.cache, solver.method, solver) 
+    loopfooter!(solver.cache, solver.alg, solver) 
     nothing                                            
 end 
 
@@ -108,19 +108,19 @@ function monitor(solver::KSESolver)
         println("Iteration : $(solver.niter)")
     end
     if solver.opts.verbose > 1
-        println("Selected Method : $(name(solver.method))")
+        println("Selected Method : $(name(solver.alg))")
         println("Stopping criteria: $(solver.stopping_criteria)")
         println("Total Energy: $(solver.energies[:Etot])")
     end
     if solver.opts.verbose > 2
-        monitor(solver.cache, solver.method, solver)
+        monitor(solver.cache, solver.alg, solver)
     end
 end
 
 
 # COMPUTE THE STOPPING CRITERIA
 function stopping_criteria!(solver::KSESolver)
-    solver.stopping_criteria =  stopping_criteria!(solver.cache, solver.method, solver)
+    solver.stopping_criteria =  stopping_criteria!(solver.cache, solver.alg, solver)
 end
     
 
@@ -136,5 +136,5 @@ function register!(solver::KSESolver)
     !energy || push!(solver.logbook.energy_log, solver.energies[:Etot])
 
     # REGISTER DATA SPECIFIC TO THE METHODS
-    register!(solver.cache, solver.method, solver)
+    #register!(solver.cache, solver.alg, solver)
 end

@@ -31,9 +31,9 @@ struct AtomProblem{ T <: Real,
                     S <: AbstractString,
                     OM <: NamedTuple,
                     OB <: NamedTuple,
-                    OS <: NamedTuple,
-                    meshType <: Mesh,
-                    basisType <: FEMBasis
+                    OS,
+                    TM,
+                    TB
                     }
     lh::Int             # Truncation of orbital for l
     nh::Int             # Truncation of orbital for n
@@ -41,14 +41,17 @@ struct AtomProblem{ T <: Real,
     model::M            # Model
     Rmax::T             # Spatial cut-off
     Nmesh::Int          # Number of points of the discretization
+    typemesh::TM        # Function to generate the mesh
     optsmesh::OM        # Options for the Mesh
+    typebasis::TB       # Function to generate the basis
     optsbasis::OB       # Options for the basis
     name::S             # Name of the problem
     solveropts::OS      # Option for the solvers
 
     function AtomProblem(;T, lh, nh, alg, model, Rmax, Nmesh,typemesh, optsmesh, typebasis, optsbasis, name = "", kwargs...)
         new{T, typeof(alg), typeof(model), typeof(name), typeof(optsmesh),
-            typeof(optsbasis), typeof(kwargs), typemesh, typebasis}(lh, nh, alg, model, Rmax, Nmesh, optsmesh, optsbasis, name, kwargs)
+            typeof(optsbasis), typeof(kwargs), typeof(typemesh), typeof(typebasis)}(lh, nh, alg, model, Rmax, Nmesh, typemesh, 
+                optsmesh, typebasis, optsbasis, name, kwargs)
     end
 
     function AtomProblem(prob; 
@@ -63,7 +66,3 @@ end
 
 datatype(::AtomProblem{T, A, M, S, OM, OB, OS, meshType, basisType}) where {T, A, M, S, OM, OB, OS, meshType, basisType} =
     T
-typemesh(::AtomProblem{T, A, M, S, OM, OB, OS, meshType, basisType}) where {T, A, M, S, OM, OB, OS, meshType, basisType} =
-    meshType
-typebasis(::AtomProblem{T, A, M, S, OM, OB, OS, meshType, basisType}) where {T, A, M, S, OM, OB, OS, meshType, basisType} =
-    basisType 

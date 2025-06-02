@@ -56,7 +56,7 @@ function fill_mass_matrix!( pb::FEMBasis,
     if typeof(weight) == NoWeight
         eldata = getelement(pb, firstindex(mesh),:M)
         _fill_local_matrix!(K, method, weight, eldata, cache.prodMG, pb)
-        @inbounds for k ∈ iterators(mesh)
+        @inbounds for k ∈ cellrange(mesh)
             Ib = cells_to_indices[k]
             Ig = cells_to_generators[k]
             @views vA = A[Ib, Ib]
@@ -64,7 +64,7 @@ function fill_mass_matrix!( pb::FEMBasis,
             @. vA += vK * invshifts[k][1] / invshifts[1][1]
         end
     else
-        @inbounds for k ∈ iterators(mesh)
+        @inbounds for k ∈ cellrange(mesh)
             eldata = getelement(pb, k,:M)
             _fill_local_matrix!(K, method, weight, eldata, cache.prodMG, pb)
             Ib = cells_to_indices[k]
@@ -106,7 +106,7 @@ function fill_stiffness_matrix!( pb::FEMBasis,
     fill!(A, 0)
     eldata = getelement(pb, firstindex(mesh),:Md)
     _fill_local_matrix!(K, method, NoWeight(), eldata, cache.prodMdG, pb)
-    @inbounds for k ∈ iterators(mesh)
+    @inbounds for k ∈ cellrange(mesh)
         Ib = cells_to_indices[k]
         Ig = cells_to_generators[k]
         @views vA = A[Ib, Ib]
@@ -148,7 +148,7 @@ function fill_mass_tensor!( pb::FEMBasis,
     if typeof(weight) == NoWeight
         eldata = getelement(pb, firstindex(mesh),:T)
         _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
-        @inbounds for k ∈ iterators(mesh)
+        @inbounds for k ∈ cellrange(mesh)
             Ib = cells_to_indices[k]
             Ig = cells_to_generators[k]
             @views vA = A[Ib, Ib, Ib]
@@ -156,7 +156,7 @@ function fill_mass_tensor!( pb::FEMBasis,
             @. vA += vT * invshifts[k][1] / invshifts[1][1]
         end
     else
-        @inbounds for k ∈ iterators(mesh)
+        @inbounds for k ∈ cellrange(mesh)
             eldata = getelement(pb, k,:T)
             _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
             Ib = cells_to_indices[k]
@@ -193,7 +193,7 @@ function fill_mass_tensor!( pb::FEMBasis,
     if typeof(weight) == NoWeight
         eldata = getelement(pb, firstindex(mesh), :T)
         _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
-        @inbounds for k ∈ iterators(mesh)
+        @inbounds for k ∈ cellrange(mesh)
             Ib = cells_to_indices[k]
             Ig = cells_to_generators[k]
             scaling = invshifts[k][1] / invshifts[1][1]
@@ -208,7 +208,7 @@ function fill_mass_tensor!( pb::FEMBasis,
             end
         end
     else
-        @inbounds for k ∈ iterators(mesh)
+        @inbounds for k ∈ cellrange(mesh)
             eldata = getelement(pb, k, :T)
             _fill_local_matrix!(T, method, weight, eldata, cache.prodTG, pb)
             Ib = cells_to_indices[k]

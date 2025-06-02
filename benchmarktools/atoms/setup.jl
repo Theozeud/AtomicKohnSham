@@ -1,4 +1,4 @@
-using KohnShamResolution
+using AtomicKohnSham
 using Plots
 using UnPack
 

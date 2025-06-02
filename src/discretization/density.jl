@@ -6,7 +6,7 @@ function density!(  discretization::KSEDiscretization,
                     n::AbstractMatrix{<:Real}, 
                     D::AbstractMatrix{<:Real})
     @unpack lₕ, nₕ, Nₕ, exc  = discretization
-    elT = eltyp(discretization)
+    elT = eltype(discretization)
     fill!(D, zero(elT))
     @inbounds for k ∈ 1:nₕ
         @inbounds for σ ∈ 1:exc
@@ -59,12 +59,12 @@ function compute_density(discretization::KSEDiscretization, D::AbstractMatrix{<:
     localisation_x = findindex(basis.mesh, x)
     I = basis.cells_to_indices[localisation_x]
     @views eval_basis = tmp_C[I]
-    evaluate!(eval_basis, basis)
-    #=
+    #evaluate!(eval_basis, basis)
+    
     @inbounds for (n,i) ∈ enumerate(I)
-    eval_basis[n] = basis(i,x)
+        eval_basis[n] = basis(i,x)
     end
-    =#
+
     @views tv = tmp_vect[I]
     @views Dview = D[I,I]
     mul!(tv,Dview,eval_basis)

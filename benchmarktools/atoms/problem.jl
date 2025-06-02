@@ -1,4 +1,5 @@
 # STRUCTURE ATOM PROBLEM
+#=
 struct AtomProblem
     T           # Type of numbers
     lh          # Truncation of orbital for l
@@ -32,7 +33,7 @@ function KohnShamResolution.groundstate(prob::AtomProblem)
     discretization = prob.typediscre(prob.lh, basis, mesh, prob.nh)
     groundstate(prob.model, discretization, prob.method; name = prob.name, prob.solveropts...)
 end
-
+=#
 
 # STRUCTURE ATOM FOR ANALYSING CONVERGENCE
 struct AtomConvergenceNmesh

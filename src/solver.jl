@@ -86,22 +86,22 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
     energies::Dict{Symbol,dataType}             # Storages of the energies
     logbook::logbookType                        # LogBook
     
-    function KohnShamSolver(model::KSEModel, 
-                            discretization::KSEDiscretization, 
-                            alg::SCFAlgorithm; 
-                            scftol::Real, 
-                            maxiter::Int = 100,
-                            exc_integration_method::IntegrationMethod = ExactIntegration(),
-                            fem_integration_method::IntegrationMethod = ExactIntegration(),
-                            degen_tol::Real = eps(eltype(discretization.basis)),
-                            logconfig = LogConfig(),
-                            verbose::Int = 3)
+    function KSESolver( model::KSEModel, 
+                        discretization::KSEDiscretization, 
+                        alg::SCFAlgorithm; 
+                        scftol::Real, 
+                        maxiter::Int = 100,
+                        exc_integration_method::IntegrationMethod = ExactIntegration(),
+                        fem_integration_method::IntegrationMethod = ExactIntegration(),
+                        degen_tol::Real = eps(eltype(discretization.basis)),
+                        logconfig = LogConfig(),
+                        verbose::Int = 3)
     
         # Set the data type as the one of the discretization basis
-        T = discretization.elT
+        T = eltype(discretization)
         
         # Init Cache of the Discretisation
-        init_cache!(discretization, model, hartree, fem_integration_method)
+        init_cache!(discretization, model, fem_integration_method)
         
         # Init Cache of the Method
         cache = create_cache_alg(alg, discretization)

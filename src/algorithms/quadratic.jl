@@ -91,7 +91,7 @@ end
 #                        Initialization
 #####################################################################
 
-function create_cache_method(::Quadratic, discretization::KohnShamDiscretization,
+function create_cache_alg(::Quadratic, discretization::KohnShamDiscretization,
                                 rcacache::RCACache)
 
     @unpack n = rcacache

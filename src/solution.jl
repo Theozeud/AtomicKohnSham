@@ -33,6 +33,8 @@ struct KSESolution{ optsType <: SolverOptions,
                                         #        Can be : SUCCESS or MAXITERS
 
     solveropts::optsType                # Option of the solver used
+
+    exc::Symbol                         # Type of exchange correlation functional
     
     niter::Int                          # Number of iterations
     stopping_criteria::T                # Final stopping criteria
@@ -51,13 +53,14 @@ struct KSESolution{ optsType <: SolverOptions,
         success = solver.niter == solver.opts.maxiter ? "MAXITERS" : "SUCCESS"
 
         # DATAS
-        datas = makesolution(solver.cache, solver.method, solver)
+        datas = makesolution(solver.cache, solver.alg, solver)
 
         new{typeof(solver.opts),
             typeof(solver.stopping_criteria),
             typeof(datas),
             typeof(solver.logbook)}(success, 
                                     solver.opts, 
+                                    typeexc(model),
                                     solver.niter, 
                                     solver.stopping_criteria, 
                                     solver.energies,
@@ -105,7 +108,8 @@ function Base.show(io::IO, sol::KSESolution)
     #printstyled(io, "            $(s) = $(sol.energies[s]) \n"; bold = true, color = :green)
     printstyled(io, "Occupation number = \n"; bold = true, color = :blue)
     for i ∈ eachindex(sol.occupation_number)
-        display_occupation_number(io, sol.problem.discretization, sol.occupation_number[i])
+        occupation_number = sol.occupation_number[i]
+        printstyled(io, "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n"; bold = true, color = :blue)
     end
 end
 

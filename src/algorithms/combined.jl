@@ -16,9 +16,9 @@ mutable struct CombinedCache{typeCache1 <: SCFCache, typeCache2 <: SCFCache} <: 
     cache2::typeCache2
 end
 
-function create_cache_method(method::CombinedMethod, discretization::KSEDiscretization)
-    cache1 = create_cache_method(method.method1, discretization)
-    cache2 = create_cache_method(method.method2, discretization)
+function create_cache_alg(method::CombinedMethod, discretization::KSEDiscretization)
+    cache1 = create_cache_alg(method.method1, discretization)
+    cache2 = create_cache_alg(method.method2, discretization)
     CombinedCache{typeof(cache1), typeof(cache2)}(cache1, cache2)
 end
 

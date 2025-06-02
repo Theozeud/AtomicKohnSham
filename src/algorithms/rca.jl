@@ -38,16 +38,16 @@ mutable struct RCACache{dataType <: Real,
     energies_prev::Dict{Symbol,dataType}        # Energies at previous time                                         
 end
 
-function create_cache_method(method::RCAAlgorithm, discretization::KSEDiscretization)
-    @unpack elT = discretization
-    t                   = elT(method.t)
-    D                   = init_density(discretization)
-    Dprev               = init_density(discretization)
-    tmpD                = init_density(discretization)
-    tmpD2               = init_density(discretization)
-    U                   = init_orbitals(discretization)
-    ϵ                   = init_orbitals_energy(discretization)
-    n                   = init_occupation_number(discretization)
+function create_cache_alg(alg::RCAAlgorithm, discretization::KSEDiscretization)
+    elT = eltype(discretization)
+    t                   = elT(alg.t)
+    D                   = zero_density(discretization)
+    Dprev               = zero_density(discretization)
+    tmpD                = zero_density(discretization)
+    tmpD2               = zero_density(discretization)
+    U                   = zero_orbitals(discretization)
+    ϵ                   = zero_orbitals_energy(discretization)
+    n                   = zero_occupation_number(discretization)
     Noccup              = zeros(Int,3)
     tdegen              = zero(elT)
     index_aufbau        = zeros(Int, length(ϵ))
@@ -132,7 +132,7 @@ function performstep!(cache::RCACache, method::RCAAlgorithm, solver::KSESolver)
     @unpack D, Dprev, U, ϵ, n = cache
     
     # STEP 1 : PREPARE THE EIGENVALUE PROBLEM
-    build_hamiltonian!(discretization, model, Dprev, opts.hartree)
+    build_hamiltonian!(discretization, model, Dprev, model.hartree)
 
     # STEP 2 : FIND ORBITALS AND CORRESPONFING ENERGIES
     find_orbital!(discretization, U, ϵ)

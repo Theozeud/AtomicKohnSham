@@ -117,11 +117,11 @@ function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
     cells_to_indices[i][2:end] .= (numbas - generators.ordermax+1):numbas-1
     cells_to_generators[i] = collect(2:generators.ordermax+1)
 
-    PolynomialBasis(generators, 
-                    mesh, 
-                    size, 
-                    indices_cells, 
-                    indices_generators, 
-                    cells_to_indices, 
-                    cells_to_generators) 
+    FEMBasis(generators, 
+            mesh, 
+            size, 
+            indices_cells, 
+            indices_generators, 
+            cells_to_indices, 
+            cells_to_generators) 
 end

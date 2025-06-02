@@ -7,7 +7,7 @@ function find_minima_oda(energy_kin0::Real, energy_kin1::Real,
                          D0::AbstractArray{<:Real}, D1::AbstractArray{<:Real}, tmpD::AbstractArray{<:Real}, 
                          model::KSEModel, discretization::KSEDiscretization)
     
-    T = discretization.elT
+    T = eltype(discretization)
 
     if isthereExchangeCorrelation(model)
         # DEFINE THE OBJECTIV FUNCTION

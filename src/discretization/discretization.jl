@@ -4,8 +4,7 @@
 struct KSEMatrices{ T<:Real, 
                     typeMatrix <: AbstractMatrix{<:Real}, 
                     typeVectorMatrix <: Vector{<:AbstractMatrix{<:Real}},
-                    typeHam <: AbstractArray{<:Real},
-                    typeExch}
+                    typeHam <: AbstractArray{<:Real}}
     # FEM MATRICES
     A::typeMatrix                   # Matrix of Qᵢ'Qⱼ'
     M₀::Matrix{T}                   # Matrix of QᵢQⱼ
@@ -45,7 +44,7 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, exc::Int)
     F           = Dict{Tuple{Int,Int,Int},T}()
     S           = zeros(T, Nₕ, Nₕ)
     # MATRICES COMPOSING THE HAMILTONIAN
-    H           = flexible_zeros(T, Nₕ, Nₕ, lₕ+1, exc)
+    H           = flexible_zeros(T, (Nₕ, Nₕ, lₕ+1), exc)
     Kin         = _spzeros(T, Nₕ, Nₕ, lₕ+1)
     Coulomb     = spzeros(T, Nₕ, Nₕ)
     Hfix        = _spzeros(T, Nₕ, Nₕ, lₕ+1)
@@ -58,9 +57,9 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, exc::Int)
     tmp_C           = zeros(T, Nₕ)
     tmp_vect        = zeros(T, Nₕ)
 
-    KSEMatrices{T, typeof(A), typeof(Hfix)}(A, M₀, M₋₁, M₋₂, F, S, 
+    KSEMatrices{T, typeof(A), typeof(Hfix), typeof(H)}(A, M₀, M₋₁, M₋₂, F, S, 
                                             H, Kin, Coulomb, Hfix, Hartree, VxcUP, VxcDOWN),  
-    DiscretisationCache{T}(tmp_MV, tmp_B, tmp_C, tmp_vect)
+    DiscretizationCache{T}(tmp_MV, tmp_B, tmp_C, tmp_vect)
 end
 
 
@@ -100,7 +99,7 @@ struct KSEDiscretization{T <: Real,
 end
 
 
-function init_cache!(discretization::KSEDiscretization, model::KSEModel, hartree::Real, integration_method::IntegrationMethod)
+function init_cache!(discretization::KSEDiscretization, model::KSEModel, integration_method::IntegrationMethod)
 
     @unpack lₕ, basis, matrices  = discretization
     @unpack A, M₀, M₋₁, M₋₂, F, S, Kin, Coulomb, Hfix = matrices
@@ -110,7 +109,7 @@ function init_cache!(discretization::KSEDiscretization, model::KSEModel, hartree
     fill_mass_matrix!(basis, M₀; method = integration_method)
     fill_mass_matrix!(basis, -1, M₋₁; method = integration_method)
     lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂; method = integration_method)
-    iszero(hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
+    iszero(model.hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
     S .= sqrt(inv(Symmetric(M₀)))
 
     # CREATION OF THE FIX PART OF THE HAMILTONIAN 
@@ -131,14 +130,14 @@ dim(discretization::KSEDiscretization) = discretization.Nₕ * (discretization.l
 multiplicity(::KSEDiscretization) = 2
 
 
-zero_density(kd::KSEDiscretization)                 = flexible_zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.exc)  
-zero_orbitals(kd::KSEDiscretization)                = flexible_zeros(kd.elT, kd.Nₕ, kd.nₕ, kd.lₕ+1, kd.exc)
-zero_orbitals_energy(kd::KSEDiscretization)         = flexible_zeros(kd.elT, kd.lₕ+1, kd.nₕ, kd.exc)
-zero_occupation_number(kd::KSEDiscretization)       = flexible_zeros(kd.elT, kd.lₕ+1, kd.nₕ, kd.exc)
-zero_density_matrix(kd::KSEDiscretization)          = flexible_zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.lₕ+1, kd.exc)
+zero_density(kd::KSEDiscretization)                 = flexible_zeros(eltype(kd), (kd.Nₕ, kd.Nₕ), kd.exc)  
+zero_orbitals(kd::KSEDiscretization)                = flexible_zeros(eltype(kd), (kd.Nₕ, kd.nₕ, kd.lₕ+1), kd.exc)
+zero_orbitals_energy(kd::KSEDiscretization)         = flexible_zeros(eltype(kd), (kd.lₕ+1, kd.nₕ), kd.exc)
+zero_occupation_number(kd::KSEDiscretization)       = flexible_zeros(eltype(kd), (kd.lₕ+1, kd.nₕ), kd.exc)
+zero_density_matrix(kd::KSEDiscretization)          = flexible_zeros(eltype(kd), (kd.Nₕ, kd.Nₕ, kd.lₕ+1), kd.exc)
 
 function zero_energies(kd::KSEDiscretization, model::KSEModel)
-    @unpack elT = kd
+    elT = eltype(kd)
     d = Dict(   :Etot => zero(elT),                                     # Total energy 
                 :Ekin => zero(elT),                                     # Kinetic energy
                 :Ecou => zero(elT),                                     # Coulomb energy
@@ -150,8 +149,8 @@ function zero_energies(kd::KSEDiscretization, model::KSEModel)
     d
 end
 
-zero_operator(kd::KSEDiscretization)        = zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.lₕ+1)
-zero_single_operator(kd::KSEDiscretization) = zeros(kd.elT, kd.Nₕ, kd.Nₕ)
+zero_operator(kd::KSEDiscretization)        = zeros(eltype(kd), kd.Nₕ, kd.Nₕ, kd.lₕ+1)
+zero_single_operator(kd::KSEDiscretization) = zeros(eltype(kd), kd.Nₕ, kd.Nₕ)
 
 
 #--------------------------------------------------------------------
@@ -162,7 +161,7 @@ function build_hamiltonian!(discretization::KSEDiscretization,
                             D::AbstractMatrix{<:Real}, 
                             hartree::Real = true)
 
-    @unpack H, Hfix, Hartree, Vxc = discretization.matrices
+    @unpack H, Hfix, Hartree, VxcUP = discretization.matrices
 
     # COMPUTE HARTREE MATRIX
     iszero(hartree) || hartree_matrix!(discretization, D, hartree)
@@ -199,8 +198,8 @@ function find_orbital!( discretization::KSEDiscretization,
         for l ∈ 0:lₕ
             @views vH = H[:,:,l+1,σ]
             λ, V = eigen(Symmetric(S*vH*S))
-            @views ϵ[l+1,:,σ] =  λ[1:n]
-            @views U[:,:,l+1,σ] = S*V[:,1:n]        
+            @views ϵ[l+1,:,σ] =  λ[1:nₕ]
+            @views U[:,:,l+1,σ] = S*V[:,1:nₕ]        
         end
     end
 end
