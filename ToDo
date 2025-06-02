@@ -1,34 +1,22 @@
 ## TO LOOK AT :
 
-- Mettre un exemple dans le readme
-
 - Ajouter du base.show à l'initialisation
 
-- Refaire marcher les scripts pour SlaterXalpha
+- A faire Marcher ensemble ::
+    - Refaire marcher les scripts pour SlaterXalpha
 
-- Refaire marche les scripts pour LSDA
+    - Refaire marche les scripts pour LSDA
+
+    - Utilisation de Libxc pour les méthodes d'échanges corrélations
+        --> voir comment faire pour 
 
 - Réparer le log
-
-- Refaire marcher les scripts
-
-- Mettre un exemple dans le readme
-
-- Utilisation de Libxc pour les méthodes d'échanges corrélations
-    --> voir comment faire pour 
 
 - Regarder pour les méthodes GGA
 
 - Résolution du problème linéaire, surtout pour la méthode quadratique
     --> LinSolve ?
 
-- Mieux organiser le code
---> Mettre chacune des méthodes dans des fichiers différents
-
-- Ajouter du base.show à l'initialisation
-
-
 
 ## PROBLEM
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
-
