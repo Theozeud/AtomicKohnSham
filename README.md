@@ -55,23 +55,26 @@ Here is one example on the hydrogen atom with the Reduced-Hartree Fock model.
 problem = AtomProblem(;
                 T               = Float64,                    # Data type for computations
                 model           = RHF(;z=1, N=1),             # Model : Reduced-Hartree Fock
-                                                              # with nuclear chare z=1  and N=1 electrons (= Hydrogen)
+                                                              # with nuclear chare z=1  and N=1 electrons
+                                                              # (= Hydrogen)
                 name            = "Hydrogen",                 # A custom name that you chan choose
                 
-                alg             = ODA(0.4),                   # SCF algorithm : Optimal Dampling with initial parameter equal to 0.4
+                alg             = ODA(0.4),                   # SCF algorithm : Optimal Dampling with initial
+                                                              # parameter equal to 0.4
                 scftol          = 1e-11,                      # Tolerance for the scf procedure
-                maxiter         = 60,                         # Maximum of iterations that will be done in any case :
-                                                              # If this number is reached, the algorithm stops regardless of convergence 
+                maxiter         = 60,                         # Maximum number of SCF iterations :
+                                                              # If this number is reached, the algorithm stops
+                                                              # regardless of convergence 
                 degen_tol       = 1e-2,                       # Tolerance to detect degeneracy between orbital energies
 
                 lh              = 0,                          # Angular momentum cutoff (ℓ ≤ lh)
                                                               # only the s-orbital is needed for the hydrogen atom
-                Rmax            = 100,                        # Spatial cut-off of the spatial domain for the radial part
+                Rmax            = 100,                        # Radial domain cutoff
                 Nmesh           = 10,                         # Number of points of the mesh
                 typemesh        = expmesh,                    # The mesh used is an exponential mesh
                 optsmesh        = (s = 1.5,),                 # Mesh parameters: here, s = 1.5
-                typebasis       = P1IntLegendreGenerator,     # The FEM Basis is composed of the integrated legendre polynomials with
-                                                              # the P1 elements
+                typebasis       = P1IntLegendreGenerator,     # The FEM Basis is composed of the integrated legendre 
+                                                              # polynomials with the P1 elements
                 optsbasis       = (ordermax = 20,),           # Polynomials up to order 20 are used
 
                 verbose         = 0)                          # Verbosity level: 0 = silent, 3 = maximum verbosity
