@@ -15,14 +15,19 @@ Currently supported functionalities:
   - Constant Damping Algorithm (CDA)
   - Optimal Damping Algorithm (ODA)
   - Quadratic damping schemes
+    
 - **Symmetry**:
   - Spherical symmetry reduction to radial equations
+    
 - **Finite Element Basis**:
   - Integrated Legendre polynomials (up to order 20)
+    
 - **Exchange–Correlation Functionals**:
     - LDA, LSDA (via Libxc.jl)
+      
 - **Mesh types**:
     - Linear, geometric, exponential
+      
 - **Floating-point precision**:
     - Float64, Double64 (quadruple precision via DoubleFloats.jl)
 
