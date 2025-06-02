@@ -1,5 +1,5 @@
 include("../../../../../benchmarktools/atoms/setup.jl")
-using KohnShamResolution
+using AtomicKohnSham
 
 # LOG CONFIG
 logconfig = LogConfig(orbitals_energy = true, occupation_number = true, energy = true)
@@ -8,21 +8,19 @@ using DoubleFloats
 
 problem = AtomProblem(;
                 T               = Float64, 
-                lh              = 0,
-                nh              = 1, 
-                method          = ODA(0.4), 
-                model           = ReducedHartreeFock(1, 1),  
-                Rmax            = 100, 
-                Nmesh           = 10,
+                lh              = 3,
+                nh              = 5, 
+                alg             = ODA(0.4), 
+                model           = RHF(;z=30, N=30),  
+                Rmax            = 1000, 
+                Nmesh           = 50,
                 typemesh        = expmesh, 
                 optsmesh        = (s = 1.5,), 
                 typebasis       = P1IntLegendreGenerator, 
                 optsbasis       = (ordermax = 20,), 
-                typediscre      = LDADiscretization,
                 name            = "test", 
                 scftol          = 1e-13,
                 maxiter         = 60,
-                hartree         = true,
                 degen_tol       = 1e-2,
                 logconfig       = logconfig,
                 verbose         = 1)

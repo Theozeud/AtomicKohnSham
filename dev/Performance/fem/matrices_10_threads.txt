@@ -1,0 +1,115 @@
+=====================================
+=====================================
+                FEM V3
+=====================================
+=====================================
+IntLeg2, Nmesh = 50
+basis
+  0.000192 seconds (304 allocations: 75.203 KiB)
+Number of basis function : 97
+A
+  0.000047 seconds (2 allocations: 112 bytes)
+M0
+  0.000064 seconds (2 allocations: 112 bytes)
+M₋₁
+  0.000194 seconds (110 allocations: 104.547 KiB)
+M₋₂
+  0.000219 seconds (209 allocations: 209.141 KiB)
+=====================================
+IntLeg5, Nmesh = 50
+basis
+  0.000747 seconds (726 allocations: 333.062 KiB)
+Number of basis function : 244
+A
+  0.000129 seconds (2 allocations: 112 bytes)
+M0
+  0.000131 seconds (2 allocations: 112 bytes)
+M₋₁
+  0.000704 seconds (542 allocations: 527.734 KiB)
+M₋₂
+  0.000763 seconds (1.04 k allocations: 1.036 MiB)
+=====================================
+IntLeg10, Nmesh = 300
+basis
+  0.149804 seconds (2.91 k allocations: 7.532 MiB)
+Number of basis function : 2989
+A
+  0.002417 seconds (2 allocations: 112 bytes)
+M0
+  0.002711 seconds (2 allocations: 112 bytes)
+M₋₁
+  0.014664 seconds (1.99 k allocations: 1.938 MiB)
+M₋₂
+  0.015502 seconds (3.84 k allocations: 3.950 MiB)
+=====================================
+IntLeg20, Nmesh = 500
+basis
+  5.623620 seconds (12.45 k allocations: 58.799 MiB)
+Number of basis function : 9979
+A
+  0.019863 seconds (2 allocations: 112 bytes)
+M0
+  0.020370 seconds (2 allocations: 112 bytes)
+M₋₁
+  0.148267 seconds (7.70 k allocations: 7.832 MiB)
+M₋₂
+  0.229578 seconds (15.00 k allocations: 16.428 MiB)
+
+
+
+=====================================
+=====================================
+                FEM V4
+=====================================
+=====================================
+IntLeg2, Nmesh = 50
+basis
+  0.000062 seconds (283 allocations: 50.625 KiB)
+Number of basis function : 97
+A
+  0.000023 seconds (3 allocations: 128 bytes)
+M0
+  0.000023 seconds (3 allocations: 128 bytes)
+M₋₁
+  0.000163 seconds (72 allocations: 3.734 KiB)
+M₋₂
+  0.000059 seconds (72 allocations: 3.625 KiB)
+=====================================
+IntLeg5, Nmesh = 50
+basis
+  0.000097 seconds (302 allocations: 162.734 KiB)
+Number of basis function : 244
+A
+  0.000058 seconds (3 allocations: 144 bytes)
+M0
+  0.000057 seconds (3 allocations: 160 bytes)
+M₋₁
+  0.000251 seconds (73 allocations: 7.453 KiB)
+M₋₂
+  0.000158 seconds (73 allocations: 7.156 KiB)
+=====================================
+IntLeg10, Nmesh = 300
+basis
+  0.000804 seconds (1.34 k allocations: 1.692 MiB)
+Number of basis function : 2989
+A
+  0.006310 seconds (3 allocations: 192 bytes)
+M0
+  0.005312 seconds (3 allocations: 192 bytes)
+M₋₁
+  0.006240 seconds (323 allocations: 39.391 KiB)
+M₋₂
+  0.006290 seconds (323 allocations: 38.453 KiB)
+=====================================
+IntLeg20, Nmesh = 500
+basis
+  0.003288 seconds (2.15 k allocations: 6.402 MiB)
+Number of basis function : 9979
+A
+  0.063085 seconds (3 allocations: 272 bytes)
+M0
+  0.062204 seconds (3 allocations: 272 bytes)
+M₋₁
+  0.070119 seconds (528 allocations: 182.188 KiB)
+M₋₂
+  0.066593 seconds (528 allocations: 178.625 KiB)

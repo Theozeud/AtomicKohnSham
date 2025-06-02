@@ -1,2 +1,15 @@
-{
+{"editor.tokenColorCustomizations": {
+  "textMateRules": [
+    {
+      "scope": [
+        "comment.line.number-sign.julia",
+        "comment.block.julia",
+        "punctuation.definition.comment.julia"
+      ],
+      "settings": {
+        "foreground": "#cc6600",
+        "fontStyle": "italic"
+      }
+    }
+  ]
 }

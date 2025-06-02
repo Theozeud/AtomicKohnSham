@@ -2,110 +2,129 @@
 #                               PRECOMPUTATIONS
 #####################################################################
 
-struct BasisPrecomputations{T <: Real}
-    productG::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
-    productdG::Dict{Tuple{Int,Int},LaurentPolynomial{T}}
-    product3G::Dict{Tuple{Int,Int,Int},LaurentPolynomial{T}}
-    function BasisPrecomputations(generators::AbstractGenerator{TG}, mesh::Mesh{TM}, invϕ::Vector{Tuple{Ts,Ts}}) where {TM,TG,Ts<:Real}
+struct BasisCache{  prodMType <: PolySet,
+                    prodTType <: PolySet,
+                    T <: Real}
+    prodMG::prodMType
+    prodMdG::prodMType
+    prodTG::prodTType
+    K::Matrix{T}                    # Local FEM Matrix
+    T::Array{T,3}                   # Local FEM Tensor
+    cacheM::Vector{T}
+    cacheT::Vector{T}
+    evalM::Matrix{T}
 
-        # SET THE TYPE OF DATAS
-        T = promote_type(TM,TG)
+    function BasisCache(generators::AbstractGenerator{TG}) where {TG}
 
         @unpack polynomials, derivpolynomials = generators
-        deg = 2*degmax(generators)+1
+        
+        # ALL PRODUCT PiPj
+        prodMG = pairwiseproduct(polynomials)
+        # ALL PRODUCT Pi'Pj'
+        prodMdG = pairwiseproduct(derivpolynomials)
+        # ALL PRODUCT PiPjPk
+        prodTG = mul(prodMG, polynomials)
 
+        # LOCAL MATRIX/TENSOR
+        K = zeros(TG, size(polynomials,1), size(polynomials,1))
+        T = zeros(TG, size(polynomials,1), size(polynomials,1), size(polynomials,1))
 
-        # PRECOMPUTE MONOM OVER DEG 1 && OVER DEG 2
-        #=
-        monom_overdeg1 = fill(zero(T), deg, length(mesh)-1) 
-        monom_overdeg2 = fill(zero(T), deg, length(mesh)-1)
-        @inbounds for i ∈ 1:length(mesh)-1
-            @inbounds for k ∈ 1:deg
-                monom_overdeg1[k,i] = _integration_monome_over_deg1(k-1, invϕ[i][1], invϕ[i][2], generators.binf, generators.bsup)
-                monom_overdeg2[k,i] = _integration_monome_over_deg2(k-1, invϕ[i][1], invϕ[i][2], generators.binf, generators.bsup)
-            end
-        end
-        =#
+        # CACHE
+        cacheM = zeros(TG, size(prodMG,2))
+        cacheT = zeros(TG, size(prodTG,2))
+        evalM  = zeros(TG,size(prodMG,1),100)
 
-        # PRECOMPUTE PRODUCT OF GENERATORS AND THEIR DERIVATIVES
-        productG = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
-        productdG = Dict{Tuple{Int,Int},LaurentPolynomial{T}}()
-        product3G = Dict{Tuple{Int,Int,Int},LaurentPolynomial{T}}()
-        @inbounds for i ∈ eachindex(generators)
-            @inbounds for j ∈ i:length(generators)
-                productG[(i,j)]     = polynomials[i] * polynomials[j]
-                productdG[(i,j)]    = derivpolynomials[i] * derivpolynomials[j]
-                @inbounds for k ∈ j:length(generators)
-                    product3G[(i,j,k)]    = productG[(i,j)] * polynomials[k]
-                end
-            end
-        end
-
-        new{T}(productG, productdG, product3G)
+        new{typeof(prodMG),
+            typeof(prodTG),
+            TG}(prodMG, 
+                prodMdG, 
+                prodTG,
+                K,
+                T,
+                cacheM,
+                cacheT,
+                evalM)
     end
 end
 
-#####################################################################
-#                           POLYNOMIAL BASIS
-#####################################################################
 
-struct PolynomialBasis{ T<:Real, 
+function getcache(cache::BasisCache, s::Symbol)
+    if s == :M
+        return cache.cacheM
+    elseif s == :Md
+        return @views cache.cacheM[1:end-1]
+    elseif s == :T
+        return cache.cacheT
+    end
+end
+
+
+"""
+    struct FEMBasis{T<:Real, 
+                           generatorsType <: AbstractGenerator, 
+                           meshType <: Mesh, 
+                           dictType <: Dict,
+                           cacheType <: BasisCache} <: Basis
+
+Represents a basis of polynomial functions defined over a 1D mesh. 
+The basis is constructed from a set of polynomial generators and adapted locally to each cell of the mesh.
+
+# Fields
+
+- `generators::generatorsType`  
+  Set of polynomial generators used to build the basis. These can be Legendre polynomials, monomials, or any other suitable family.
+
+- `mesh::meshType`  
+  The mesh over which the basis is defined. 
+
+- `size::Int`  
+  Total number of basis functions.
+
+- `indices_cells::dictType`  
+  Dictionary mapping each basis index to the cell(s) on which its support is nonzero.
+
+- `indices_generators::dictType`  
+  Dictionary mapping each basis index to the generator indices used to construct it.
+
+- `cells_to_indices::Dict{Int,Vector{Int}}`  
+  Inverse map: associates each cell with the indices of basis functions that are supported on it.
+
+- `cells_to_generator::Dict{Int,Vector{Int}}`  
+  Maps each cell to the generator indices used locally for constructing basis functions on that cell.
+
+- `shifts::Vector{Tuple{T,T}}`  
+  Translations applied to center each cell in a reference domain (e.g., mapping to a reference element).
+
+- `invshifts::Vector{Tuple{T,T}}`  
+  Inverse translations used to map from the reference cell back to the global coordinates.
+
+- `cache::cacheType`  
+  A cache structure used to store intermediate values for efficient computation.
+
+"""
+struct FEMBasis{ T<:Real, 
                         generatorsType <: AbstractGenerator, 
                         meshType <: Mesh, 
-                        dictType <: Dict} <: Basis
-    generators::generatorsType                          # Set of Polynomials used to generate the basis
-    mesh::meshType                                      # Mesh
-    size::Int                                           # Size of the basis
-    indices_cells::dictType                             # Dict index basis -> indices support
-    indices_generators::dictType                        # Dict index basis -> indices generators
-    cells_to_indices::Dict{Int,Vector{Int}}             # Dict index cells -> indices basis
-    normalisation::Vector{T}                            # Coefficients of normalisation
-    shifts::Vector{Tuple{T,T}}                          # Translation to each cells of the mesh
-    invshifts::Vector{Tuple{T,T}}                       # Inverse of the translation 
-    matrix_fill_indices::Vector{CartesianIndex{2}}      # Vector of indices filled in fem matrices
-    tensor_fill_indices::Vector{CartesianIndex{3}}      # Vector of indices filled in fem tensors
-    max_length_intersection::Tuple{Int,Int}             # Maximal number of common mesh two polynomials of the basis can share
-    precomputations::BasisPrecomputations{T}            # Structure which store computations used many times
+                        dictType <: Dict,
+                        cacheType <: BasisCache}
+    generators::generatorsType                         
+    mesh::meshType                                      
+    size::Int                                          
+    indices_cells::dictType                            
+    indices_generators::dictType                        
+    cells_to_indices::Dict{Int,Vector{Int}}             
+    cells_to_generators::Dict{Int,Vector{Int}}           
+    shifts::Vector{Tuple{T,T}}                          
+    invshifts::Vector{Tuple{T,T}}                       
+    cache::cacheType                                    
 
-    function PolynomialBasis(generators::AbstractGenerator, 
-                             mesh::Mesh, 
-                             size::Int, 
-                             indices_cells::Dict, 
-                             indices_generators::Dict,
-                             cells_to_indices::Dict{Int,Vector{Int}}, 
-                             normalisation::Vector{T}, 
-                             shifts::Vector{Tuple{T,T}}, 
-                             invshifts::Vector{Tuple{T,T}}, 
-                             matrix_fill_indices::Vector{CartesianIndex{2}}, 
-                             tensor_fill_indices::Vector{CartesianIndex{3}},
-                             max_length_intersection::Tuple{Int,Int},
-                             precomputations::BasisPrecomputations) where T <: Real
-        new{eltype(generators), 
-            typeof(generators), 
-            typeof(mesh),
-            typeof(indices_cells)}( generators, 
-                                    mesh, 
-                                    size, 
-                                    indices_cells, 
-                                    indices_generators, 
-                                    cells_to_indices, 
-                                    normalisation, 
-                                    shifts, 
-                                    invshifts, 
-                                    matrix_fill_indices, 
-                                    tensor_fill_indices,
-                                    max_length_intersection,
-                                    precomputations)
-    end
-
-    function PolynomialBasis(generators::AbstractGenerator, 
+    function FEMBasis(generators::AbstractGenerator, 
                              mesh::Mesh, 
                              size::Int, 
                              indices_cells::Dict, 
                              indices_generators::Dict, 
-                             cells_to_indices::Dict{Int,Vector{Int}}, 
-                             normalisation::Vector{<:Real},
-                             max_length_intersection::Tuple{Int,Int})
+                             cells_to_indices::Dict{Int,Vector{Int}},
+                             cells_to_generators::Dict{Int,Vector{Int}})
         
         T = eltype(generators)
         shifts    = Vector{Tuple{T,T}}(undef, length(mesh)-1)
@@ -115,58 +134,44 @@ struct PolynomialBasis{ T<:Real,
             invshifts[i] = shift(T, generators.binf, generators.bsup, mesh[i], mesh[i+1])
         end
         
-        matrix_fill_indices = CartesianIndex{2}[]
-        tensor_fill_indices = CartesianIndex{3}[]
-        I = fill(0,max_length_intersection[2])
-        @inbounds for i in 1:size
-            @inbounds for j in i:size
-                if !isdisjoint(indices_cells[i], indices_cells[j])
-                    push!(matrix_fill_indices, CartesianIndex(i, j))
-                    count = find_intersection!(I, indices_cells[i], indices_cells[j])
-                    @views Iv = I[1:count]
-                    @inbounds for k ∈ j:size
-                        if !isdisjoint(Iv, indices_cells[k])
-                            push!(tensor_fill_indices, CartesianIndex(i, j, k))
-                        end
-                    end
-                else
-                    break
-                end
-            end
-        end 
-        
-        precomputations = BasisPrecomputations(generators, mesh, invshifts)
+        cache = BasisCache(generators)
 
         new{eltype(generators), 
             typeof(generators),
             typeof(mesh),
-            typeof(indices_cells)}( generators, 
-                                    mesh, 
-                                    size, 
-                                    indices_cells, 
-                                    indices_generators, 
-                                    cells_to_indices, 
-                                    normalisation, 
-                                    shifts, 
-                                    invshifts, 
-                                    matrix_fill_indices, 
-                                    tensor_fill_indices,
-                                    max_length_intersection,
-                                    precomputations)
+            typeof(indices_cells),
+            typeof(cache)}( generators, 
+                            mesh, 
+                            size, 
+                            indices_cells, 
+                            indices_generators, 
+                            cells_to_indices, 
+                            cells_to_generators,
+                            shifts, 
+                            invshifts, 
+                            cache)
     end
 end
 
-@inline Base.eltype(::PolynomialBasis{T, TB, TM}) where {T,TB,TM} = T
+@inline Base.eltype(::FEMBasis{T}) where {T} = T
+@inline Base.length(pb::FEMBasis) = pb.size
+@inline Base.eachindex(pb::FEMBasis) = 1:pb.size
 
-@inline Base.length(pb::PolynomialBasis) = pb.size
-@inline Base.eachindex(pb::PolynomialBasis) = 1:pb.size
+@inline getgenerator(pb::FEMBasis, i::Int, j::Int) = getpolynomial(pb.generators, pb.indices_generators[i][j])
+@inline getderivgenerator(pb::FEMBasis, i::Int, j::Int)= getderivpolynomial(pb.generators, pb.indices_generators[i][j])
+@inline getshift(pb::FEMBasis, i::Int, j::Int) = pb.shifts[pb.indices_cells[i][j]]
+@inline getinvshift(pb::FEMBasis, i::Int, j::Int) = pb.invshifts[pb.indices_cells[i][j]]
+@inline getmesh(pb::FEMBasis,i::Int, j::Int) = (pb.mesh[pb.indices_cells[i][j]], pb.mesh[pb.indices_cells[i][j]]+1)
 
-@inline getgenerator(pb::PolynomialBasis, i::Int, j::Int) = getpolynomial(pb.generators, pb.indices_generators[i][j])
-@inline getderivgenerator(pb::PolynomialBasis, i::Int, j::Int)= getderivpolynomial(pb.generators, pb.indices_generators[i][j])
-@inline getnormalization(pb::PolynomialBasis, i::Int) = pb.normalisation[i]
-@inline getshift(pb::PolynomialBasis, i::Int, j::Int) = pb.shifts[pb.indices_cells[i][j]]
-@inline getinvshift(pb::PolynomialBasis, i::Int, j::Int) = pb.invshifts[pb.indices_cells[i][j]]
-@inline getmesh(pb::PolynomialBasis,i::Int, j::Int) = (pb.mesh[pb.indices_cells[i][j]], pb.mesh[pb.indices_cells[i][j]]+1)
+
+function Base.show(io::IO, basis::FEMBasis)
+    println(io, "FEMBasis with $(basis.size) functions")
+    println(io, "  Mesh type:        $(typeof(basis.mesh))")
+    println(io, "  Generators type:  $(typeof(basis.generators))")
+    println(io, "  Cells:            $(length(basis.shifts)) total")
+    println(io, "  Caching:          $(typeof(basis.cache))")
+end
+
 
 @inline function shift(T::Type, a::Real, b::Real, mᵢ::Real, mᵢ₊₁::Real)
     # Linear function that maps [a,b] to [mᵢ, mᵢ₊₁]
@@ -176,53 +181,38 @@ end
 end
 
 
-function getprod(pb::PolynomialBasis, i::Int, j::Int)
-    if i ≤ j
-        return pb.precomputations.productG[(i,j)]
-    else
-        return pb.precomputations.productG[(j,i)]
-    end
-end
-
-
-function sort_triplet(a::Int, b::Int, c::Int)::Tuple{Int, Int, Int}
-    if a ≤ b
-        if b ≤ c
-            return (a, b, c)
-        elseif a ≤ c
-            return (a, c, b)
-        else
-            return (c, a, b)
-        end
-    else
-        if a ≤ c
-            return (b, a, c)
-        elseif b ≤ c
-            return (b, c, a)
-        else
-            return (c, b, a)
-        end
-    end
-end
-
-
-function getprod(pb::PolynomialBasis, i::Int, j::Int, k::Int)
-    (a,b,c) = sort_triplet(i,j,k)
-    return pb.precomputations.product3G[(a,b,c)]
-end
-
-function getdprod(pb::PolynomialBasis, i::Int, j::Int)
-    if i ≤ j
-        return pb.precomputations.productdG[(i,j)]
-    else
-        return pb.precomputations.productdG[(j,i)]
-    end
+function getelement(pb::FEMBasis, k::Int, s::Symbol)
+    @unpack generators, mesh, shifts, invshifts = pb
+    ElementData(shifts[k], 
+                invshifts[k], 
+                mesh[k], 
+                mesh[k+1], 
+                generators.binf, 
+                generators.bsup,
+                s)
 end
 
 #####################################################################
 #                          EVALUATION TOOLS
 #####################################################################
-function (pb::PolynomialBasis)(i::Int, x::T) where T
+function (pb::FEMBasis)(I::AbstractVector{<:Int}, X::AbstractVector{T}) where T
+    NewT = promote_type(eltype(pb), T)
+    evaluations = zeros(NewT, length(I), length(X))
+    evaluate!(evaluations, pb, I, X)
+    evaluations
+end
+
+function evaluate!( evaluations::AbstractVecOrMat, 
+                    pb::FEMBasis, 
+                    I::AbstractVector{<:Int}, 
+                    X::AbstractVector{T}) where T
+
+    
+
+end
+
+
+function (pb::FEMBasis)(i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
     if isnothing(j)
@@ -233,11 +223,10 @@ function (pb::PolynomialBasis)(i::Int, x::T) where T
     ϕ = getshift(pb, i, j)
     ϕx = ϕ[1]*x + ϕ[2]
     y = P(ϕx)
-    y *= getnormalization(pb, i)
     return y
 end
 
-function (pb::PolynomialBasis)(coeffs::AbstractVector, x::T) where T
+function (pb::FEMBasis)(coeffs::AbstractVector, x::T) where T
     @assert length(coeffs) == pb.size
     newT = promote_type(eltype(pb),T)
     y = zero(newT)
@@ -248,7 +237,7 @@ function (pb::PolynomialBasis)(coeffs::AbstractVector, x::T) where T
     y
 end
 
-function eval_derivative(pb::PolynomialBasis, i::Int, x::T) where T
+function eval_derivative(pb::FEMBasis, i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
     if isnothing(j)
@@ -259,6 +248,5 @@ function eval_derivative(pb::PolynomialBasis, i::Int, x::T) where T
     ϕ = getshift(pb, i, j)
     ϕx = ϕ[1]*x + ϕ[2]
     y = P(ϕx)
-    y *= getnormalization(pb, i)
     return y
 end

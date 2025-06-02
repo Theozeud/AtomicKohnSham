@@ -1,78 +1,91 @@
+#--------------------------------------------------------------------
+#                           GROUNDSTATE
+#--------------------------------------------------------------------
+"""
+    groundstate(model::KSEModel, 
+                discretization::KSEDiscretization, 
+                method::SCFAlgorithm; 
+                name::String = "", kwargs...) -> KSESolution
 
-#  MAIN FUNCTION : GROUNDSTATE 
-function groundstate(model::AbstractDFTModel, 
-                     discretization::KohnShamDiscretization, 
-                     method::SCFMethod; 
+Computes the ground state solution of a Kohn–Sham model using a specified discretization and SCF method.
+
+This function creates a `KSESolver` object with the given model, discretization, and method, then solves the nonlinear eigenvalue problem via `solve!`. The result is returned as a `KSESolution` object.
+
+# Arguments
+- `model::KSEModel`: The Kohn–Sham extended model.
+- `discretization::KSEDiscretization`: Discretization of the radial Kohn–Sham equations.
+- `method::SCFAlgorithm`: Self-consistent field (SCF) method to solve the nonlinear problem (e.g., `ODA()`, `Quadratic()`).
+- `name::String` (optional): Name for the simulation, stored in the output.
+- `kwargs`: Additional keyword arguments forwarded to `KSESolver`.
+
+# Returns
+- `KSESolution`: The computed ground state, including orbitals, energies, density, etc.
+"""
+function groundstate(model::KSEModel, 
+                     discretization::KSEDiscretization, 
+                     alg::SCFAlgorithm; 
                      name::String = "", kwargs...)
-    solver = init(model, discretization, method; kwargs...)
+    solver = KSESolver(model, discretization, alg; kwargs...)
     solve!(solver)
-    makesolution(solver, name)
+    KSESolution(solver, name)
 end
 
-groundstate(problem::DFTProblem; kwargs...) =  groundstate(model(problem), discretization(problem), method(problem); kwargs...)
+
+"""
+    groundstate(prob::AtomProblem) -> KSESolution
+
+Convenience function to compute the ground state from an `AtomProblem`.
+
+This function constructs the mesh, basis, and discretization from the problem specification, then calls `groundstate` with the appropriate arguments.
+
+# Arguments
+- `prob::AtomProblem`: A fully specified atomic problem including model, mesh and basis types, SCF method, cutoffs, and solver options.
+
+# Returns
+- `KSESolution`: The computed ground state solution for the atomic system.
+"""
+function groundstate(prob::AtomProblem)
+    T = datatype(prob)
+    typemesh = prob.typemesh
+    typebasis = prob.typebasis
+    mesh = typemesh(zero(T), prob.Rmax, prob.Nmesh; T = T, prob.optsmesh...)
+    basis = typebasis(mesh, T; prob.optsbasis...)
+    discretization = KSEDiscretization(prob.lh, basis, mesh, typeexc(prob.model), prob.nh)
+    groundstate(prob.model, discretization, prob.alg; name = prob.name, prob.solveropts...)
+end
+
+
+#--------------------------------------------------------------------
+#                           GROUNDSTATE STEPS
+#--------------------------------------------------------------------
+##
+# QUESTION :
+#               solver.cache et solver.alg pour dispatcher ??
+#                method devrait être suffisant
+##
+
 
 #  SOLVE
-function solve!(solver::KohnShamSolver)
+function solve!(solver::KSESolver)
     while (solver.stopping_criteria > solver.opts.scftol || iszero(solver.niter)) && solver.niter < solver.opts.maxiter
         loopheader!(solver)
-        performstep!(solver.cache, solver.method, solver)
+        performstep!(solver.cache, solver.alg, solver)
         loopfooter!(solver)
         monitor(solver)
     end
 end
 
-# INITALIZATION
-function init(  model::AbstractDFTModel, discretization::KohnShamDiscretization, method::SCFMethod; 
-                scftol::Real, 
-                maxiter::Int = 100,
-                exc_integration_method::IntegrationMethod = ExactIntegration(),
-                fem_integration_method::IntegrationMethod = ExactIntegration(),
-                hartree::Real = 1, 
-                degen_tol::Real = eps(eltype(discretization.basis)),
-                logconfig = LogConfig(),
-                verbose::Int = 3)
-
-    # Set the data type as the one of the discretization basis
-    T = discretization.elT
-
-    # Init Cache of the Discretisation
-    init_cache!(discretization, model, hartree, fem_integration_method)
-
-    # Init Cache of the Method
-    cache = create_cache_method(method, discretization)
-
-    # Init Energies 
-    energies = init_energies(discretization, model)
-      
-    #  SolverOptions
-    opts = SolverOptions(T(scftol), 
-                         maxiter, 
-                         exc_integration_method, 
-                         fem_integration_method, 
-                         T(hartree), 
-                         T(degen_tol),
-                         UInt8(verbose))
-
-    # Init log parameters
-    niter = 0
-    stopping_criteria = zero(T)
-    
-    logbook = LogBook(logconfig, T)
-    
-    KohnShamSolver(niter, stopping_criteria, discretization, model, method, cache, opts, energies, logbook)
-end
-
 
 # LOOPHEADER
-function loopheader!(solver::KohnShamSolver)
+function loopheader!(solver::KSESolver)
     # LOOPHEADER SPECIFIC FOR THE METHOD 
-    loopheader!(solver.cache, solver.method, solver)
+    loopheader!(solver.cache, solver.alg, solver)
     nothing                                         
 end 
 
 
 # LOOPFOOTER
-function loopfooter!(solver::KohnShamSolver)
+function loopfooter!(solver::KSESolver)
     # INCREASE THE NUMBER OF ITERATIONS DONE
     solver.niter += 1
 
@@ -83,37 +96,36 @@ function loopfooter!(solver::KohnShamSolver)
     register!(solver)     
     
     # LOOPFOOTER SPECIFIC FOR THE METHOD
-    loopfooter!(solver.cache, solver.method, solver) 
+    loopfooter!(solver.cache, solver.alg, solver) 
     nothing                                            
 end 
 
 
 # MONITOR : DISPLAY CURRENT STATE OF SOLVER
-function monitor(solver::KohnShamSolver)
+function monitor(solver::KSESolver)
     if solver.opts.verbose > 0
         println("--------------------------")
         println("Iteration : $(solver.niter)")
     end
     if solver.opts.verbose > 1
-        println("Selected Method : $(name(solver.method))")
+        println("Selected Method : $(name(solver.alg))")
         println("Stopping criteria: $(solver.stopping_criteria)")
         println("Total Energy: $(solver.energies[:Etot])")
     end
     if solver.opts.verbose > 2
-        monitor(solver.cache, solver.method, solver)
+        monitor(solver.cache, solver.alg, solver)
     end
 end
 
 
 # COMPUTE THE STOPPING CRITERIA
-function stopping_criteria!(solver::KohnShamSolver)
-    solver.stopping_criteria =  stopping_criteria!(solver.cache, solver.method, solver)
+function stopping_criteria!(solver::KSESolver)
+    solver.stopping_criteria =  stopping_criteria!(solver.cache, solver.alg, solver)
 end
     
 
-
 # UPDATE THE LOG : STORE INTERMEDIATE STATE
-function register!(solver::KohnShamSolver)
+function register!(solver::KSESolver)
     @unpack logbook = solver
     @unpack occupation_number, orbitals_energy, stopping_criteria, energy, density = logbook.config
 
@@ -124,13 +136,5 @@ function register!(solver::KohnShamSolver)
     !energy || push!(solver.logbook.energy_log, solver.energies[:Etot])
 
     # REGISTER DATA SPECIFIC TO THE METHODS
-    register!(solver.cache, solver.method, solver)
-end
-
-
-
-# MAKE THE SOLUTION
-function makesolution(solver::KohnShamSolver, name::String)
-    datas = makesolution(solver.cache, solver.method, solver)
-    KohnShamSolution(solver, name, datas)
+    #register!(solver.cache, solver.alg, solver)
 end

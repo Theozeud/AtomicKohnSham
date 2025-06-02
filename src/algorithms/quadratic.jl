@@ -2,7 +2,7 @@
 #                          Quadratic Method
 #####################################################################
 
-struct Quadratic{typeMethod, typeOpts<:NamedTuple} <: SCFMethod 
+struct Quadratic{typeMethod, typeOpts<:NamedTuple} <: SCFAlgorithm
     method::typeMethod  # Method  to solve the linear system
     opts::typeOpts      # Options to solve the linear system
 end
@@ -91,7 +91,7 @@ end
 #                        Initialization
 #####################################################################
 
-function create_cache_method(::Quadratic, discretization::KohnShamDiscretization,
+function create_cache_alg(::Quadratic, discretization::KohnShamDiscretization,
                                 rcacache::RCACache)
 
     @unpack n = rcacache

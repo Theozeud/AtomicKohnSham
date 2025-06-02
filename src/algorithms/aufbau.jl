@@ -1,12 +1,13 @@
 # RETURN THE MAXIMAL NUMBER OF ELECTRONS THAT CAN BE PUT AT THE LAYER CORRESPONDING TO THE INDEX idx
 
-function convert_index(discretization::LDADiscretization, idx::Int)
+function convert_index(discretization::KSEDiscretization, idx::Int)
     @unpack lₕ  = discretization
     l = rem(idx - 1, lₕ+1)
     k = div(idx-1,lₕ+1)+1
     return (l,k)
 end
 
+#=
 function convert_index(discretization::LSDADiscretization, idx::Int)
     @unpack lₕ, nₕ  = discretization
     σ       = div(idx-1, (lₕ+1)*nₕ)+1
@@ -15,23 +16,25 @@ function convert_index(discretization::LSDADiscretization, idx::Int)
     k = div(idxσ,lₕ+1)+1
     return (l,k,σ)
 end
-
-function degeneracy(discretization::LDADiscretization, idx::Int)
-    l,_ = convert_index(discretization::LDADiscretization, idx)
+=#
+function degeneracy(discretization::KSEDiscretization, idx::Int)
+    l,_ = convert_index(discretization::KSEDiscretization, idx)
     return 4 * l + 2
 end
 
+#=
 function degeneracy(discretization::LSDADiscretization, idx::Int)
     l,_ = convert_index(discretization, idx)
     return 2 * l + 1
 end
+=#
 
 #####################################################################
 #                        AUFBAU PRINCIPLE
 #####################################################################
 
 
-function aufbau!(cache::RCACache, solver::KohnShamSolver)
+function aufbau!(cache::RCACache, solver::KSESolver)
 
     @unpack model, discretization, opts, energies = solver
     @unpack U, ϵ, n, Noccup, D, tmpD, tmpD2, index_aufbau, energies_prev = cache

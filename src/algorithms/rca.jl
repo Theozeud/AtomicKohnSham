@@ -2,7 +2,7 @@
 #                          RCA METHOD
 #####################################################################
 
-abstract type RCAMethod <: SCFMethod end
+abstract type RCAAlgorithm <: SCFAlgorithm end
 
 #####################################################################
 #                          RCA CACHE
@@ -38,16 +38,16 @@ mutable struct RCACache{dataType <: Real,
     energies_prev::Dict{Symbol,dataType}        # Energies at previous time                                         
 end
 
-function create_cache_method(method::RCAMethod, discretization::KohnShamDiscretization)
-    @unpack elT = discretization
-    t                   = elT(method.t)
-    D                   = init_density(discretization)
-    Dprev               = init_density(discretization)
-    tmpD                = init_density(discretization)
-    tmpD2               = init_density(discretization)
-    U                   = init_orbitals(discretization)
-    ϵ                   = init_orbitals_energy(discretization)
-    n                   = init_occupation_number(discretization)
+function create_cache_alg(alg::RCAAlgorithm, discretization::KSEDiscretization)
+    elT = eltype(discretization)
+    t                   = elT(alg.t)
+    D                   = zero_density(discretization)
+    Dprev               = zero_density(discretization)
+    tmpD                = zero_density(discretization)
+    tmpD2               = zero_density(discretization)
+    U                   = zero_orbitals(discretization)
+    ϵ                   = zero_orbitals_energy(discretization)
+    n                   = zero_occupation_number(discretization)
     Noccup              = zeros(Int,3)
     tdegen              = zero(elT)
     index_aufbau        = zeros(Int, length(ϵ))
@@ -79,7 +79,7 @@ struct RCASolution{ densityType <: AbstractArray,
     Noccup::Vector{Int}                                         # Triplet (Nf,Np,Nv)
 end
 
-function makesolution(cache::RCACache, ::RCAMethod, solver::KohnShamSolver)
+function makesolution(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
     occupation = make_occupation_number(solver.discretization, cache)
     RCASolution{typeof(cache.D), typeof(cache.U), typeof(cache.ϵ), typeof(occupation)}(cache.D, cache.U, cache.ϵ, occupation, cache.Noccup)
 end
@@ -87,32 +87,29 @@ end
 
 # Make occupation number
 
-function make_occupation_number(::LDADiscretization, cache::RCACache)
+function make_occupation_number(kd::KSEDiscretization, cache::RCACache)
     @unpack ϵ, n = cache
     index = findall(x->x ≠ 0, n)
     index_sort = sortperm(ϵ[index])
     new_index = index[index_sort]
-    return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]]), ϵ[i], n[i]) for i ∈ new_index]
+    if kd.exc == 1
+        return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]]), ϵ[i], n[i]) for i ∈ new_index]
+    elseif kd.exc == 2
+        return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]],SPIN_LABELS[i[3]]), ϵ[i], n[i]) for i ∈ new_index]
+    end
 end
 
-function make_occupation_number(::LSDADiscretization, cache::RCACache)
-    @unpack ϵ, n = cache
-    index = findall(x->x ≠ 0, n)
-    index_sort = sortperm(ϵ[index])
-    new_index = index[index_sort]
-    return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]],SPIN_LABELS[i[3]]), ϵ[i], n[i]) for i ∈ new_index]
-end
 
 #####################################################################
 #                          RCA STEPS
 #####################################################################
 
 
-function stopping_criteria!(cache::RCACache, ::RCAMethod, solver::KohnShamSolver)
+function stopping_criteria!(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
     norm(cache.D - cache.Dprev) + abs(solver.energies[:Etot] - cache.energies_prev[:Etot])
 end
 
-function loopheader!(cache::RCACache, ::RCAMethod, solver::KohnShamSolver)
+function loopheader!(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
     @unpack energies = solver
     @unpack energies_prev, Dprev, D = cache
     cache.Dprev            .= cache.D
@@ -124,13 +121,13 @@ function loopheader!(cache::RCACache, ::RCAMethod, solver::KohnShamSolver)
 end
 
 
-function performstep!(cache::RCACache, method::RCAMethod, solver::KohnShamSolver)
+function performstep!(cache::RCACache, method::RCAAlgorithm, solver::KSESolver)
 
     @unpack discretization, model, opts, energies = solver
     @unpack D, Dprev, U, ϵ, n = cache
     
     # STEP 1 : PREPARE THE EIGENVALUE PROBLEM
-    prepare_eigenvalue_problem!(discretization, model, Dprev, opts.hartree)
+    build_hamiltonian!(discretization, model, Dprev, model.hartree)
 
     # STEP 2 : FIND ORBITALS AND CORRESPONFING ENERGIES
     find_orbital!(discretization, U, ϵ)
@@ -159,9 +156,9 @@ function performstep!(cache::RCACache, method::RCAMethod, solver::KohnShamSolver
 end
 
 
-function loopfooter!(::RCACache, ::RCAMethod, ::KohnShamSolver) end
+function loopfooter!(::RCACache, ::RCAAlgorithm, ::KSESolver) end
 
-function monitor(cache::RCACache, ::RCAMethod, ::KohnShamSolver)
+function monitor(cache::RCACache, ::RCAAlgorithm, ::KSESolver)
     println("Relaxed Parameter : $(cache.t)")
     println("degeneracy ? : $(cache.flag_degen)")
     if cache.flag_degen
@@ -173,7 +170,7 @@ end
 #                   CONSTANT DAMPLING ALGORITHM
 #####################################################################
 
-struct CDA{T} <: RCAMethod
+struct CDA{T} <: RCAAlgorithm
     t::T
     function CDA(t::Real)
         @assert 0 ≤ t ≤ 1
@@ -183,7 +180,7 @@ end
 
 name(::CDA) = "CDA" 
 
-function update_density!(cache::RCACache, ::CDA, solver::KohnShamSolver)
+function update_density!(cache::RCACache, ::CDA, solver::KSESolver)
     @unpack t, D, Dprev, energies_prev = cache
     @unpack energies, discretization, model = solver
 
@@ -210,7 +207,7 @@ end
 #                   OPTIMAL DAMPLING ALGORITHM
 #####################################################################
 
-struct ODA{T<:Real} <: RCAMethod 
+struct ODA{T<:Real} <: RCAAlgorithm
     t::T
     iter::Int
     function ODA(t::Real, iter::Int = 1)
@@ -220,7 +217,7 @@ end
 
 name(::ODA) = "ODA" 
 
-function update_density!(cache::RCACache, m::ODA, solver::KohnShamSolver)
+function update_density!(cache::RCACache, m::ODA, solver::KSESolver)
 
     @unpack D, Dprev, tmpD, energies_prev= cache
     @unpack discretization, model, energies = solver

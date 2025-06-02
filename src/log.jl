@@ -1,3 +1,6 @@
+#--------------------------------------------------------------------
+#                               LogConfig
+#--------------------------------------------------------------------
 struct LogConfig
     occupation_number::Bool
     orbitals_energy::Bool
@@ -10,6 +13,20 @@ struct LogConfig
     end
 end
 
+
+function Base.show(io::IO, lc::LogConfig)
+    println(io, "LogConfig:")
+    println(io, "  occupation_number  = ", lc.occupation_number)
+    println(io, "  orbitals_energy    = ", lc.orbitals_energy)
+    println(io, "  stopping_criteria  = ", lc.stopping_criteria)
+    println(io, "  energy             = ", lc.energy)
+    println(io, "  density            = ", lc.density)
+end
+
+
+#--------------------------------------------------------------------
+#                               LogBook
+#--------------------------------------------------------------------
 struct LogBook
     config::LogConfig
     occupation_number_log
