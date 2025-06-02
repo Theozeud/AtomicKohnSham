@@ -30,6 +30,7 @@ Currently supported functionalities:
 Based on our experiments, the following setup provides excellent results:
 - Use an exponential mesh with a parameter between 1 and 2.
 - Combine it with the Integrated Legendre polynomial basis of order up to 20.
+  
 This combination offers a good balance between numerical accuracy and computational efficiency.
 
 ## Notes :
