@@ -45,6 +45,7 @@ This combination offers a good balance between numerical accuracy and computatio
 ## Notes :
 - Currently, only one FEM basis has been implemented. However, adding a new one is straightforward, as all FEM matrix assemblies are handled automatically
 
+
 - Higer precision should works but this has not been thoroughly tested.
 
 ## Examples 
