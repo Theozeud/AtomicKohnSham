@@ -1,7 +1,14 @@
 ## TO LOOK AT :
 
-- Unifier LDA et LDSA en une seule structure 
-    --> identifier les abstractions à faire
+- Mettre un exemple dans le readme
+
+- Ajouter du base.show à l'initialisation
+
+- Refaire marcher les scripts pour SlaterXalpha
+
+- Refaire marche les scripts pour LSDA
+
+- Réparer le log
 
 - Refaire marcher les scripts
 
