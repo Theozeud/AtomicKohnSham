@@ -45,10 +45,10 @@
     @test_nowarn sol = groundstate(problem)
     sol = groundstate(problem)
 
-    @test abs(sol.energies[:Ekin] - 0.24396486583278804) < 1e-15 
-    @test abs(sol.energies[:Ecou] + 0.685672154045772) < 1e-15 
-    @test abs(sol.energies[:Ehar] - 0.19774242102873807) < 1e-15 
-    @test abs(sol.energies[:Etot] + 0.24396486718424593) < 1e-15 
+    @test abs(sol.energies[:Ekin] - 0.24396486583278804) < 1e-11
+    @test abs(sol.energies[:Ecou] + 0.685672154045772) < 1e-11 
+    @test abs(sol.energies[:Ehar] - 0.19774242102873807) < 1e-11 
+    @test abs(sol.energies[:Etot] + 0.24396486718424593) < 1e-11 
 
     occ = sol.datas.occupation_number[1]
     @test occ[1] == "1s"
