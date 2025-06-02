@@ -4,6 +4,9 @@
 
 abstract type ExchangeCorrelation end
 
+abstract type LDA <: ExchangeCorrelation end
+abstract type LSDA <: ExchangeCorrelation end
+
 struct NoExchangeCorrelation <: ExchangeCorrelation end
 
 exc(::NoExchangeCorrelation, rho) = zero(rho)
@@ -16,7 +19,7 @@ isthereExchangeCorrelation(::NoExchangeCorrelation) = false
 #                            SlaterXα
 #####################################################################
 
-struct SlaterXα <: ExchangeCorrelation end
+struct SlaterXα <: LDA end
 
 exc(::SlaterXα, rho::Real) = - 3/4 * (3/π)^(1/3) * rho^(4/3)
 vxc(::SlaterXα, rho::Real) = - (3/π)^(1/3) * rho^(1/3)
@@ -29,15 +32,15 @@ vxcDOWN(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real)  = 0.5 *vxc(xa,rhoDOWN)
 #                           Perdew-Wang 92
 #####################################################################
 
-struct LSDA <: ExchangeCorrelation end
+struct PW91 <: LSDA end
 
-exc(lsda::LSDA, rhoUP::Real, rhoDOWN::Real) = ex(lsda, rhoUP,rhoDOWN) + ec(lsda, rhoUP,rhoDOWN)
-vxcUP(lsda::LSDA, rhoUP::Real, rhoDOWN::Real) = vxUP(lsda, rhoUP) + vcUP(lsda, rhoUP, rhoDOWN)
-vxcDOWN(lsda::LSDA, rhoUP::Real, rhoDOWN::Real) = vxDOWN(lsda, rhoDOWN) + vcDOWN(lsda, rhoUP, rhoDOWN)
+exc(lsda::PW91, rhoUP::Real, rhoDOWN::Real) = ex(lsda, rhoUP,rhoDOWN) + ec(lsda, rhoUP,rhoDOWN)
+vxcUP(lsda::PW91, rhoUP::Real, rhoDOWN::Real) = vxUP(lsda, rhoUP) + vcUP(lsda, rhoUP, rhoDOWN)
+vxcDOWN(lsda::PW91, rhoUP::Real, rhoDOWN::Real) = vxDOWN(lsda, rhoDOWN) + vcDOWN(lsda, rhoUP, rhoDOWN)
 
-ex(::LSDA, rhoUP::Real,rhoDOWN::Real) =  -3/4 * (6/π)^(1/3) * (rhoUP^(4/3) + rhoDOWN^(4/3))
-vxUP(::LSDA, rhoUP::Real) = -(6/π * rhoUP )^(1/3)
-vxDOWN(::LSDA, rhoDOWN::Real) = -(6/π * rhoDOWN )^(1/3)
+ex(::PW91, rhoUP::Real,rhoDOWN::Real) =  -3/4 * (6/π)^(1/3) * (rhoUP^(4/3) + rhoDOWN^(4/3))
+vxUP(::PW91, rhoUP::Real) = -(6/π * rhoUP )^(1/3)
+vxDOWN(::PW91, rhoDOWN::Real) = -(6/π * rhoDOWN )^(1/3)
 
 @inline _rho(rhoUP::Real, rhoDOWN::Real) = rhoDOWN + rhoUP
 @inline relative_spin_polarization(rhoUP::Real, rhoDOWN::Real, rho) = (rhoUP - rhoDOWN)/rho
@@ -51,13 +54,13 @@ end
 
 function εcPW(rs::Real, ξ::Real)
     if abs(ξ) < eps(ξ)
-        @views view_params1 = LSDA_CORRELATION_PARAMETERS[:,1]
+        @views view_params1 = PW91_CORRELATION_PARAMETERS[:,1]
         εcPW0 =  G(rs, view_params1...)     # Correlation energy densioty for ξ = 0
         return εcPW0
     else
-        @views view_params1 = LSDA_CORRELATION_PARAMETERS[:,1]
-        @views view_params2 = LSDA_CORRELATION_PARAMETERS[:,2]
-        @views view_params3 = LSDA_CORRELATION_PARAMETERS[:,3]
+        @views view_params1 = PW91_CORRELATION_PARAMETERS[:,1]
+        @views view_params2 = PW91_CORRELATION_PARAMETERS[:,2]
+        @views view_params3 = PW91_CORRELATION_PARAMETERS[:,3]
         εcPW0 =  G(rs, view_params1...)    # Correlation energy densioty for ξ = 0
         εcPW1 =  G(rs, view_params2...)     # Correlation energy densioty for ξ = 1
         αc    = -G(rs, view_params3...)     # Spin stiffness
@@ -67,7 +70,7 @@ function εcPW(rs::Real, ξ::Real)
     end
 end
 
-function ec(::LSDA, rhoUP::Real, rhoDOWN::Real)
+function ec(::PW91, rhoUP::Real, rhoDOWN::Real)
     rho = _rho(rhoUP, rhoDOWN)                                 # Density
     ξ   = relative_spin_polarization(rhoUP, rhoDOWN, rho)      # Relative spin polarization
     rs  = density_parameter(rho)                               # Density parameter
@@ -75,15 +78,15 @@ function ec(::LSDA, rhoUP::Real, rhoDOWN::Real)
 end
 
 
-function vcUP(lsda::LSDA, rhoUP::Real, rhoDOWN::Real)
+function vcUP(lsda::PW91, rhoUP::Real, rhoDOWN::Real)
     _vc(lsda, rhoUP, rhoDOWN, 1)
 end
 
-function vcDOWN(lsda::LSDA, rhoUP::Real, rhoDOWN::Real)
+function vcDOWN(lsda::PW91, rhoUP::Real, rhoDOWN::Real)
     _vc(lsda, rhoUP, rhoDOWN, -1)
 end
 
-@fastmath function _vc(::LSDA, rhoUP::Real, rhoDOWN::Real, σ::Int)
+@fastmath function _vc(::PW91, rhoUP::Real, rhoDOWN::Real, σ::Int)
     # DENSITY
     rho = _rho(rhoUP, rhoDOWN)
     
@@ -101,15 +104,15 @@ end
     c3 = fξ * c1
 
     # CORRELATION ENERGY DENSITY FOR ξ = 0
-    @views view_params1 = LSDA_CORRELATION_PARAMETERS[:,1]
+    @views view_params1 = PW91_CORRELATION_PARAMETERS[:,1]
     εcPW0, ∂εcPW0∂rs = G∂G(rs, view_params1...)
 
     # CORRELATION ENERGY DENSITY FOR ξ = 1
-    @views view_params2 = LSDA_CORRELATION_PARAMETERS[:,2]
+    @views view_params2 = PW91_CORRELATION_PARAMETERS[:,2]
     εcPW1,∂εcPW1∂rs  = G∂G(rs, view_params2...)
 
     # MINUS SPIN STIFFNESS
-    @views view_params3 = LSDA_CORRELATION_PARAMETERS[:,3]
+    @views view_params3 = PW91_CORRELATION_PARAMETERS[:,3]
     mαc,mdαc         = G∂G(rs, view_params3...)
 
 
@@ -127,7 +130,7 @@ end
 
 
 
-const LSDA_CORRELATION_PARAMETERS =
+const PW91_CORRELATION_PARAMETERS =
       # εcPW0       # εcPW1      # -αc
     [     1.0           1.0        1.0;  # p 
      0.031091      0.015545   0.016887;  # A

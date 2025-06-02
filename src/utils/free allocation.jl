@@ -93,3 +93,12 @@ function remove_trace(A::AbstractMatrix, B::AbstractMatrix)
     end
     nothing
 end
+
+
+function flexible_zeros(dims::NTuple{N, Int}, lastdim::Int) where {N}
+    if lastdim == 1
+        return zeros(dims...)
+    else
+        return zeros(dims..., lastdim)
+    end
+end

@@ -2,8 +2,10 @@
 #                          KSE MATRICES
 #--------------------------------------------------------------------
 struct KSEMatrices{ T<:Real, 
-                            typeMatrix <: AbstractMatrix{<:Real}, 
-                            typeVectorMatrix <: Vector{<:AbstractMatrix{<:Real}}}
+                    typeMatrix <: AbstractMatrix{<:Real}, 
+                    typeVectorMatrix <: Vector{<:AbstractMatrix{<:Real}},
+                    typeHam <: AbstractArray{<:Real},
+                    typeExch}
     # FEM MATRICES
     A::typeMatrix                   # Matrix of Qᵢ'Qⱼ'
     M₀::Matrix{T}                   # Matrix of QᵢQⱼ
@@ -12,12 +14,14 @@ struct KSEMatrices{ T<:Real,
     F::Dict{Tuple{Int,Int,Int},T}   # Tensor of 1/x QᵢQⱼQₖ 
     S::Matrix{T}                    # √(M₀⁻¹)          
     # MATRICES COMPOSING THE HAMILTONIAN
-    H::Array{T,3}                   # Hamiltonian
-    Kin::typeVectorMatrix           # Kinetic Matrix
+    H::typeHam                      # Hamiltonian for each l and each spin
+    Kin::typeVectorMatrix           # Kinetic Matrix for each l
     Coulomb::typeMatrix             # Coulomb Matrix
     Hfix::typeVectorMatrix          # (Kinetic + Coulomb) Matrix        
     Hartree::typeMatrix             # Hartree Matrix 
-    Vxc::typeMatrix                 # Echange-correlation Matrix
+    VxcUP::typeMatrix               # Echange-correlation Matrix UP
+    VxcDOWN::typeMatrix             # Echange-correlation Matrix DOWN
+                                    # For LDA, only VxcUP is used.
 end
 
 
@@ -32,7 +36,7 @@ struct DiscretizationCache{T <: Real}
 end
 
 
-function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type)
+function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, exc::Int)
     # FEM MATRICES
     A           = spzeros(T, Nₕ, Nₕ) 
     M₀          = zeros(T, Nₕ, Nₕ)
@@ -41,13 +45,13 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type)
     F           = Dict{Tuple{Int,Int,Int},T}()
     S           = zeros(T, Nₕ, Nₕ)
     # MATRICES COMPOSING THE HAMILTONIAN
-    H           = zeros(T, Nₕ, Nₕ, lₕ+1)    #_sp
+    H           = flexible_zeros(T, Nₕ, Nₕ, lₕ+1, exc)
     Kin         = _spzeros(T, Nₕ, Nₕ, lₕ+1)
     Coulomb     = spzeros(T, Nₕ, Nₕ)
     Hfix        = _spzeros(T, Nₕ, Nₕ, lₕ+1)
     Hartree     = spzeros(T, Nₕ, Nₕ)
-    Vxc         = spzeros(T, Nₕ, Nₕ)
-
+    VxcUP       = spzeros(T, Nₕ, Nₕ)
+    VxcDOWN     = spzeros(T, Nₕ, Nₕ)
     # Initialization of array for temporary stockage of computations 
     tmp_MV          = zeros(T, Nₕ, Nₕ)  
     tmp_B           = zeros(T, Nₕ)
@@ -55,7 +59,7 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type)
     tmp_vect        = zeros(T, Nₕ)
 
     KSEMatrices{T, typeof(A), typeof(Hfix)}(A, M₀, M₋₁, M₋₂, F, S, 
-                                            H, Kin, Coulomb, Hfix, Hartree, Vxc),  
+                                            H, Kin, Coulomb, Hfix, Hartree, VxcUP, VxcDOWN),  
     DiscretisationCache{T}(tmp_MV, tmp_B, tmp_C, tmp_vect)
 end
 
@@ -83,13 +87,15 @@ struct KSEDiscretization{T <: Real,
     mesh::M
     Rmin::T
     Rmax::T
-    elT::Type
+    exc::Int
     matrices::KSEMatrices{T}
     cache::DiscretizationCache{T}
-    function KSEDiscretization(lₕ::Int, basis::FEMBasis, mesh::Mesh, nₕ::Int = length(basis))
+    function KSEDiscretization(lₕ::Int, basis::FEMBasis, mesh::Mesh, exc::Symbol, nₕ::Int = length(basis))
         elT = eltype(basis)
         Nₕ = length(basis)
-        new{elT, typeof(basis), typeof(mesh)}(lₕ, nₕ, Nₕ, basis, mesh, first(mesh), last(mesh), elT, create_cache_discretization(lₕ, Nₕ, elT)...)
+        intexc =  exc == :lda ? 1 : 2
+        new{elT, typeof(basis), typeof(mesh)}(lₕ, nₕ, Nₕ, basis, mesh, elT(first(mesh)), elT(last(mesh)),intexc,
+                                                create_cache_discretization(lₕ, Nₕ, elT, intexc)...)
     end
 end
 
@@ -120,17 +126,16 @@ end
 #                               API
 #--------------------------------------------------------------------
 
-Base.eltype(discretization::KSEDiscretization) = discretization.elT
+Base.eltype(::KSEDiscretization{T}) where T = T
 dim(discretization::KSEDiscretization) = discretization.Nₕ * (discretization.lₕ + 1)
 multiplicity(::KSEDiscretization) = 2
 
 
-
-zero_density(kd::KSEDiscretization)                 = zeros(kd.elT, kd.Nₕ, kd.Nₕ)  
-zero_orbitals(kd::KSEDiscretization)                = zeros(kd.elT, kd.Nₕ, kd.nₕ, kd.lₕ+1)
-zero_orbitals_energy(kd::KSEDiscretization)         = zeros(kd.elT, kd.lₕ+1, kd.nₕ)
-zero_occupation_number(kd::KSEDiscretization)       = zeros(kd.elT, kd.lₕ+1, kd.nₕ)
-zero_density_matrix(kd::KSEDiscretization)          = zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.lₕ+1)
+zero_density(kd::KSEDiscretization)                 = flexible_zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.exc)  
+zero_orbitals(kd::KSEDiscretization)                = flexible_zeros(kd.elT, kd.Nₕ, kd.nₕ, kd.lₕ+1, kd.exc)
+zero_orbitals_energy(kd::KSEDiscretization)         = flexible_zeros(kd.elT, kd.lₕ+1, kd.nₕ, kd.exc)
+zero_occupation_number(kd::KSEDiscretization)       = flexible_zeros(kd.elT, kd.lₕ+1, kd.nₕ, kd.exc)
+zero_density_matrix(kd::KSEDiscretization)          = flexible_zeros(kd.elT, kd.Nₕ, kd.Nₕ, kd.lₕ+1, kd.exc)
 
 function zero_energies(kd::KSEDiscretization, model::KSEModel)
     @unpack elT = kd
@@ -138,7 +143,10 @@ function zero_energies(kd::KSEDiscretization, model::KSEModel)
                 :Ekin => zero(elT),                                     # Kinetic energy
                 :Ecou => zero(elT),                                     # Coulomb energy
                 :Ehar => zero(elT))                                     # Hartree energy
-    !(isthereExchangeCorrelation(model)) ||  (d[:Eexc] = zero(elT))     # Exchange-correlation energy
+    if isthereExchangeCorrelation(model)
+        (d[:Eexc] = zero(elT))                                          # Exchange-correlation energy
+        kd.exc != :lsda || (d[:Ekincorr] = zero(elT))                   # Kinetic-correlation energy
+    end
     d
 end
 
@@ -163,10 +171,17 @@ function build_hamiltonian!(discretization::KSEDiscretization,
     !isthereExchangeCorrelation(model) || 
                     exchange_corr_matrix!(discretization, model, D)
     
-    # BUILD THE HAMILTONIAN OF THE lᵗʰ SECTION
+    # BUILD THE HAMILTONIAN OF THE lᵗʰ SECTION FOR EACH SPIN σ ∈ {↑,↓}
     @threads for l ∈ 0:discretization.lₕ
-        @views vH = H[:,:,l+1]
-        @. vH = Hfix[l+1] + Vxc + Hartree
+        @views vH = H[:,:,l+1,1]
+        @. vH = Hfix[l+1] + VxcUP + Hartree
+    end
+
+    if discretization.exc == 2
+        @threads for l ∈ 0:discretization.lₕ
+            @views vH = H[:,:,l+1,2]
+            @. vH = Hfix[l+1] + VxcDOWN + Hartree
+        end
     end
     nothing
 end
@@ -176,15 +191,17 @@ function find_orbital!( discretization::KSEDiscretization,
                         U::AbstractArray{<:Real}, 
                         ϵ::AbstractMatrix{<:Real})
 
-    @unpack lₕ, nₕ, matrices = discretization
+    @unpack lₕ, nₕ, matrices, exc = discretization
     @unpack S, H = matrices
 
-    # SOLVE THE GENERALIZED EIGENVALUE PROBLEM FOR EACH SECTION l
-    for l ∈ 0:lₕ
-        @views vH = H[:,:,l+1]
-        λ, V = eigen(Symmetric(S*vH*S))
-        @views ϵ[l+1,:] =  λ[1:n]
-        @views U[:,:,l+1] = S*V[:,1:n]        
+    # SOLVE THE GENERALIZED EIGENVALUE PROBLEM FOR EACH SECTION l AND FOR EACH σ ∈ {↑,↓}
+    for σ ∈ 1:exc
+        for l ∈ 0:lₕ
+            @views vH = H[:,:,l+1,σ]
+            λ, V = eigen(Symmetric(S*vH*S))
+            @views ϵ[l+1,:,σ] =  λ[1:n]
+            @views U[:,:,l+1,σ] = S*V[:,1:n]        
+        end
     end
 end
 
@@ -198,24 +215,32 @@ function normalization!(discretization::KSEDiscretization,
     @unpack M₀ = discretization.matrices
     @unpack lₕ, nₕ = discretization
     @inbounds for k ∈ 1:nₕ
-        @inbounds for l ∈ 1:lₕ+1   
-            if !iszero(n[l,k])
-                @views Ulk = U[:,k,l]
-                coeff = sqrt(Ulk'*M₀*Ulk)
-                Ulk .= Ulk .* 1.0/coeff
+        @inbounds for σ ∈ 1:2
+            @inbounds for l ∈ 1:lₕ+1   
+                if !iszero(n[l,k,σ])
+                    @views Ulkσ = U[:,k,l,σ]
+                    coeff = sqrt(Ulkσ'*M₀*Ulkσ)
+                    Ulkσ .= Ulkσ .* 1.0/coeff
+                end
             end
         end
     end
     nothing
 end
 
-function normalization!(discretization::KSEDiscretization, U::AbstractArray{<:Real}, l::Int, k::Int)
+
+function normalization!(discretization::KSEDiscretization, 
+                        U::AbstractArray{<:Real}, 
+                        l::Int, 
+                        k::Int,
+                        σ::Int = 1)
     @unpack M₀ = discretization.matrices
-    @views Ulk = U[:,k,l+1]
-    coeff = sqrt(Ulk'*M₀*Ulk)
-    Ulk .= Ulk .* 1.0/coeff
+    @views Ulkσ = U[:,k,l+1,σ]
+    coeff = sqrt(Ulkσ'*M₀*Ulkσ)
+    Ulkσ .= Ulkσ .* 1.0/coeff
     nothing
 end
+
 
 #####################################################################
 #                          TYPES ORBITALS

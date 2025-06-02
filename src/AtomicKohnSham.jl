@@ -87,7 +87,7 @@ module AtomicKohnSham
     #               DISCRETIZATION
     # -------------------------------------
     export KSEDiscretization
-    include("discretization/structure.jl")
+    include("discretization/discretization.jl")
     include("discretization/operator.jl")
     include("discretization/energies.jl")
     include("discretization/density.jl")

@@ -5,15 +5,18 @@ function density!(  discretization::KSEDiscretization,
                     U::AbstractArray{<:Real}, 
                     n::AbstractMatrix{<:Real}, 
                     D::AbstractMatrix{<:Real})
-    @unpack lₕ, nₕ, Nₕ, elT  = discretization
+    @unpack lₕ, nₕ, Nₕ, exc  = discretization
+    elT = eltyp(discretization)
     fill!(D, zero(elT))
     @inbounds for k ∈ 1:nₕ
-        @inbounds for l ∈ 1:lₕ+1   
-            if !iszero(n[l,k])
-                @inbounds for i ∈ 1:Nₕ
-                    val = n[l,k] * U[i,k,l] 
-                    @inbounds @simd for j ∈ 1:i
-                        D[i,j] += val * U[j,k,l]
+        @inbounds for σ ∈ 1:exc
+            @inbounds for l ∈ 1:lₕ+1   
+                if !iszero(n[l,k,σ])
+                    @inbounds for i ∈ 1:Nₕ
+                        val = n[l,k] * U[i,k,l,σ] 
+                        @inbounds @simd for j ∈ 1:i
+                            D[i,j,σ] += val * U[j,k,l,σ]
+                        end
                     end
                 end
             end
@@ -21,7 +24,7 @@ function density!(  discretization::KSEDiscretization,
     end
     @inbounds for i in 1:Nₕ
         @inbounds @simd for j in 1:i-1
-            D[j,i] = D[i,j]
+            D[j,i,:] .= D[i,j,:]
         end
     end
     nothing
