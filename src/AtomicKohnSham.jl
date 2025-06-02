@@ -19,7 +19,6 @@ module AtomicKohnSham
     using HypergeometricFunctions
 
     using UnPack
-    using Memoize
     
     using Base.Threads
 
