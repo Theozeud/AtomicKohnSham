@@ -1,5 +1,6 @@
-/Manifest.toml
 *.ipynb
-.vscode/settings.json
 *.json
-/.vscode
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+/Manifest*.toml
