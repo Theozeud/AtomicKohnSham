@@ -3,21 +3,22 @@
 - Unifier LDA et LDSA en une seule structure 
     --> identifier les abstractions à faire
 
+- Refaire marcher les scripts
+
+- Mettre un exemple dans le readme
+
 - Utilisation de Libxc pour les méthodes d'échanges corrélations
     --> voir comment faire pour 
 
-- Regarder ce qui peut etre parallélisé
+- Regarder pour les méthodes GGA
 
 - Résolution du problème linéaire, surtout pour la méthode quadratique
     --> LinSolve ?
 
 - Mieux organiser le code
 --> Mettre chacune des méthodes dans des fichiers différents
---> Réfléchir à la logique des étapes du code
-notes : 
-    - un bloc sur la base de discrétisation
-    
 
+- Ajouter du base.show à l'initialisation
 
 
 

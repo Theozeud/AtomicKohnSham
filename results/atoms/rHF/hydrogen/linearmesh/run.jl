@@ -8,12 +8,12 @@ using DoubleFloats
 
 problem = AtomProblem(;
                 T               = Float64, 
-                lh              = 0,
-                nh              = 1, 
+                lh              = 3,
+                nh              = 5, 
                 alg             = ODA(0.4), 
-                model           = RHF(;z=1, N=1),  
-                Rmax            = 100, 
-                Nmesh           = 10,
+                model           = RHF(;z=30, N=30),  
+                Rmax            = 1000, 
+                Nmesh           = 50,
                 typemesh        = expmesh, 
                 optsmesh        = (s = 1.5,), 
                 typebasis       = P1IntLegendreGenerator, 
