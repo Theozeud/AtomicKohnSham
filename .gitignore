@@ -1,2 +1,5 @@
-/Manifest.toml
 *.ipynb
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+/Manifest*.toml
