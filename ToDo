@@ -11,14 +11,19 @@
 
     - Utilisation de Libxc pour les méthodes d'échanges corrélations
         --> voir comment faire pour 
+        --> Approche hybride entre Libxc en Float64 et mes propres fonctionnells pour Double64
+
+    - Regarder pour les méthodes GGA
+
+
+- Postprocess : plot the orbitals + plot the density
 
 - Réparer le log
-
-- Regarder pour les méthodes GGA
 
 - Résolution du problème linéaire, surtout pour la méthode quadratique
     --> LinSolve ?
 
+- Compléter les tests
 
 ## PROBLEM
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
