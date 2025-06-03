@@ -70,7 +70,7 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
         K .*= eldata.ϕ[1]^2
     elseif eldata.s == :T
         _newps = mul(generators_factorized, generators_factorized)
-        newps = mul(_newps, generators)
+        newps = mul(_newps, basis.generators.polynomials)
         fill_local_matrix!(K, method, NoWeight(), eldata, newps, basis)
         K .*= eldata.ϕ[1]^2
     end

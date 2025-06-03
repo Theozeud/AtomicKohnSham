@@ -114,7 +114,7 @@ function polynomialrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R
 end
 
-polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(polynomialrange(a,b,n; T = T, s = s), "Polynomial Mesh", (s = s,))
+polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s::Real) = Mesh(polynomialrange(a,b,n; T = T, s = s), "Polynomial Mesh", (s = s,))
 
 
 #-------------------------------------
@@ -132,4 +132,4 @@ function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R
 end
 
-expmesh(a::Real, b::Real ,n::Int; T = Float64, s) = Mesh(exprange(a,b,n; T = T, s = s), "Exponential Mesh", (s = s,))
+expmesh(a::Real, b::Real ,n::Int; T = Float64, s::Real) = Mesh(exprange(a,b,n; T = T, s = s), "Exponential Mesh", (s = s,))
