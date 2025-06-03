@@ -114,16 +114,6 @@ function Base.show(io::IO, sol::KSESolution)
 end
 
 
-function display_occupation_number(io::IO, ::KSEDiscretization, occupation_number)
-    printstyled(io, "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n"; bold = true, color = :blue)
-end
-
-#=
-function display_occupation_number(io::IO, ::LSDADiscretization, occupation_number)
-    printstyled(io, "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n"; bold = true, color = :blue)
-end
-=#
-
 #--------------------------------------------------------------------
 #                  POST-PROCESSING COMPUTATIONS
 #--------------------------------------------------------------------
