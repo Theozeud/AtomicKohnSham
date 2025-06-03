@@ -27,7 +27,7 @@ Currently supported functionalities:
   - Integrated Legendre polynomials (up to order 20)
     
 - **Exchange–Correlation Functionals**:
-    - LDA, LSDA (via Libxc.jl)
+    - LDA, LSDA
       
 - **Mesh types**:
     - Linear, geometric, exponential
