@@ -1,9 +1,9 @@
-#####################################################################
+#--------------------------------------------------------------------
 #                           FILL LOCAL MATRIX
-#####################################################################
+#--------------------------------------------------------------------
 
 function _fill_local_matrix!(K::AbstractArray, 
-                            method::IntegrationMethod, 
+                            method::FEMIntegrationMethod, 
                             weight::AbstractWeight, 
                             eldata::ElementData, 
                             ps::PolySet,
@@ -16,9 +16,9 @@ function _fill_local_matrix!(K::AbstractArray,
     return fill_local_matrix!(K, method, weight, eldata, ps, basis)
 end
 
-#####################################################################
+#--------------------------------------------------------------------
 #                           SINGULARITY INTEGRATION
-#####################################################################
+#--------------------------------------------------------------------
 #=
     --> Check singularity
     si oui -> on transforme l'intégration
@@ -36,7 +36,7 @@ end
 
 
 function fill_local_matrix_withsingularity!(K::AbstractArray, 
-                                            method::IntegrationMethod, 
+                                            method::FEMIntegrationMethod, 
                                             ::InvX, 
                                             eldata::ElementData, 
                                             ps::PolySet,
@@ -56,7 +56,7 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
 end
 
 function fill_local_matrix_withsingularity!(K::AbstractArray, 
-                                            method::IntegrationMethod, 
+                                            method::FEMIntegrationMethod, 
                                             ::InvX2, 
                                             eldata::ElementData, 
                                             ps::PolySet,
@@ -76,9 +76,9 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
     end
 end
 
-#####################################################################
+#--------------------------------------------------------------------
 #                           EXACT INTEGRATION
-#####################################################################
+#--------------------------------------------------------------------
 
 function fill_local_matrix!(K::AbstractArray, 
                             ::ExactIntegration, 
@@ -125,28 +125,21 @@ function fill_local_matrix!(K::AbstractArray,
 end
 
 
-#####################################################################
+#--------------------------------------------------------------------
 #                   QUADRATURE INTEGRATION
-#####################################################################
+#--------------------------------------------------------------------
 
 function fill_local_matrix!(K::AbstractArray, 
-                            quadra::QuadratureIntegration, 
+                            quadra::GaussLegendre, 
                             weight::FunWeight, 
                             eldata::ElementData, 
-                            ps::PolySet,
+                            ::PolySet,
                             basis::FEMBasis)
-    @unpack x, w, shiftx, wx = quadra
-    @unpack evalM = basis.cache
-    @unpack binf, bsup, invϕ = eldata
-    # RESCALING ON [-1,1]
-    @. shiftx = (bsup - binf)/2*x + (bsup + binf)/2
-    # EVALUATE POLYNOMIALS
-    evaluate!(evalM, ps, shiftx)
-    # SHIFT invϕ
-    @. shiftx = invϕ[1] * shiftx + invϕ[2]
-    # COMPUTATION
-    @. wx  = weight(shiftx) * w
-    Kreshape = reshape(K,length(K),1)
-    mul!(Kreshape, evalM, wx)
-    Kreshape .*= eldata.invϕ[1]
+    @unpack x, w, shiftx, wx, Qgenx = quadra
+    @unpack invϕ = eldata
+    shiftx .= invϕ[1].*x .+ invϕ[2]
+    weight(wx, shiftx)
+    @. wx  *= w
+    @tensor K[i,j] = Qgenx[i,j,k] * wx[k]
+    K .*= eldata.invϕ[1]
 end
