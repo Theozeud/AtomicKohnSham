@@ -3,13 +3,13 @@
 #--------------------------------------------------------------------
 function density!(  discretization::KSEDiscretization, 
                     U::AbstractArray{<:Real}, 
-                    n::AbstractMatrix{<:Real}, 
-                    D::AbstractMatrix{<:Real})
-    @unpack lₕ, nₕ, Nₕ, exc  = discretization
+                    n::AbstractArray{<:Real}, 
+                    D::AbstractArray{<:Real})
+    @unpack lₕ, nₕ, Nₕ, polarized  = discretization
     elT = eltype(discretization)
     fill!(D, zero(elT))
     @inbounds for k ∈ 1:nₕ
-        @inbounds for σ ∈ 1:exc
+        @inbounds for σ ∈ 1:(1+polarized)
             @inbounds for l ∈ 1:lₕ+1   
                 if !iszero(n[l,k,σ])
                     @inbounds for i ∈ 1:Nₕ
@@ -52,25 +52,74 @@ function density!(  discretization::KSEDiscretization,
     nothing
 end
 
-
-function compute_density(discretization::KSEDiscretization, D::AbstractMatrix{<:Real}, x::Real)
+#--------------------------------------------------------------------
+#                       Evaluation of Density
+#--------------------------------------------------------------------
+function eval_density(  discretization::KSEDiscretization, 
+                        D::AbstractMatrix{<:Real}, 
+                        x::Real)
     @unpack basis, cache = discretization
     @unpack tmp_vect, tmp_C = cache
     localisation_x = findindex(basis.mesh, x)
     I = basis.cells_to_indices[localisation_x]
     @views eval_basis = tmp_C[I]
-    #evaluate!(eval_basis, basis)
-    
-    @inbounds for (n,i) ∈ enumerate(I)
-        eval_basis[n] = basis(i,x)
-    end
-
+    evaluate!(eval_basis, basis, I, x)
     @views tv = tmp_vect[I]
     @views Dview = D[I,I]
     mul!(tv,Dview,eval_basis)
     return 1/(4π*x^2) * dot(eval_basis,tv)
 end
 
+
+function eval_density(  discretization::KSEDiscretization, 
+                        D::AbstractMatrix{<:Real}, 
+                        X::AbstractVector{<:Real})
+    newT = promote_type(eltype(D), eltype(X))
+    ρ = zeros(newT, length(X))
+    eval_density!(ρ, discretization, D, X)
+    ρ
+end
+
+
+function eval_density!( ρ::AbstractVector{<:Real},
+                        discretization::KSEDiscretization, 
+                        D::AbstractMatrix{<:Real}, 
+                        X::AbstractVector{<:Real})
+    @unpack basis, cache = discretization
+    @unpack tmp_vect, tmp_C = cache   
+    cache_Pϕx = _cache_Pϕx(basis, first(X))
+    @inbounds for k ∈ eachindex(X)
+        xk = X[k]
+        localisation_xk = findindex(basis.mesh, xk)
+        Ik = basis.cells_to_indices[localisation_xk]
+        @views eval_basis = tmp_C[Ik]
+        evaluate!(eval_basis, basis, Ik, xk, cache_Pϕx)
+        @views tv = tmp_vect[Ik]
+        @views Dk = D[Ik,Ik]
+        mul!(tv, Dk, eval_basis)
+        ρ[k] = 1/(4π*xk^2) * dot(eval_basis,tv)
+    end
+    ρ
+end
+
+
+function optimized_eval_density!(ρ::AbstractVector{<:Real},
+                                 discretization::KSEDiscretization, 
+                                 D::AbstractMatrix{<:Real}, 
+                                 X::AbstractVector{<:Real})
+    @unpack basis, fem_integration_method, mesh = discretization
+    Qgenx = fem_integration_method.Qgenx
+    fill!(ρ, 0)
+    idxmesh = findindex(mesh, first(X))
+    Ib = basis.cells_to_indices[idxmesh]
+    Ig = basis.cells_to_generators[idxmesh]
+    @views DIb = D[Ib, Ib]
+    @views QgenxIg = Qgenx[Ig, Ig, :]
+    @tensor ρ[k] = DIb[i,j] * QgenxIg[i,j,k]
+    @.ρ /= X^2
+    @. ρ *= 1/4π
+    ρ
+end
 
 #--------------------------------------------------------------------
 #                          Density Matrix
