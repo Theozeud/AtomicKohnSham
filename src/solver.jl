@@ -1,16 +1,9 @@
 #--------------------------------------------------------------------
 #                           SOLVER OPTIONS
 #--------------------------------------------------------------------
-struct SolverOptions{T <: Real, 
-                    intexcType <: IntegrationMethod, 
-                    intfemType <: IntegrationMethod}
+struct SolverOptions{T <: Real}
     scftol::T                               # SCF tolerance
     maxiter::Int                            # Maximum of iteration done
-
-    exc_integration_method::intexcType      # Integration method to compute integrals 
-                                            # involving exchange correlation
-    fem_integration_method::intfemType      # Integration method to compute integrals
-                                            # for fem's matrices
 
     degen_tol::T                            # Tolerance to consider degenescence of orbitals energy
 
@@ -31,8 +24,6 @@ end
                 alg::SCFAlgorithm; 
                 scftol::Real, 
                 maxiter::Int = 100,
-                exc_integration_method::IntegrationMethod = ExactIntegration(),
-                fem_integration_method::IntegrationMethod = ExactIntegration(),
                 degen_tol::Real = eps(eltype(discretization.basis)),
                 logconfig = LogConfig(),
                 verbose::Int = 3) -> KSESolver
@@ -48,8 +39,6 @@ Use `solve!(solver)` to run the self-consistent procedure, and access solution d
 - `alg`: SCF algorithm to use (e.g. `ODA``, `Quadratic()`).
 - `scftol`: Tolerance on the SCF convergence.
 - `maxiter`: Maximum number of SCF iterations.
-- `exc_integration_method`: Integration method for exchange–correlation terms.
-- `fem_integration_method`: Integration method for FEM matrix assembly.
 - `degen_tol`: Tolerance to detect degeneracy in eigenvalues (default: machine epsilon).
 - `logconfig`: Logging configuration (`LogConfig()`).
 - `verbose`: Verbosity level (0: silent, 3: detailed).
@@ -91,8 +80,6 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
                         alg::SCFAlgorithm; 
                         scftol::Real, 
                         maxiter::Int = 100,
-                        exc_integration_method::IntegrationMethod = ExactIntegration(),
-                        fem_integration_method::IntegrationMethod = ExactIntegration(),
                         degen_tol::Real = eps(eltype(discretization.basis)),
                         logconfig = LogConfig(),
                         verbose::Int = 3)
@@ -101,7 +88,7 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
         T = eltype(discretization)
         
         # Init Cache of the Discretisation
-        init_cache!(discretization, model, fem_integration_method)
+        init_cache!(discretization, model)
         
         # Init Cache of the Method
         cache = create_cache_alg(alg, discretization)
@@ -112,8 +99,6 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
         #  SolverOptions
         opts = SolverOptions(   T(scftol), 
                                 maxiter, 
-                                exc_integration_method, 
-                                fem_integration_method, 
                                 T(degen_tol),
                                 UInt8(verbose))
         
