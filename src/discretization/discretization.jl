@@ -11,7 +11,8 @@ struct KSEMatrices{ T<:Real,
     M₋₁::typeMatrix                 # Matrix of 1/x QᵢQⱼ
     M₋₂::typeMatrix                 # Matrix of 1/x² QᵢQⱼ
     F::Dict{Tuple{Int,Int,Int},T}   # Tensor of 1/x QᵢQⱼQₖ 
-    S::Matrix{T}                    # √(M₀⁻¹)          
+    S::Matrix{T}                    # √(M₀⁻¹) 
+    Sinv::Matrix{T}                 # √(M₀)             
     # MATRICES COMPOSING THE HAMILTONIAN
     H::typeHam                      # Hamiltonian for each l and each spin
     Kin::typeVectorMatrix           # Kinetic Matrix for each l
@@ -31,11 +32,11 @@ struct DiscretizationCache{T <: Real}
     tmp_MV::Matrix{T}               # Store the contraction F:C
     tmp_B::Vector{T}                # Matrix of 4πρQᵢ  
     tmp_C::Vector{T}                # Matrix for V(ρ) - solution of the Gauss Electrostatic law
-    tmp_vect::Vector{T}             # Vector to store temprary vector
+    tmp_vect::Vector{T}             # Vector to store temporary vector
 end
 
 
-function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, exc::Int)
+function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, polarized::Bool)
     # FEM MATRICES
     A           = spzeros(T, Nₕ, Nₕ) 
     M₀          = zeros(T, Nₕ, Nₕ)
@@ -43,8 +44,9 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, exc::Int)
     M₋₂         = spzeros(T, Nₕ, Nₕ)
     F           = Dict{Tuple{Int,Int,Int},T}()
     S           = zeros(T, Nₕ, Nₕ)
+    Sinv        = zeros(T, Nₕ, Nₕ)
     # MATRICES COMPOSING THE HAMILTONIAN
-    H           = flexible_zeros(T, (Nₕ, Nₕ, lₕ+1), exc)
+    H           = flexible_zeros(T, (Nₕ, Nₕ, lₕ+1), polarized)
     Kin         = _spzeros(T, Nₕ, Nₕ, lₕ+1)
     Coulomb     = spzeros(T, Nₕ, Nₕ)
     Hfix        = _spzeros(T, Nₕ, Nₕ, lₕ+1)
@@ -57,7 +59,7 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, exc::Int)
     tmp_C           = zeros(T, Nₕ)
     tmp_vect        = zeros(T, Nₕ)
 
-    KSEMatrices{T, typeof(A), typeof(Hfix), typeof(H)}(A, M₀, M₋₁, M₋₂, F, S, 
+    KSEMatrices{T, typeof(A), typeof(Hfix), typeof(H)}(A, M₀, M₋₁, M₋₂, F, S, Sinv, 
                                             H, Kin, Coulomb, Hfix, Hartree, VxcUP, VxcDOWN),  
     DiscretizationCache{T}(tmp_MV, tmp_B, tmp_C, tmp_vect)
 end
@@ -78,7 +80,9 @@ end
 """
 struct KSEDiscretization{T <: Real, 
                          B <: FEMBasis,
-                         M <: Mesh} 
+                         M <: Mesh,
+                         Mat <: KSEMatrices,
+                         FIM <: FEMIntegrationMethod} 
     lₕ::Int
     nₕ::Int
     Nₕ::Int
@@ -86,32 +90,55 @@ struct KSEDiscretization{T <: Real,
     mesh::M
     Rmin::T
     Rmax::T
-    exc::Int
-    matrices::KSEMatrices{T}
+    polarized::Bool    
+    matrices::Mat
     cache::DiscretizationCache{T}
-    function KSEDiscretization(lₕ::Int, basis::FEMBasis, mesh::Mesh, exc::Symbol, nₕ::Int = length(basis))
+    fem_integration_method::FIM     # Integration method to compute integrals
+                                    # for fem's matrices
+    function KSEDiscretization(lₕ::Int, 
+                               basis::FEMBasis, 
+                               mesh::Mesh, 
+                               exc::Symbol, 
+                               nₕ::Int = length(basis),
+                               fem_integration_method::FEMIntegrationMethod = GaussLegendre(basis))
         elT = eltype(basis)
         Nₕ = length(basis)
-        intexc =  exc == :lda ? 1 : 2
-        new{elT, typeof(basis), typeof(mesh)}(lₕ, nₕ, Nₕ, basis, mesh, elT(first(mesh)), elT(last(mesh)),intexc,
-                                                create_cache_discretization(lₕ, Nₕ, elT, intexc)...)
+        polarized =  exc == :lda ? false : true
+        matrices, cache = create_cache_discretization(lₕ, Nₕ, elT, polarized)
+        new{elT, 
+            typeof(basis), 
+            typeof(mesh),
+            typeof(matrices),
+            typeof(fem_integration_method)}(lₕ, 
+                                            nₕ, 
+                                            Nₕ, 
+                                            basis, 
+                                            mesh, 
+                                            elT(first(mesh)), 
+                                            elT(last(mesh)),
+                                            polarized,
+                                            matrices,
+                                            cache,
+                                            fem_integration_method)
     end
 end
 
 
-function init_cache!(discretization::KSEDiscretization, model::KSEModel, integration_method::IntegrationMethod)
+
+function init_cache!(discretization::KSEDiscretization, model::KSEModel)
 
     @unpack lₕ, basis, matrices  = discretization
-    @unpack A, M₀, M₋₁, M₋₂, F, S, Kin, Coulomb, Hfix = matrices
+    @unpack A, M₀, M₋₁, M₋₂, F, S, Sinv, Kin, Coulomb, Hfix = matrices
 
     # CREATION OF FEM MATRICES
-    fill_stiffness_matrix!(basis, A; method = integration_method)
-    fill_mass_matrix!(basis, M₀; method = integration_method)
-    fill_mass_matrix!(basis, -1, M₋₁; method = integration_method)
-    lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂; method = integration_method)
-    iszero(model.hartree) || fill_mass_tensor!(basis, -1, F; method = integration_method)
+    fill_stiffness_matrix!(basis, A)
+    fill_mass_matrix!(basis, M₀)
+    fill_mass_matrix!(basis, -1, M₋₁)
+    lₕ == 0 || fill_mass_matrix!(basis, -2, M₋₂)
+    iszero(model.hartree) || fill_mass_tensor!(basis, -1, F)
     S .= sqrt(inv(Symmetric(M₀)))
-
+    Sinv .= sqrt(Symmetric(M₀))
+    
     # CREATION OF THE FIX PART OF THE HAMILTONIAN 
     kinetic_matrix!(discretization)
     coulomb_matrix!(discretization, model)
@@ -130,11 +157,11 @@ dim(discretization::KSEDiscretization) = discretization.Nₕ * (discretization.l
 multiplicity(::KSEDiscretization) = 2
 
 
-zero_density(kd::KSEDiscretization)                 = flexible_zeros(eltype(kd), (kd.Nₕ, kd.Nₕ), kd.exc)  
-zero_orbitals(kd::KSEDiscretization)                = flexible_zeros(eltype(kd), (kd.Nₕ, kd.nₕ, kd.lₕ+1), kd.exc)
-zero_orbitals_energy(kd::KSEDiscretization)         = flexible_zeros(eltype(kd), (kd.lₕ+1, kd.nₕ), kd.exc)
-zero_occupation_number(kd::KSEDiscretization)       = flexible_zeros(eltype(kd), (kd.lₕ+1, kd.nₕ), kd.exc)
-zero_density_matrix(kd::KSEDiscretization)          = flexible_zeros(eltype(kd), (kd.Nₕ, kd.Nₕ, kd.lₕ+1), kd.exc)
+zero_density(kd::KSEDiscretization)                 = flexible_zeros(eltype(kd), (kd.Nₕ, kd.Nₕ), kd.polarized)  
+zero_orbitals(kd::KSEDiscretization)                = flexible_zeros(eltype(kd), (kd.Nₕ, kd.nₕ, kd.lₕ+1), kd.polarized)
+zero_orbitals_energy(kd::KSEDiscretization)         = flexible_zeros(eltype(kd), (kd.lₕ+1, kd.nₕ), kd.polarized)
+zero_occupation_number(kd::KSEDiscretization)       = flexible_zeros(eltype(kd), (kd.lₕ+1, kd.nₕ), kd.polarized)
+zero_density_matrix(kd::KSEDiscretization)          = flexible_zeros(eltype(kd), (kd.Nₕ, kd.Nₕ, kd.lₕ+1), kd.polarized)
 
 function zero_energies(kd::KSEDiscretization, model::KSEModel)
     elT = eltype(kd)
@@ -144,7 +171,7 @@ function zero_energies(kd::KSEDiscretization, model::KSEModel)
                 :Ehar => zero(elT))                                     # Hartree energy
     if isthereExchangeCorrelation(model)
         (d[:Eexc] = zero(elT))                                          # Exchange-correlation energy
-        kd.exc != :lsda || (d[:Ekincorr] = zero(elT))                   # Kinetic-correlation energy
+        kd.polarized != :lsda || (d[:Ekincorr] = zero(elT))                   # Kinetic-correlation energy
     end
     d
 end
@@ -176,7 +203,7 @@ function build_hamiltonian!(discretization::KSEDiscretization,
         @. vH = Hfix[l+1] + VxcUP + Hartree
     end
 
-    if discretization.exc == 2
+    if discretization.polarized
         @threads for l ∈ 0:discretization.lₕ
             @views vH = H[:,:,l+1,2]
             @. vH = Hfix[l+1] + VxcDOWN + Hartree
@@ -190,11 +217,11 @@ function find_orbital!( discretization::KSEDiscretization,
                         U::AbstractArray{<:Real}, 
                         ϵ::AbstractMatrix{<:Real})
 
-    @unpack lₕ, nₕ, matrices, exc = discretization
+    @unpack lₕ, nₕ, matrices, polarized = discretization
     @unpack S, H = matrices
 
     # SOLVE THE GENERALIZED EIGENVALUE PROBLEM FOR EACH SECTION l AND FOR EACH σ ∈ {↑,↓}
-    for σ ∈ 1:exc
+    for σ ∈ 1:(polarized+1)
         for l ∈ 0:lₕ
             @views vH = H[:,:,l+1,σ]
             λ, V = eigen(Symmetric(S*vH*S))

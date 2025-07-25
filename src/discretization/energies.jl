@@ -6,16 +6,16 @@ function compute_total_energy( discretization::KSEDiscretization,
                                 D::AbstractMatrix{<:Real}, 
                                 n::AbstractMatrix{<:Real},
                                 ϵ::AbstractMatrix{<:Real})
-    @unpack Rmax, matrices, exc = discretization
+    @unpack Rmax, matrices, polarized = discretization
     @unpack VxcUP, VxcDOWN = matrices
     @tensor energy = n[l,n] * ϵ[l,n] 
     if isthereExchangeCorrelation(model)
         energy_exc = compute_exchangecorrelation_energy(discretization, model, D)
         energy_har = compute_hartree_energy(discretization, D)
-        if exc == 1
+        if !polarized
             @tensor energy_correction = Vxc[i,j] * D[i,j]
             return energy - energy_har + energy_exc - energy_correction
-        elseif exc == 2
+        else
             @views DUP = D[:,:,1]   
             @views DDOWN = D[:,:,2]
             @tensor energy_correctionUP     = VxcUP[i,j] * DUP[i,j]
@@ -36,11 +36,11 @@ end
 function compute_kinetic_energy(discretization::KSEDiscretization, 
                                 U::AbstractArray{<:Real}, 
                                 n::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, exc  = discretization
+    @unpack lₕ, nₕ, polarized  = discretization
     elT = eltype(discretization)
     @unpack Kin = discretization.matrices
     energy_kin = zero(elT)
-    @inbounds for σ ∈ 1:exc
+    @inbounds for σ ∈ 1:(1+polarized)
         @inbounds for l ∈ 1:lₕ+1 
             @inbounds for k ∈ 1:nₕ
                 if !iszero(n[l,k,σ])
@@ -60,11 +60,11 @@ end
 function compute_coulomb_energy(discretization::KSEDiscretization, 
                                 U::AbstractArray{<:Real}, 
                                 n::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, exc  = discretization
+    @unpack lₕ, nₕ, polarized  = discretization
     elT = eltype(discretization)
     @unpack Coulomb = discretization.matrices
     energy_cou = zero(elT)
-    @inbounds for σ ∈ 1:exc
+    @inbounds for σ ∈ 1:(1+polarized)
         @inbounds for l ∈ 1:lₕ+1   
             @inbounds for k ∈ 1:nₕ
                 if !iszero(n[l,k,σ])
@@ -83,16 +83,16 @@ end
 #--------------------------------------------------------------------
 function compute_hartree_energy(discretization::KSEDiscretization, 
                                 D::AbstractMatrix{<:Real})
-    @unpack Rmax, matrices, cache, exc = discretization
+    @unpack Rmax, matrices, cache, polarized = discretization
     elT = eltype(discretization)
     @unpack A, F, M₀ = matrices
     @unpack tmp_B, tmp_C = cache
-    if exc == 1
+    if !polarized
         tensor_matrix_dict!(tmp_B, D, F)
         tmp_C .= A\tmp_B
         @tensor Crho = D[i,j] * M₀[i,j]
         return elT(0.5) * (dot(tmp_B,tmp_C) + Crho^2/Rmax)
-    elseif exc == 2
+    else
         @views DUP = D[:,:,1]   
         @views DDOWN = D[:,:,2]
         tensor_matrix_dict!(tmp_B, DUP, DDOWN, F)
@@ -108,18 +108,18 @@ end
 function compute_hartree_mix_energy(discretization::KSEDiscretization, 
                                     D0::AbstractMatrix{<:Real}, 
                                     D1::AbstractMatrix{<:Real})
-    @unpack Rmax, matrices, cache, exc = discretization
+    @unpack Rmax, matrices, cache, polarized = discretization
     elT = eltype(discretization)
     @unpack A, F, M₀ = matrices
     @unpack tmp_B, tmp_C = cache
-    if exc == 1
+    if !polarized
         tensor_matrix_dict!(tmp_B, D0, F)
         tmp_C .= A\tmp_B
         tensor_matrix_dict!(tmp_B, D1, F)
         @tensor Crho0 = D0[i,j] * M₀[i,j]
         @tensor Crho1 = D1[i,j] * M₀[i,j]
         return elT(0.5) * (dot(tmp_B,tmp_C) + Crho0*Crho1/Rmax)
-    elseif exc == 2
+    else
         @views D0UP     = D0[:,:,1]   
         @views D0DOWN   = D0[:,:,2]
         @views D1UP     = D1[:,:,1]   
@@ -144,13 +144,13 @@ end
 function compute_exchangecorrelation_energy(discretization::KSEDiscretization, 
                                             model::KSEModel, 
                                             D::AbstractMatrix{<:Real})
-    @unpack Rmax, exc = discretization
-    if exc ==1
+    @unpack Rmax, polarized = discretization
+    if !polarized
         ρ(x) = compute_density(discretization, D, x)
         f1(x,p) = exc(model.exc, ρ(x)) * x^2
         prob = IntegralProblem(f1, (zero(Rmax), Rmax))
         return 4π * solve(prob, QuadGKJL(); reltol = 1e-10, abstol = 1e-10).u
-    elseif exc == 2
+    else
         @views DUP = D[:,:,1]   
         @views DDOWN = D[:,:,2]
         ρUP(x) = compute_densityUP(discretization, DUP, x)
@@ -165,9 +165,9 @@ end
 function compute_kinetic_correlation_energy!(discretization::KSEDiscretization, 
                                              model::KSEModel, 
                                              D::AbstractMatrix{<:Real})
-    @unpack Rmax, exc = discretization
+    @unpack Rmax, polarized = discretization
     elT = eltype(discretization)
-    if exc == 1
+    if !polarized
         return zero(elT)
     end
     @views DUP = D[:,:,1]   
@@ -177,7 +177,7 @@ function compute_kinetic_correlation_energy!(discretization::KSEDiscretization,
     ρ(x) = ρDOWN(x) + ρUP(x)
     ξ(x) = (ρUP(x) - ρDOWN(x))/ρ(x)
     rs(x) = (3/(4π * ρ(x)))^(1/3)
-    tc(x,p) =  -4 * ec(model.exc, ρUP(x), ρDOWN(x)) * ρ(x) * x^2 + 3 * x^2 * ( ρUP(x)* vcUP(model.exc, ρUP(x), ρDOWN(x))+ ρDOWN(x) * vcDOWN(model.exc, ρUP(x), ρDOWN(x))) #
+    tc(x,p) =  -4 * ec(model.exc, ρUP(x), ρDOWN(x)) * ρ(x) * x^2 + 3 * x^2 * ( ρUP(x)* vcUP(model.exc, ρUP(x), ρDOWN(x))+ ρDOWN(x) * vcDOWN(model.exc, ρUP(x), ρDOWN(x)))
     prob = IntegralProblem(tc, (zero(Rmax),Rmax))
     solver.energy_kincor = 4π * solve(prob, QuadGKJL(); reltol = 1e-10, abstol = 1e-10).u
     nothing

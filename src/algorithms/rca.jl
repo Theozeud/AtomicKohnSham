@@ -92,9 +92,9 @@ function make_occupation_number(kd::KSEDiscretization, cache::RCACache)
     index = findall(x->x ≠ 0, n)
     index_sort = sortperm(ϵ[index])
     new_index = index[index_sort]
-    if kd.exc == 1
+    if !kd.polarized == 1
         return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]]), ϵ[i], n[i]) for i ∈ new_index]
-    elseif kd.exc == 2
+    else
         return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]],SPIN_LABELS[i[3]]), ϵ[i], n[i]) for i ∈ new_index]
     end
 end

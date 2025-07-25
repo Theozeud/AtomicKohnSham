@@ -56,14 +56,14 @@ end
 
 
 function hartree_matrix!(discretization::KSEDiscretization, D::AbstractMatrix{<:Real}, coeff::Real = true)
-    @unpack Rmax, matrices, cache, exc = discretization
+    @unpack Rmax, matrices, cache, polarized = discretization
     @unpack A, M₀, F, Hartree = matrices
     @unpack tmp_MV, tmp_B, tmp_C = cache
-    if exc == 1
+    if !polarized
         tensor_matrix_dict!(tmp_B, D, F)
         tmp_C .= A\tmp_B
         @tensor newCrho = D[i,j] * M₀[i,j]
-    elseif exc == 2
+    else
         @views DUP = D[:,:,1]   
         @views DDOWN = D[:,:,2]
         tensor_matrix_dict!(tmp_B, DUP, DDOWN, F)
@@ -84,15 +84,15 @@ end
 function exchange_corr_matrix!( discretization::KSEDiscretization, 
                                 model::KSEModel, 
                                 D::AbstractMatrix{<:Real})
-    @unpack matrices, basis, exc = discretization
+    @unpack matrices, basis, polarized = discretization
     @unpack VxcUP, VxcDOWN = matrices
-    if exc == 1
+    if !polarized
         ρ(x) = compute_density(discretization, D, x)
-        weight = FunWeight(x -> vxc(model.exc, ρ(x)))
+        weight = FunWeight(x -> vxc(model.exc, ρ(x)); is_inplace = true, is_vectorized = true)
         fill!(VxcUP, 0) 
         fill_mass_matrix!(basis, VxcUP; weight = weight)
         Vxc .= (Vxc .+ Vxc') ./2
-    elseif exc == 2
+    else
         @views DUP = D[:,:,1]   
         @views DDOWN = D[:,:,2]
         ρUP(x) = compute_densityUP(discretization, DUP, x)
