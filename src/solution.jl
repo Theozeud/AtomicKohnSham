@@ -100,12 +100,10 @@ function Base.show(io::IO, sol::KSESolution)
     println(io, string(sol.niter))
     printstyled(io, "Stopping criteria = "; bold = true)
     println(io, string(sol.stopping_criteria ))
-    #printstyled(io, "Energy = $(sol.energies[:Etot]) \n"; bold = true, color = :green)
     printstyled(io, "All Energies :\n"; bold = true, color = :green)
     for s ∈ keys(sol.energies)
         printstyled(io, "            $(s) = $(sol.energies[s]) \n"; bold = true, color = :green)
     end
-    #printstyled(io, "            $(s) = $(sol.energies[s]) \n"; bold = true, color = :green)
     printstyled(io, "Occupation number = \n"; bold = true, color = :blue)
     for i ∈ eachindex(sol.occupation_number)
         occupation_number = sol.occupation_number[i]
@@ -119,42 +117,39 @@ end
 #--------------------------------------------------------------------
 
 # COMPUTE EIGENVECTORS
-
-function eigenvector(sol::KSESolution, n::Int, l::Int, σ::Int, x)
-    eigenvector(sol.problem.discretization, sol, n, l, σ, x)
+function eigenvector(discretization::KSEDiscretization, sol::KSESolution, n::Int, l::Int, X::AbstractVector{<:Real})
+    @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
+    @assert !discretization.polarized "The discretization is spin-polarized. Please give a spin σ."
+    evaluate(discretization.basis, sol.orbitals[:, n-l,l+1], X)
 end
 
-function eigenvector(discretization::KSEDiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, x)
-    @assert 0 ≤ l ≤ n-1
-    tmp = discretization.basis(sol.orbitals[l+1,:, n-l], x)
-    if iszero(x) && tmp ≈ zero(tmp)
-        return zero(tmp)
-    else
-        return  1/sqrt(4π * x) * tmp 
-    end
+function eigenvector(discretization::KSEDiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, X::AbstractVector{<:Real})
+    @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
+    evaluate(discretization.basis, sol.orbitals[:, n-l,l+1,σ], X)
 end
 
-#=
-function eigenvector(discretization::LSDADiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, x)
-    @assert 0 ≤ l ≤ n-1
-    tmp = discretization.basis(sol.orbitals[l+1,:, n-l,σ], x)
-    if iszero(x) && tmp ≈ zero(tmp)
-        return zero(tmp)
-    else
-        return  1/sqrt(4π * x) * tmp 
-    end
-end
-=#
+
 
 # COMPUTE DENSITY
-
-function density(sol::KSESolution, x::Real)
-    compute_density(sol.problem.discretization, sol.density_coeffs, x)
+function eval_density(discretization::KSEDiscretization, sol::KSESolution, X::AbstractVector{<:Real})
+    if !discretization.polarized
+        eval_density(discretization, sol.density_coeffs, X)
+    else
+        @views DUP = sol.density_coeffs[:,:,1]
+        ρUP = eval_density(discretization, DUP, X)
+        @views DDOWN = sol.density_coeffs[:,:,1]
+        ρDOWN = eval_density(discretization, DDOWN, X)
+        ρUP .+ ρDOWN
+    end
 end
 
-function density(sol::KSESolution, X::AbstractVector)
-    [compute_density(sol.problem.discretization, sol.density_coeffs, x) for x ∈ X]
+
+function eval_density(discretization::KSEDiscretization, sol::KSESolution, X::AbstractVector{<:Real}, σ::Int)
+    @assert 1≤ σ ≤ discretization.polarized+1
+    @views Dσ = sol.density_coeffs[:,:,σ]
+    eval_density(discretization, Dσ, X)
 end
+
 
 # TOTAL CHARGE OF THE SYSTEM
 function total_charge(sol::KSESolution)
