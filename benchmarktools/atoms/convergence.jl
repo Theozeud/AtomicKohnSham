@@ -1,3 +1,12 @@
+#--------------------------------------------------------------------
+#                   ANALYSING CONVERGENCE IN NMESH
+#--------------------------------------------------------------------
+struct AtomConvergenceNmesh
+    vecNmesh        # Set of Nmesh used
+    Error           # Dict of errors on orbitals energy : for each problem,
+                    # there is a vector of errors depending on Nmesh
+    num             # Number of orbitals energy used 
+end
 
 function convergenceNmesh(vecNmesh::AbstractVector, problems; nums = [1])
     Errors = Dict()
@@ -37,6 +46,15 @@ function convergencePlotNmesh(sols::AtomConvergenceNmesh, nums = firstindex(sols
     plt
 end
 
+#--------------------------------------------------------------------
+#                   ANALYSING CONVERGENCE IN RMAX
+#--------------------------------------------------------------------
+struct AtomConvergenceRmax
+    vecRmax         # Set of Nmesh used
+    Error           # Dict of errors on orbitals energy : for each problem,
+                    # there is a vector of errors depending on Rmax
+    num             # Number of orbitals energy used 
+end
 function convergenceRmax(vecRmax::AbstractVector, problems; nums = [1])
     Errors = Dict()
     for problem ∈ problems
