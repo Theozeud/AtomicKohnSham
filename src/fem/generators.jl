@@ -55,16 +55,19 @@ struct P1IntLegendreGenerator{T, polyType <: PolySet, derivpolyType <: PolySet} 
     end
 end
 
-@inline Base.firstindex(::P1IntLegendreGenerator) = 1
-@inline Base.eachindex(p1ilg::P1IntLegendreGenerator) = eachindex(p1ilg.polynomials)
-@inline Base.getindex(p1ilg::P1IntLegendreGenerator, n::Int) =  p1ilg.polynomials[n] 
-@inline getpolynomial(p1ilg::P1IntLegendreGenerator) = p1ilg.polynomials
-@inline getderivpolynomial(p1ilg::P1IntLegendreGenerator) = p1ilg.derivpolynomials
-@inline Base.length(p1ilg::P1IntLegendreGenerator) = length(p1ilg.polynomials)
 
-degmax(p1ilg::P1IntLegendreGenerator) = p1ilg.ordermax
+Base.firstindex(::P1IntLegendreGenerator)               = 1
+Base.eachindex(p1ilg::P1IntLegendreGenerator)           = eachindex(p1ilg.polynomials)
+#degmax(p1ilg::P1IntLegendreGenerator)                   = p1ilg.ordermax
 
-function P1IntLegendreGenerator(mesh::Mesh, T::Type = Float64; kwargs...)
+getpolynomial(p1ilg::P1IntLegendreGenerator, i::Int)                        = p1ilg.polynomials[i]
+getpolynomial(p1ilg::P1IntLegendreGenerator, I::AbstractVector{Int})        = p1ilg.polynomials[I]
+getderivpolynomial(p1ilg::P1IntLegendreGenerator, i::Int)                   = p1ilg.derivpolynomials[i]
+getderivpolynomial(p1ilg::P1IntLegendreGenerator, I::AbstractVector{Int})   = p1ilg.derivpolynomials[I]
+
+
+
+function P1IntLegendreBasis(mesh::Mesh, T::Type = Float64; kwargs...)
     # CREATE GENERATORS
     generators = P1IntLegendreGenerator(T; kwargs...)
     # SIZE OF THE BASIS
