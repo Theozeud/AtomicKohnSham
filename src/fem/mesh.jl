@@ -1,6 +1,6 @@
-#-------------------------------------
-#            MESH STRUCTURE
-#-------------------------------------
+#--------------------------------------------------------------------
+#                                   MESH
+#--------------------------------------------------------------------
 """
     Mesh(points::AbstractVector{T}, name::AbstractString = "", params::NamedTuple = NamedTuple{}()) where T <: Real
 
@@ -30,9 +30,9 @@ struct Mesh{T <: Real,
 end
 
 
-#-------------------------------------
-#                   API
-#-------------------------------------
+#--------------------------------------------------------------------
+#                                    API
+#--------------------------------------------------------------------
 function Base.show(io::IO, m::Mesh)
     printstyled(io, "Mesh: \"", m.name, "\""; bold = true)
     println("")
@@ -64,23 +64,28 @@ end
 
 @inline function findindex(m::Mesh, x::Real)
     if x ≤ m[end]
-        return searchsortedlast(m.points, x)
+        idx = searchsortedlast(m.points, x)
+        if idx == lastindex(m)
+            return idx - 1
+        else
+            return idx
+        end
     else
         return lastindex(m)+1
     end
 end
 
 
-#-------------------------------------
-#           LINEAR MESH
-#-------------------------------------
+#--------------------------------------------------------------------
+#                               LINEAR MESH
+#--------------------------------------------------------------------
 
 linmesh(a::Real, b::Real, n::Int; T::Type = Float64) = Mesh(T.(LinRange(a,b,n)), "Linear Mesh")
 
 
-#-------------------------------------
-#           GEOMETRIC MESH
-#-------------------------------------
+#--------------------------------------------------------------------
+#                               GEOMETRIC MESH
+#--------------------------------------------------------------------
 
 function geometricrange(a::Real ,b::Real ,n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
@@ -100,9 +105,9 @@ end
 geometricmesh(a::Real, b::Real ,n::Int; T = Float64, s::Real) = Mesh(geometricrange(a,b,n; T = T, s = s), "Geometric Mesh", (s = s,))
 
 
-#-------------------------------------
-#           POLYNOMIAL MESH
-#-------------------------------------
+#--------------------------------------------------------------------
+#                           POLYNOMIAL MESH
+#--------------------------------------------------------------------
 
 function polynomialrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)
@@ -117,9 +122,9 @@ end
 polynomialmesh(a::Real, b::Real ,n::Int; T = Float64, s::Real) = Mesh(polynomialrange(a,b,n; T = T, s = s), "Polynomial Mesh", (s = s,))
 
 
-#-------------------------------------
-#          EXPONENTIAL MESH
-#-------------------------------------
+#--------------------------------------------------------------------
+#                           EXPONENTIAL MESH
+#--------------------------------------------------------------------
 
 function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R = zeros(T,n)

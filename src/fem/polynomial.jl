@@ -2,9 +2,9 @@ using UnPack
 using LinearAlgebra
 using SparseArrays
 
-struct PolySet{T, typeData<:AbstractMatrix}
+struct PolySet{T, typeData<:AbstractVecOrMat}
     coeffs::typeData
-    function PolySet(polys::AbstractMatrix)
+    function PolySet(polys::AbstractVecOrMat)
         new{eltype(polys), typeof(polys)}(polys)
     end
 end
@@ -24,6 +24,17 @@ npolys(ps::PolySet) = size(ps.coeffs, 1)
 maxdeg(ps::PolySet) = size(ps.coeffs, 2) - 1
 
 allocate_polyset(T::DataType, nbpoly::Int, degmax::Int) = PolySet(zeros(T,nbpoly, degmax+1))
+
+
+function Base.getindex(ps::PolySet, row::Int)
+    @views v = ps.coeffs[row,:]
+    return PolySet(v')
+end
+
+function Base.getindex(ps::PolySet, rows::AbstractVector{Int})
+    @views v = ps.coeffs[rows,:]
+    return PolySet(v)
+end
 
 function SparseArrays.sparse(ps::PolySet)
     sparseps = sparse(ps.coeffs)

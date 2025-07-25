@@ -1,7 +1,6 @@
-#####################################################################
-#                               PRECOMPUTATIONS
-#####################################################################
-
+#--------------------------------------------------------------------
+#                               CACHE
+#--------------------------------------------------------------------
 struct BasisCache{  prodMType <: PolySet,
                     prodTType <: PolySet,
                     T <: Real}
@@ -12,7 +11,6 @@ struct BasisCache{  prodMType <: PolySet,
     T::Array{T,3}                   # Local FEM Tensor
     cacheM::Vector{T}
     cacheT::Vector{T}
-    evalM::Matrix{T}
 
     function BasisCache(generators::AbstractGenerator{TG}) where {TG}
 
@@ -32,7 +30,6 @@ struct BasisCache{  prodMType <: PolySet,
         # CACHE
         cacheM = zeros(TG, size(prodMG,2))
         cacheT = zeros(TG, size(prodTG,2))
-        evalM  = zeros(TG,size(prodMG,1),100)
 
         new{typeof(prodMG),
             typeof(prodTG),
@@ -42,8 +39,7 @@ struct BasisCache{  prodMType <: PolySet,
                 K,
                 T,
                 cacheM,
-                cacheT,
-                evalM)
+                cacheT)
     end
 end
 
@@ -59,6 +55,9 @@ function getcache(cache::BasisCache, s::Symbol)
 end
 
 
+#--------------------------------------------------------------------
+# 						FEM BASIS STRUCTURE
+#--------------------------------------------------------------------
 """
     struct FEMBasis{T<:Real, 
                            generatorsType <: AbstractGenerator, 
@@ -102,11 +101,11 @@ The basis is constructed from a set of polynomial generators and adapted locally
   A cache structure used to store intermediate values for efficient computation.
 
 """
-struct FEMBasis{ T<:Real, 
-                        generatorsType <: AbstractGenerator, 
-                        meshType <: Mesh, 
-                        dictType <: Dict,
-                        cacheType <: BasisCache}
+struct FEMBasis{T<:Real, 
+				generatorsType <: AbstractGenerator, 
+				meshType <: Mesh, 
+				dictType <: Dict,
+				cacheType <: BasisCache}
     generators::generatorsType                         
     mesh::meshType                                      
     size::Int                                          
@@ -116,7 +115,8 @@ struct FEMBasis{ T<:Real,
     cells_to_generators::Dict{Int,Vector{Int}}           
     shifts::Vector{Tuple{T,T}}                          
     invshifts::Vector{Tuple{T,T}}                       
-    cache::cacheType                                    
+    cache::cacheType
+    max_nb_poly_cells::Int                                    
 
     function FEMBasis(generators::AbstractGenerator, 
                              mesh::Mesh, 
@@ -136,6 +136,8 @@ struct FEMBasis{ T<:Real,
         
         cache = BasisCache(generators)
 
+        max_nb_poly_cells = max(length.(values(cells_to_indices))...)
+
         new{eltype(generators), 
             typeof(generators),
             typeof(mesh),
@@ -149,10 +151,14 @@ struct FEMBasis{ T<:Real,
                             cells_to_generators,
                             shifts, 
                             invshifts, 
-                            cache)
+                            cache,
+                            max_nb_poly_cells)
     end
 end
 
+#--------------------------------------------------------------------
+#								API
+#--------------------------------------------------------------------
 @inline Base.eltype(::FEMBasis{T}) where {T} = T
 @inline Base.length(pb::FEMBasis) = pb.size
 @inline Base.eachindex(pb::FEMBasis) = 1:pb.size
@@ -181,37 +187,13 @@ end
 end
 
 
-function getelement(pb::FEMBasis, k::Int, s::Symbol)
-    @unpack generators, mesh, shifts, invshifts = pb
-    ElementData(shifts[k], 
-                invshifts[k], 
-                mesh[k], 
-                mesh[k+1], 
-                generators.binf, 
-                generators.bsup,
-                s)
-end
-
-#####################################################################
+#--------------------------------------------------------------------
 #                          EVALUATION TOOLS
-#####################################################################
-function (pb::FEMBasis)(I::AbstractVector{<:Int}, X::AbstractVector{T}) where T
-    NewT = promote_type(eltype(pb), T)
-    evaluations = zeros(NewT, length(I), length(X))
-    evaluate!(evaluations, pb, I, X)
-    evaluations
-end
+#--------------------------------------------------------------------
+```
+    Evaluation of the i-th element of the basis `pb` in x.
 
-function evaluate!( evaluations::AbstractVecOrMat, 
-                    pb::FEMBasis, 
-                    I::AbstractVector{<:Int}, 
-                    X::AbstractVector{T}) where T
-
-    
-
-end
-
-
+```
 function (pb::FEMBasis)(i::Int, x::T) where T
     localisation_x = findindex(pb.mesh, x)
     j = findfirst(==(localisation_x), pb.indices_cells[i])
@@ -222,31 +204,86 @@ function (pb::FEMBasis)(i::Int, x::T) where T
     P = getgenerator(pb, i, j)
     ϕ = getshift(pb, i, j)
     ϕx = ϕ[1]*x + ϕ[2]
-    y = P(ϕx)
+    y = evaluate(P,ϕx)
     return y
 end
 
-function (pb::FEMBasis)(coeffs::AbstractVector, x::T) where T
-    @assert length(coeffs) == pb.size
-    newT = promote_type(eltype(pb),T)
-    y = zero(newT)
-    localisation_x = findindex(pb.mesh, x)
-    for i ∈ cells_to_indices[localisation_x]
-        y += coeffs[i] * pb(i, x)
-    end
-    y
+
+```
+    Evaluation of the i-th element of the basis `pb` in x
+    for i ∈ `I`.
+
+```
+function (pb::FEMBasis)(I::AbstractVector{Int}, x::T) where T
+    NewT = promote_type(eltype(pb), T)
+    evaluations = zeros(NewT, length(I))
+    evaluate!(evaluations, pb, I, x)
+    evaluations
 end
 
-function eval_derivative(pb::FEMBasis, i::Int, x::T) where T
+function (pb::FEMBasis)(x::T) where T
+    NewT = promote_type(eltype(pb), T)
+    evaluations = zeros(NewT, length(I))
+    evaluate!(evaluations, pb, 1:length(pb), x)
+    evaluations
+end
+
+function evaluate!( evaluations::AbstractVector, 
+                    pb::FEMBasis, 
+                    I::AbstractVector{<:Int}, 
+                    x::T, 
+                    cache_Pϕx::AbstractVector = _cache_Pϕx(pb, x)) where T
+    fill!(evaluations,0)
+    fill!(cache_Pϕx, 0)
     localisation_x = findindex(pb.mesh, x)
-    j = findfirst(==(localisation_x), pb.indices_cells[i])
-    if isnothing(j)
-        newT = promote_type(eltype(pb), T)
-        return zero(newT)
-    end
-    P = getderivgenerator(pb, i, j)
-    ϕ = getshift(pb, i, j)
+    ϕ = pb.shifts[localisation_x]
     ϕx = ϕ[1]*x + ϕ[2]
-    y = P(ϕx)
-    return y
+    P = pb.generators.polynomials
+    AtomicKohnSham.evaluate!(cache_Pϕx,P,ϕx)
+    cache_Pϕx
+    @inbounds for i ∈ eachindex(I) 
+        j = findfirst(==(localisation_x), pb.indices_cells[I[i]])
+        if !isnothing(j)
+            k = pb.indices_generators[I[i]][j]
+            evaluations[i] = cache_Pϕx[k]
+        end
+    end
+end
+
+function _cache_Pϕx(pb::FEMBasis, ::T) where T
+    newT = promote_type(eltype(pb), T)
+    zeros(newT, length(pb.generators))
+end
+
+
+```
+    Evaluation of a function defined through coefficients `coeffs` over the basis `pb` 
+	at the points of the vector `X`. 
+
+```
+function evaluate(pb::FEMBasis, coeffs::AbstractVector{<:Real}, X::AbstractVector{T}) where T
+    NewT = promote_type(eltype(pb), eltype(coeffs), T)
+    evaluations = zeros(NewT, length(X))
+    evaluate!(evaluations, pb, coeffs, X)
+    evaluations
+end
+
+
+function evaluate!(evaluations::AbstractVector, 
+                   pb::FEMBasis, 
+                   coeffs::AbstractVector{<:Real}, 
+                   X::AbstractVector{<:Real})
+    fill!(evaluations,0)
+    Q = zeros(eltype(evaluations), pb.max_nb_poly_cells)
+    cache_Pϕx = _cache_Pϕx(pb, first(X))
+    @inbounds for k ∈ eachindex(X)
+        xk = X[k]
+        localisation_xk = findindex(pb.mesh, xk)
+        Ik = pb.cells_to_indices[localisation_xk]
+        lk = length(Ik)
+        @views coeffsk = coeffs[Ik]
+        @views Qk = Q[1:lk]
+        evaluate!(Qk, pb, Ik, xk, cache_Pϕx)
+        evaluations[k] = dot(Qk, coeffsk)
+    end
 end
