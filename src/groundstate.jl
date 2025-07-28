@@ -2,9 +2,9 @@
 #                           GROUNDSTATE
 #--------------------------------------------------------------------
 """
-    groundstate(model::KSEModel, 
-                discretization::KSEDiscretization, 
-                method::SCFAlgorithm; 
+    groundstate(model::KSEModel,
+                discretization::KSEDiscretization,
+                method::SCFAlgorithm;
                 name::String = "", kwargs...) -> KSESolution
 
 Computes the ground state solution of a Kohn–Sham model using a specified discretization and SCF method.
@@ -21,9 +21,9 @@ This function creates a `KSESolver` object with the given model, discretization,
 # Returns
 - `KSESolution`: The computed ground state, including orbitals, energies, density, etc.
 """
-function groundstate(model::KSEModel, 
-                     discretization::KSEDiscretization, 
-                     alg::SCFAlgorithm; 
+function groundstate(model::KSEModel,
+                     discretization::KSEDiscretization,
+                     alg::SCFAlgorithm;
                      name::String = "", kwargs...)
     solver = KSESolver(model, discretization, alg; kwargs...)
     solve!(solver)
@@ -50,7 +50,7 @@ function groundstate(prob::AtomProblem)
     typebasis = prob.typebasis
     mesh = typemesh(zero(T), prob.Rmax, prob.Nmesh; T = T, prob.optsmesh...)
     basis = typebasis(mesh, T; prob.optsbasis...)
-    discretization = KSEDiscretization(prob.lh, basis, mesh, typeexc(prob.model), prob.nh)
+    discretization = KSEDiscretization(prob.lh, basis, mesh, prob.model.n_spin, prob.nh)
     groundstate(prob.model, discretization, prob.alg; name = prob.name, prob.solveropts...)
 end
 
@@ -78,10 +78,10 @@ end
 
 # LOOPHEADER
 function loopheader!(solver::KSESolver)
-    # LOOPHEADER SPECIFIC FOR THE METHOD 
+    # LOOPHEADER SPECIFIC FOR THE METHOD
     loopheader!(solver.cache, solver.alg, solver)
-    nothing                                         
-end 
+    nothing
+end
 
 
 # LOOPFOOTER
@@ -89,16 +89,16 @@ function loopfooter!(solver::KSESolver)
     # INCREASE THE NUMBER OF ITERATIONS DONE
     solver.niter += 1
 
-    # COMPUTE THE NEW STOPPING CRITERIA   
-    stopping_criteria!(solver) 
+    # COMPUTE THE NEW STOPPING CRITERIA
+    stopping_criteria!(solver)
 
-    # UPDATE THE LOG                                           
-    register!(solver)     
-    
+    # UPDATE THE LOG
+    register!(solver)
+
     # LOOPFOOTER SPECIFIC FOR THE METHOD
-    loopfooter!(solver.cache, solver.alg, solver) 
-    nothing                                            
-end 
+    loopfooter!(solver.cache, solver.alg, solver)
+    nothing
+end
 
 
 # MONITOR : DISPLAY CURRENT STATE OF SOLVER
@@ -122,15 +122,15 @@ end
 function stopping_criteria!(solver::KSESolver)
     solver.stopping_criteria =  stopping_criteria!(solver.cache, solver.alg, solver)
 end
-    
+
 
 # UPDATE THE LOG : STORE INTERMEDIATE STATE
 function register!(solver::KSESolver)
     @unpack logbook = solver
     @unpack occupation_number, orbitals_energy, stopping_criteria, energy, density = logbook.config
 
-    # STORE THE STOPPING CRITERIA 
-    !stopping_criteria || push!(solver.logbook.stopping_criteria_log, solver.stopping_criteria)   
+    # STORE THE STOPPING CRITERIA
+    !stopping_criteria || push!(solver.logbook.stopping_criteria_log, solver.stopping_criteria)
 
     # STORE THE TOTAL ENERGY
     !energy || push!(solver.logbook.energy_log, solver.energies[:Etot])

@@ -1,22 +1,22 @@
 #--------------------------------------------------------------------
 #                         TOTAL ENERGY
 #--------------------------------------------------------------------
-function compute_total_energy( discretization::KSEDiscretization, 
+function compute_total_energy( discretization::KSEDiscretization,
                                 model::KSEModel,
-                                D::AbstractMatrix{<:Real}, 
+                                D::AbstractMatrix{<:Real},
                                 n::AbstractMatrix{<:Real},
                                 ϵ::AbstractMatrix{<:Real})
-    @unpack Rmax, matrices, polarized = discretization
+    @unpack Rmax, matrices, n_spin = discretization
     @unpack VxcUP, VxcDOWN = matrices
-    @tensor energy = n[l,n] * ϵ[l,n] 
-    if isthereExchangeCorrelation(model)
+    @tensor energy = n[l,n] * ϵ[l,n]
+    if has_exchcorr(model)
         energy_exc = compute_exchangecorrelation_energy(discretization, model, D)
         energy_har = compute_hartree_energy(discretization, D)
-        if !polarized
-            @tensor energy_correction = Vxc[i,j] * D[i,j]
+        if n_spin == 1
+            @tensor energy_correction = VxcUP[i,j] * D[i,j]
             return energy - energy_har + energy_exc - energy_correction
         else
-            @views DUP = D[:,:,1]   
+            @views DUP = D[:,:,1]
             @views DDOWN = D[:,:,2]
             @tensor energy_correctionUP     = VxcUP[i,j] * DUP[i,j]
             @tensor energy_correctionDOWN   = VxcDOWN[i,j] * DDOWN[i,j]
@@ -33,15 +33,15 @@ end
 #--------------------------------------------------------------------
 #                        KINETIC ENERGY
 #--------------------------------------------------------------------
-function compute_kinetic_energy(discretization::KSEDiscretization, 
-                                U::AbstractArray{<:Real}, 
+function compute_kinetic_energy(discretization::KSEDiscretization,
+                                U::AbstractArray{<:Real},
                                 n::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, polarized  = discretization
+    @unpack lₕ, nₕ, n_spin  = discretization
     elT = eltype(discretization)
     @unpack Kin = discretization.matrices
     energy_kin = zero(elT)
-    @inbounds for σ ∈ 1:(1+polarized)
-        @inbounds for l ∈ 1:lₕ+1 
+    @inbounds for σ ∈ 1:n_spin
+        @inbounds for l ∈ 1:lₕ+1
             @inbounds for k ∈ 1:nₕ
                 if !iszero(n[l,k,σ])
                     @views Ulkσ = U[:,k,l,σ]
@@ -57,15 +57,15 @@ end
 #--------------------------------------------------------------------
 #                        COULOMB ENERGY
 #--------------------------------------------------------------------
-function compute_coulomb_energy(discretization::KSEDiscretization, 
-                                U::AbstractArray{<:Real}, 
+function compute_coulomb_energy(discretization::KSEDiscretization,
+                                U::AbstractArray{<:Real},
                                 n::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, polarized  = discretization
+    @unpack lₕ, nₕ, n_spin  = discretization
     elT = eltype(discretization)
     @unpack Coulomb = discretization.matrices
     energy_cou = zero(elT)
-    @inbounds for σ ∈ 1:(1+polarized)
-        @inbounds for l ∈ 1:lₕ+1   
+    @inbounds for σ ∈ n_spin
+        @inbounds for l ∈ 1:lₕ+1
             @inbounds for k ∈ 1:nₕ
                 if !iszero(n[l,k,σ])
                     @views Ulkσ = U[:,k,l,σ]
@@ -81,19 +81,19 @@ end
 #--------------------------------------------------------------------
 #                        HARTREE ENERGY
 #--------------------------------------------------------------------
-function compute_hartree_energy(discretization::KSEDiscretization, 
+function compute_hartree_energy(discretization::KSEDiscretization,
                                 D::AbstractMatrix{<:Real})
-    @unpack Rmax, matrices, cache, polarized = discretization
+    @unpack Rmax, matrices, cache, n_spin = discretization
     elT = eltype(discretization)
     @unpack A, F, M₀ = matrices
     @unpack tmp_B, tmp_C = cache
-    if !polarized
+    if n_spin == 1
         tensor_matrix_dict!(tmp_B, D, F)
         tmp_C .= A\tmp_B
         @tensor Crho = D[i,j] * M₀[i,j]
         return elT(0.5) * (dot(tmp_B,tmp_C) + Crho^2/Rmax)
     else
-        @views DUP = D[:,:,1]   
+        @views DUP = D[:,:,1]
         @views DDOWN = D[:,:,2]
         tensor_matrix_dict!(tmp_B, DUP, DDOWN, F)
         tmp_C .= A\tmp_B
@@ -105,14 +105,14 @@ function compute_hartree_energy(discretization::KSEDiscretization,
 end
 
 
-function compute_hartree_mix_energy(discretization::KSEDiscretization, 
-                                    D0::AbstractMatrix{<:Real}, 
+function compute_hartree_mix_energy(discretization::KSEDiscretization,
+                                    D0::AbstractMatrix{<:Real},
                                     D1::AbstractMatrix{<:Real})
-    @unpack Rmax, matrices, cache, polarized = discretization
+    @unpack Rmax, matrices, cache, n_spin = discretization
     elT = eltype(discretization)
     @unpack A, F, M₀ = matrices
     @unpack tmp_B, tmp_C = cache
-    if !polarized
+    if n_spin == 1
         tensor_matrix_dict!(tmp_B, D0, F)
         tmp_C .= A\tmp_B
         tensor_matrix_dict!(tmp_B, D1, F)
@@ -120,9 +120,9 @@ function compute_hartree_mix_energy(discretization::KSEDiscretization,
         @tensor Crho1 = D1[i,j] * M₀[i,j]
         return elT(0.5) * (dot(tmp_B,tmp_C) + Crho0*Crho1/Rmax)
     else
-        @views D0UP     = D0[:,:,1]   
+        @views D0UP     = D0[:,:,1]
         @views D0DOWN   = D0[:,:,2]
-        @views D1UP     = D1[:,:,1]   
+        @views D1UP     = D1[:,:,1]
         @views D1DOWN   = D1[:,:,2]
         tensor_matrix_dict!(tmp_B, D0UP, D0DOWN, F)
         tmp_C .= A\tmp_B
@@ -141,17 +141,18 @@ end
 #--------------------------------------------------------------------
 #                  EXCHANGE CORRELATION ENERGY
 #--------------------------------------------------------------------
-function compute_exchangecorrelation_energy(discretization::KSEDiscretization, 
-                                            model::KSEModel, 
+function compute_exchangecorrelation_energy(discretization::KSEDiscretization,
+                                            model::KSEModel,
                                             D::AbstractMatrix{<:Real})
-    @unpack Rmax, polarized = discretization
-    if !polarized
-        ρ(x) = compute_density(discretization, D, x)
-        f1(x,p) = exc(model.exc, ρ(x)) * x^2
-        prob = IntegralProblem(f1, (zero(Rmax), Rmax))
-        return 4π * solve(prob, QuadGKJL(); reltol = 1e-10, abstol = 1e-10).u
+    @unpack Rmax, n_spin, fem_integration_method = discretization
+    @unpack fx, fy, wy, y, shiftx = fem_integration_method
+    if n_spin == 1
+        eval_density!(fx, discretization, D, y)
+        evaluate_zk!(model; rho=fx, zk=fy, cache=shiftx)
+        @. fx = fx * fy * y^2
+        return 4π * dot(wy,fx)
     else
-        @views DUP = D[:,:,1]   
+        @views DUP = D[:,:,1]
         @views DDOWN = D[:,:,2]
         ρUP(x) = compute_densityUP(discretization, DUP, x)
         ρDOWN(x) = compute_densityDOWN(discretization, DDOWN, x)
@@ -162,15 +163,15 @@ function compute_exchangecorrelation_energy(discretization::KSEDiscretization,
 end
 
 
-function compute_kinetic_correlation_energy!(discretization::KSEDiscretization, 
-                                             model::KSEModel, 
+function compute_kinetic_correlation_energy!(discretization::KSEDiscretization,
+                                             model::KSEModel,
                                              D::AbstractMatrix{<:Real})
-    @unpack Rmax, polarized = discretization
+    @unpack Rmax, n_spin = discretization
     elT = eltype(discretization)
-    if !polarized
+    if n_spin == 1
         return zero(elT)
     end
-    @views DUP = D[:,:,1]   
+    @views DUP = D[:,:,1]
     @views DDOWN = D[:,:,2]
     ρUP(x) = compute_densityUP(discretization, DUP, x)
     ρDOWN(x) = compute_densityDOWN(discretization, DDOWN, x)

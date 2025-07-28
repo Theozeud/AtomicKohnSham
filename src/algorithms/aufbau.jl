@@ -1,5 +1,3 @@
-# RETURN THE MAXIMAL NUMBER OF ELECTRONS THAT CAN BE PUT AT THE LAYER CORRESPONDING TO THE INDEX idx
-
 function convert_index(discretization::KSEDiscretization, idx::Int)
     @unpack lₕ  = discretization
     l = rem(idx - 1, lₕ+1)
@@ -40,19 +38,19 @@ function aufbau!(cache::RCACache, solver::KSESolver)
     @unpack U, ϵ, n, Noccup, D, tmpD, tmpD2, index_aufbau, energies_prev = cache
 
     # INIT OCCUPATION NUMBER
-    fill!(n, zero(eltype(n))) 
+    fill!(n, zero(eltype(n)))
     fill!(Noccup, zero(eltype(Noccup)))
 
     # COLLECT THE INDICES OF THE SORTED ORBITAL ENERGIES
     index_aufbau .= sortperm(vec(ϵ))
-   
+
     # LOOP TO FILL THE ORBITALS
     remain = model.N
     idx = 1
     while remain > 0 && idx ≤ length(index_aufbau)
 
         # FIND ALL THE ORBITALS WITH THE SAME ENERGY
-        indices_degen = [index_aufbau[idx]]  
+        indices_degen = [index_aufbau[idx]]
         idx += 1
         while idx ≤ length(index_aufbau) && abs(ϵ[index_aufbau[idx]] - ϵ[first(indices_degen)]) < opts.degen_tol && length(indices_degen) <2
             push!(indices_degen, index_aufbau[idx])
@@ -72,7 +70,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
 
             for i in eachindex(indices_degen)
                 n[indices_degen[i]] = degen[i]
-                normalization!(discretization, U, convert_index(discretization,i)...) 
+                normalization!(discretization, U, convert_index(discretization,i)...)
             end
             remain -= total_degen
             Noccup[1] += length(indices_degen)
@@ -95,7 +93,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                 normalization!(discretization, U, convert_index(discretization,i)...)
             end
 
-            # COMPUTE ENERGIES FOR ONE EXTREMA 
+            # COMPUTE ENERGIES FOR ONE EXTREMA
             degen_first = degen[1]
             if degen_first ≥ remain
                 n[indices_degen[1]] = remain
@@ -108,7 +106,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                 n1_0 = degen_first
                 n2_0 = remain - degen_first
             end
-            
+
             density!(discretization, U, n, D)
             energy_kin0 = compute_kinetic_energy(discretization, U, n)
             energy_cou0 = compute_coulomb_energy(discretization, U, n)
@@ -127,7 +125,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                 n1_1 = remain - degen_second
                 n2_1 = degen_second
             end
-            
+
             density!(discretization, U, n, tmpD)
             energy_kin1 = compute_kinetic_energy(discretization, U, n)
             energy_cou1 = compute_coulomb_energy(discretization, U, n)
@@ -137,9 +135,9 @@ function aufbau!(cache::RCACache, solver::KSESolver)
             energy_har10 = compute_hartree_mix_energy(discretization, tmpD, D)
 
             # FIND THE OPTIMUM OCCUPATION
-            cache.tdegen, energies[:Etot] = find_minima_oda(energy_kin0, energy_kin1, 
-                                                            energy_cou0, energy_cou1, 
-                                                            energy_har0, energy_har1, 
+            cache.tdegen, energies[:Etot] = find_minima_oda(energy_kin0, energy_kin1,
+                                                            energy_cou0, energy_cou1,
+                                                            energy_har0, energy_har1,
                                                             energy_har01, energy_har10,
                                                             D, tmpD, tmpD2, model, discretization)
 
@@ -155,7 +153,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
             energies[:Ekin] = t*energy_kin0 + (1-t)*energy_kin1
             energies[:Ecou] = t*energy_cou0 + (1-t)*energy_cou1
             energies[:Ehar] = t^2*energy_har0 + (1-t)^2*energy_har1 + t*(1-t) * (energy_har01 + energy_har10)
-            if isthereExchangeCorrelation(model)
+            if has_exchcorr(model)
                 energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D)
             end
 
@@ -166,8 +164,6 @@ function aufbau!(cache::RCACache, solver::KSESolver)
         end
 
     end
-    Noccup[3] = length(ϵ) - Noccup[1] - Noccup[2] 
+    Noccup[3] = length(ϵ) - Noccup[1] - Noccup[2]
     nothing
 end
-
-

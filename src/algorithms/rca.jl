@@ -18,24 +18,24 @@ mutable struct RCACache{dataType <: Real,
 
     D::densityType                              # Density Matrix at current time
     Dprev::densityType                          # Density Matrix at previous time
-    tmpD::densityType                           # Storage for extra Density Matrix 
+    tmpD::densityType                           # Storage for extra Density Matrix
                                                 # (usefull for degeneracy)
-    tmpD2::densityType                          # Storage for extra Density Matrix 
+    tmpD2::densityType                          # Storage for extra Density Matrix
                                                 # (usefull to kill allocation in ODA)
 
     U::orbitalsType                             # Coefficient of orbitals at current time
     ϵ::orbitalsenergyType                       # Orbitals energy at current time
-    n::occupationType                           # Occupation number at current time 
-    Noccup::Vector{Int}                         # Triplet (Nf,Np,Nv) where  
-                                                #     - Nf is the number of fully occupied  orbitals, 
+    n::occupationType                           # Occupation number at current time
+    Noccup::Vector{Int}                         # Triplet (Nf,Np,Nv) where
+                                                #     - Nf is the number of fully occupied  orbitals,
                                                 #     - Np is the number of partially occupied orbitals,
                                                 #     - Nv is the number of virtual orbitals
-    
-    flag_degen::Bool                            # Flag to know if there is a degeneracy 
+
+    flag_degen::Bool                            # Flag to know if there is a degeneracy
     tdegen::dataType                            # Interpolation parameters in case of degeneracy
 
     index_aufbau::Vector{Int}                   # Indices List for aufbau
-    energies_prev::Dict{Symbol,dataType}        # Energies at previous time                                         
+    energies_prev::Dict{Symbol,dataType}        # Energies at previous time
 end
 
 function create_cache_alg(alg::RCAAlgorithm, discretization::KSEDiscretization)
@@ -57,9 +57,9 @@ function create_cache_alg(alg::RCAAlgorithm, discretization::KSEDiscretization)
                                 :Ehar => zero(elT))
     RCACache{
         elT,
-        typeof(D), 
-        typeof(U), 
-        typeof(ϵ), 
+        typeof(D),
+        typeof(U),
+        typeof(ϵ),
         typeof(n)}(t, D, Dprev, tmpD, tmpD2, U, ϵ, n, Noccup, false, tdegen, index_aufbau, energies_prev)
 end
 
@@ -92,7 +92,7 @@ function make_occupation_number(kd::KSEDiscretization, cache::RCACache)
     index = findall(x->x ≠ 0, n)
     index_sort = sortperm(ϵ[index])
     new_index = index[index_sort]
-    if !kd.polarized == 1
+    if kd.n_spin == 1
         return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]]), ϵ[i], n[i]) for i ∈ new_index]
     else
         return [(string(i[2]+ i[1] -1, L_QUANTUM_LABELS[i[1]],SPIN_LABELS[i[3]]), ϵ[i], n[i]) for i ∈ new_index]
@@ -125,7 +125,7 @@ function performstep!(cache::RCACache, method::RCAAlgorithm, solver::KSESolver)
 
     @unpack discretization, model, opts, energies = solver
     @unpack D, Dprev, U, ϵ, n = cache
-    
+
     # STEP 1 : PREPARE THE EIGENVALUE PROBLEM
     build_hamiltonian!(discretization, model, Dprev, model.hartree)
 
@@ -133,7 +133,7 @@ function performstep!(cache::RCACache, method::RCAAlgorithm, solver::KSESolver)
     find_orbital!(discretization, U, ϵ)
 
     # STEP 3 : FILL THE OCCUPATION NUMBER MATRIX ACCORDINGLY WITH THE AUFBAU PRINCIPLE
-    #          The normalization of eigenvectors is made during this step to only 
+    #          The normalization of eigenvectors is made during this step to only
     #          normalize the eigenvectors we need.
     aufbau!(cache, solver)
 
@@ -145,9 +145,9 @@ function performstep!(cache::RCACache, method::RCAAlgorithm, solver::KSESolver)
         energies[:Ekin] = compute_kinetic_energy(discretization, U, n)
         energies[:Ecou] = compute_coulomb_energy(discretization, U, n)
         energies[:Ehar] = compute_hartree_energy(discretization, D)
-        !isthereExchangeCorrelation(model) || 
+        !has_exchcorr(model) ||
                 (energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D))
-        #!(typeof(discretization) <: LSDADiscretization) || 
+        #!(typeof(discretization) <: LSDADiscretization) ||
         #        (energies[:Ekincorr] = compute_kinetic_correlation_energy!(discretization, model, D))
     end
 
@@ -178,7 +178,7 @@ struct CDA{T} <: RCAAlgorithm
     end
 end
 
-name(::CDA) = "CDA" 
+name(::CDA) = "CDA"
 
 function update_density!(cache::RCACache, ::CDA, solver::KSESolver)
     @unpack t, D, Dprev, energies_prev = cache
@@ -193,7 +193,7 @@ function update_density!(cache::RCACache, ::CDA, solver::KSESolver)
         energies[:Ekin] = t*energies[:Ekin] + (1-t)*energies_prev[:Ekin]
         energies[:Ecou] = t*energies[:Ecou] + (1-t)*energies_prev[:Ecou]
         energies[:Ehar] = compute_hartree_energy(discretization, D)
-        if isthereExchangeCorrelation(model)
+        if has_exchcorr(model)
             energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D)
         end
     end
@@ -215,7 +215,7 @@ struct ODA{T<:Real} <: RCAAlgorithm
     end
 end
 
-name(::ODA) = "ODA" 
+name(::ODA) = "ODA"
 
 function update_density!(cache::RCACache, m::ODA, solver::KSESolver)
 
@@ -223,7 +223,7 @@ function update_density!(cache::RCACache, m::ODA, solver::KSESolver)
     @unpack discretization, model, energies = solver
 
     if solver.niter > 0
-        
+
         if solver.niter < m.iter
             D .= cache.t * D + (1 - cache.t) * Dprev
 
@@ -232,19 +232,19 @@ function update_density!(cache::RCACache, m::ODA, solver::KSESolver)
             energies[:Ekin] = cache.t*energies[:Ekin] + (1-tcache.t)*energies_prev[:Ekin]
             energies[:Ecou] = cache.t*energies[:Ecou] + (1-cache.t)*energies_prev[:Ecou]
             energies[:Ehar] = compute_hartree_energy(discretization, D)
-            if isthereExchangeCorrelation(model)
+            if has_exchcorr(model)
                 energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D)
             end
             return nothing
         end
-        
+
         energy_har01 = compute_hartree_mix_energy(discretization, D, Dprev)
         energy_har10 = compute_hartree_mix_energy(discretization, Dprev, D)
 
         # FIND THE OPTIMUM OCCUPATION
-        cache.t, energies[:Etot] = find_minima_oda( energies[:Ekin], energies_prev[:Ekin], 
-                                                    energies[:Ecou], energies_prev[:Ecou], 
-                                                    energies[:Ehar], energies_prev[:Ehar], 
+        cache.t, energies[:Etot] = find_minima_oda( energies[:Ekin], energies_prev[:Ekin],
+                                                    energies[:Ecou], energies_prev[:Ecou],
+                                                    energies[:Ehar], energies_prev[:Ehar],
                                                     energy_har01, energy_har10,
                                                     D, Dprev, tmpD, model, discretization)
 
@@ -256,7 +256,7 @@ function update_density!(cache::RCACache, m::ODA, solver::KSESolver)
         energies[:Ekin] = t*energies[:Ekin] + (1-t)*energies_prev[:Ekin]
         energies[:Ecou] = t*energies[:Ecou] + (1-t)*energies_prev[:Ecou]
         energies[:Ehar] = t^2*energies[:Ehar] + (1-t)^2*energies_prev[:Ehar] + t*(1-t) * (energy_har01 + energy_har10)
-        if isthereExchangeCorrelation(model)
+        if has_exchcorr(model)
             energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D)
         end
 

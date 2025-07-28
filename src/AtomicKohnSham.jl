@@ -19,18 +19,22 @@ module AtomicKohnSham
     using HypergeometricFunctions
 
     using UnPack
-    
+
     using Base.Threads
+    using AtomicKohnSham
 
+    using Libxc: Functional, OptArray
+    import Libxc: is_lda
+    import Libxc: evaluate as evaluate_functional
+    import Libxc: evaluate! as evaluate_functional!
 
-    
     # -------------------------------------
     #               UTILS
     # -------------------------------------
     include("utils/free allocation.jl")
     include("utils/sparse tools.jl")
 
-    
+
     # -------------------------------------
     #               POLYSET
     # -------------------------------------
@@ -47,13 +51,13 @@ module AtomicKohnSham
     # -------------------------------------
     export FEMBasis
 
-    export P1IntLegendreGenerator
+    export P1IntLegendreGenerator, P1IntLegendreBasis
 
-    export mass_matrix, sparse_mass_matrix, 
+    export mass_matrix, sparse_mass_matrix,
            stiffness_matrix, sparse_stiffness_matrix,
            mass_tensor
-    
-    export IntegrationMethod, ExactIntegration, QuadratureIntegration
+
+    export FEMIntegrationMethod, ExactIntegration, QuadratureIntegration, GaussLegendre
 
     abstract type AbstractGenerator{T} end
     @inline Base.eltype(::AbstractGenerator{T}) where T = T
@@ -66,7 +70,8 @@ module AtomicKohnSham
 
     include("fem/generators.jl")
     include("fem/basis.jl")
-    include("fem/computations.jl")
+    include("fem/integration methods.jl")
+    include("fem/weights.jl")
     include("fem/matrices.jl")
     include("fem/local matrix.jl")
     include("fem/integration_formula.jl")
@@ -75,12 +80,15 @@ module AtomicKohnSham
     # -------------------------------------
     #               MODELISATION
     # -------------------------------------
-    export ExchangeCorrelation, NoExchangeCorrelation, SlaterXα, LSDA
-    export KSEModel, RHF, SlaterXα
+    export NoFunctional, BuiltinFunctional
+    export evaluate_functional, evaluate_functional!
+    export KSEModel, RHF, Slater
 
-    include("exchange correlation.jl")
+    include("exchange correlation/BuiltinFunctional.jl")
+    include("exchange correlation/SlaterXa.jl")
+    #include("exchange correlation/PW92.jl")
     include("models.jl")
-    
+
 
     # -------------------------------------
     #               DISCRETIZATION
@@ -91,7 +99,7 @@ module AtomicKohnSham
     include("discretization/energies.jl")
     include("discretization/density.jl")
 
-    
+
     # -------------------------------------
     #               LogBook
     # -------------------------------------
@@ -122,7 +130,7 @@ module AtomicKohnSham
     export AtomProblem
     include("problem.jl")
 
-    export KSESolution, eigenvector, density, total_charge
+    export KSESolution, eigenvector, eval_density, total_charge
     include("solution.jl")
 
     export groundstate

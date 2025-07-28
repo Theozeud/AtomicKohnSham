@@ -4,9 +4,9 @@
 """
     KSESolution(solver::KSESolver, name::String) -> KSESolution
 
-Constructs a solution object from a fully converged (or stopped) Kohn–Sham solver. 
-This structure stores the result of a self-consistent field (SCF) computation, 
-including metadata such as convergence status, final energies, iteration logs, 
+Constructs a solution object from a fully converged (or stopped) Kohn–Sham solver.
+This structure stores the result of a self-consistent field (SCF) computation,
+including metadata such as convergence status, final energies, iteration logs,
 and algorithm-specific data.
 
 # Arguments
@@ -14,7 +14,7 @@ and algorithm-specific data.
 - `name::String`: Name or label for the solution (can be empty if unused).
 
 # Fields
-- `success::String`: Convergence status — either `"SUCCESS"` if convergence occurred before reaching `maxiter`, 
+- `success::String`: Convergence status — either `"SUCCESS"` if convergence occurred before reaching `maxiter`,
                                             or   `"MAXITERS"` if the iteration limit was reached.
 - `solveropts::SolverOptions`: Options that were used in the solver (e.g., tolerance, integration method).
 - `niter::Int`: Number of SCF iterations performed.
@@ -24,8 +24,8 @@ and algorithm-specific data.
 - `log::LogBook`: Object that records iteration history and diagnostics.
 - `name::String`: Name of the solution (can be used for identification, labeling results, etc.).
 """
-struct KSESolution{ optsType <: SolverOptions, 
-                    T <: Real, 
+struct KSESolution{ optsType <: SolverOptions,
+                    T <: Real,
                     solutionType <: SCFSolution,
                     logbookType <: LogBook}
 
@@ -34,11 +34,9 @@ struct KSESolution{ optsType <: SolverOptions,
 
     solveropts::optsType                # Option of the solver used
 
-    exc::Symbol                         # Type of exchange correlation functional
-    
     niter::Int                          # Number of iterations
     stopping_criteria::T                # Final stopping criteria
-              
+
     energies::Dict{Symbol, T}           # Energies
 
     datas::solutionType                 # All datas depending on the scf algorithm used
@@ -58,14 +56,13 @@ struct KSESolution{ optsType <: SolverOptions,
         new{typeof(solver.opts),
             typeof(solver.stopping_criteria),
             typeof(datas),
-            typeof(solver.logbook)}(success, 
-                                    solver.opts, 
-                                    typeexc(solver.model),
-                                    solver.niter, 
-                                    solver.stopping_criteria, 
+            typeof(solver.logbook)}(success,
+                                    solver.opts,
+                                    solver.niter,
+                                    solver.stopping_criteria,
                                     solver.energies,
                                     datas,
-                                    solver.logbook, 
+                                    solver.logbook,
                                     name)
     end
 end
@@ -117,7 +114,11 @@ end
 #--------------------------------------------------------------------
 
 # COMPUTE EIGENVECTORS
-function eigenvector(discretization::KSEDiscretization, sol::KSESolution, n::Int, l::Int, X::AbstractVector{<:Real})
+function eigenvector(discretization::KSEDiscretization,
+    sol::KSESolution,
+    n::Int,
+    l::Int,
+    X::AbstractVector{<:Real})
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
     @assert !discretization.polarized "The discretization is spin-polarized. Please give a spin σ."
     evaluate(discretization.basis, sol.orbitals[:, n-l,l+1], X)
@@ -131,8 +132,11 @@ end
 
 
 # COMPUTE DENSITY
-function eval_density(discretization::KSEDiscretization, sol::KSESolution, X::AbstractVector{<:Real})
-    if !discretization.polarized
+function eval_density(
+    discretization::KSEDiscretization,
+    sol::KSESolution,
+    X::AbstractVector{<:Real})
+    if discretization.n_spin == 1
         eval_density(discretization, sol.density_coeffs, X)
     else
         @views DUP = sol.density_coeffs[:,:,1]
@@ -144,7 +148,11 @@ function eval_density(discretization::KSEDiscretization, sol::KSESolution, X::Ab
 end
 
 
-function eval_density(discretization::KSEDiscretization, sol::KSESolution, X::AbstractVector{<:Real}, σ::Int)
+function eval_density(
+    discretization::KSEDiscretization,
+    sol::KSESolution,
+    X::AbstractVector{<:Real},
+    σ::Int)
     @assert 1≤ σ ≤ discretization.polarized+1
     @views Dσ = sol.density_coeffs[:,:,σ]
     eval_density(discretization, Dσ, X)
