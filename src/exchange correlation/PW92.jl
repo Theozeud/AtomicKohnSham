@@ -1,36 +1,3 @@
-#####################################################################
-#                        EXCHANGE-CORRELATION
-#####################################################################
-
-abstract type ExchangeCorrelation end
-
-abstract type LDA <: ExchangeCorrelation end
-abstract type LSDA <: ExchangeCorrelation end
-
-struct NoExchangeCorrelation <: ExchangeCorrelation end
-
-exc(::NoExchangeCorrelation, rho) = zero(rho)
-vxc(::NoExchangeCorrelation, rho) = zero(rho)
-
-isthereExchangeCorrelation(::ExchangeCorrelation) = true
-isthereExchangeCorrelation(::NoExchangeCorrelation) = false
-
-#####################################################################
-#                            SlaterXα
-#####################################################################
-
-struct SlaterXα <: LDA end
-
-exc(::SlaterXα, rho::Real) = - 3/4 * (3/π)^(1/3) * rho^(4/3)
-vxc(::SlaterXα, rho::Real) = - (3/π)^(1/3) * rho^(1/3)
-
-exc(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real) = 0.5 * (exc(xa,rhoUP) + exc(xa,rhoDOWN))
-vxcUP(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real) = 0.5 *vxc(xa,rhoUP)
-vxcDOWN(xa::SlaterXα, rhoUP::Real, rhoDOWN::Real)  = 0.5 *vxc(xa,rhoDOWN)
-
-#####################################################################
-#                           Perdew-Wang 92
-#####################################################################
 
 struct PW91 <: LSDA end
 

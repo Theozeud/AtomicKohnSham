@@ -4,7 +4,7 @@
 """
     KSEModel(; z::Real, N::Real, hartree::Real = 0, exc::ExchangeCorrelation = NoExchangeCorrelation())
 
-Structure for storing the parameters of an extended Kohn–Sham model (LDA/LSDA).  
+Structure for storing the parameters of an extended Kohn–Sham model (LDA/LSDA).
 Encodes physical and modeling parameters for atomic or ionic simulations.
 
 # Arguments
@@ -13,41 +13,99 @@ Encodes physical and modeling parameters for atomic or ionic simulations.
 - `hartree::Real = 0`: Scaling factor for the Hartree term:
     - `0` disables electron-electron repulsion.
     - `1` uses the full Hartree interaction.
-- `exc::ExchangeCorrelation = NoExchangeCorrelation()`: Exchange–correlation model used in the simulation. 
+- `exc::ExchangeCorrelation = NoExchangeCorrelation()`: Exchange–correlation model used in the simulation.
 """
-struct KSEModel{T <: Real, 
-                TEXCH <: ExchangeCorrelation}
+struct KSEModel{T <: Real,
+                TEX,
+                TCO}
 
     z::T                # Charge of the nucleus
     N::T                # Number of electrons
 
-    hartree::T          # Coefficient multiply to the Hartree Matrix : 
-                        # 0 -> no hartree term, 
+    hartree::T          # Coefficient multiply to the Hartree Term :
+                        # 0 -> no hartree term,
                         # 1-> full hartree term
 
-    exc::TEXCH          # Exchange-correlation functional
+    exchange::TEX       # Exchange functional
+    correlation::TCO    # Correlation functional
 
-    function KSEModel(; z::Real, 
-                        N::Real, 
-                        hartree::Real = 1, 
-                        exc::ExchangeCorrelation = NoExchangeCorrelation())
+    n_spin::Int         # Spin Polarization
+                        # 1 -> No Polarization
+                        # 2 -> Polarisation
+
+    function KSEModel(; z::Real,
+                        N::Real,
+                        hartree::Real = 1,
+                        ex = NoFunctional(1),
+                        ec = NoFunctional(1))
         T = promote_type(typeof(z), typeof(N), typeof(hartree))
-        new{T, typeof(exc)}(T(z), T(N), T(hartree), exc)
+        n_spin = max(ex.n_spin, ec.n_spin)
+        new{T,
+            typeof(ex),
+            typeof(ec)}(T(z), T(N), T(hartree), ex, ec, n_spin)
     end
 end
 
-isthereExchangeCorrelation(km::KSEModel) = isthereExchangeCorrelation(km.exc)
+has_exchange(model::KSEModel)       = !(model.exchange isa NoFunctional)
+has_correlation(model::KSEModel)    = !(model.correlation isa NoFunctional)
+has_exchcorr(model::KSEModel)       = has_exchange(model) || has_correlation(model)
+
+
+
+function evaluate_vrhox(model::KSEModel; rho::AbstractArray{<:Real})
+    evaluate_functional(model.exchange; rho=rho, derivatives=1)
+end
+
+
+function evaluate_vrhoc(model::KSEModel; rho::AbstractArray{<:Real})
+    evaluate_functional(model.correlation; rho=rho, derivatives=1)
+end
+
+function evaluate_vrhox!(
+    model::KSEModel;
+    rho::AbstractArray{<:Real},
+    vrho::AbstractArray{<:Real})
+    evaluate_functional!(model.exchange; rho=rho, vrho=vrho)
+end
+
+function evaluate_vrhoc!(
+    model::KSEModel;
+    rho::AbstractArray{<:Real},
+    vrho::AbstractArray{<:Real})
+    evaluate_functional!(model.correlation; rho=rho, vrho=vrho)
+end
+
+
+function evaluate_vrho!(model::KSEModel;
+    rho::AbstractArray{<:Real},
+    vrho::AbstractArray{<:Real},
+    cache::AbstractArray{<:Real})
+    evaluate_vrhoc!(model; rho=rho, vrho=cache)
+    evaluate_vrhox!(model; rho=rho, vrho=vrho)
+    @. vrho += cache
+end
+
+function evaluate_zk!(
+    model::KSEModel;
+    rho::AbstractArray{<:Real},
+    zk::AbstractArray{<:Real},
+    cache::AbstractArray{<:Real})
+    evaluate_functional!(model.correlation; rho=rho, zk=cache)
+    evaluate_functional!(model.exchange; rho=rho, zk=zk)
+    @. zk += cache
+end
 
 
 #--------------------------------------------------------------------
-#                         MODEL CONSTRUCTOR
+#                         SHORT MODEL CONSTRUCTOR
 #--------------------------------------------------------------------
 """
     RHF(; z::Real, N::Real)
 
 Convenience constructor for the Hartree–Fock model using the extended Kohn–Sham framework.
 
-Creates a `KSEModel` with the specified nuclear charge `z` and number of electrons `N`, and disables the exchange–correlation and Hartree terms, corresponding to the standard Hartree–Fock approximation.
+Creates a `KSEModel` with the specified nuclear charge `z` and number of electrons `N`, and
+disables the exchange–correlation.
 
 # Arguments
 - `z::Real`: Nuclear charge (e.g., 2.0 for helium).
@@ -56,15 +114,16 @@ Creates a `KSEModel` with the specified nuclear charge `z` and number of electro
 # Returns
 - `KSEModel` with no exchange–correlation and no Hartree term.
 """
-RHF(; z::Real, N::Real) = KSEModel(z = z, N = N)
+RHF(; z::Real, N::Real) = KSEModel(z=z, N=N)
 
 
 """
-    SlaterXα(; z::Real, N::Real)
+    Slater(; z::Real, N::Real)
 
-Convenience constructor for an extended Kohn–Sham model with the Slater Xα exchange functional.
+Convenience constructor for an extended Kohn–Sham model with the Slater exchange functional.
 
-Creates a `KSEModel` with the specified nuclear charge `z` and number of electrons `N`, and uses the Slater Xα exchange-only approximation (no correlation term and no Hartree term).
+Creates a `KSEModel` with the specified nuclear charge `z` and number of electrons `N`,
+and uses the Slater exchange-only approximation (no correlation term and no Hartree term).
 
 # Arguments
 - `z::Real`: Nuclear charge (e.g., 10.0 for neon).
@@ -73,22 +132,8 @@ Creates a `KSEModel` with the specified nuclear charge `z` and number of electro
 # Returns
 - `KSEModel` using the Slater Xα exchange functional.
 """
-SlaterXα(z::Real, N::Real) = KSEModel(z = z, N = N, exc = SlaterXα())
-
-
-
-# MUST BE RENAMED IN SOMETHING LIKE PERDEW 
-LSDA(z::Real, N::Real) = KSEModel(z = z, N = N, exc = LSDA())
-
-
-function typeexc(model::KSEModel)
-    if isthereExchangeCorrelation(model)
-        if model.exc isa LDA
-            return :lda
-        elseif model.exc isa LSDA
-            return :lsda
-        end
-    else
-        return :lda
-    end
+function Slater(;z::Real, N::Real, n_spin::Int = 1)
+    ex = BuiltinFunctional(:lda_x; n_spin=n_spin)
+    ec = NoFunctional(n_spin)
+    return KSEModel(z=z, N=N, ex=ex, ec=ec)
 end
