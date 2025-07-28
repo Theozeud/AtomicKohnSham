@@ -1,7 +1,7 @@
 antiadjoint(z::Complex) = -real(z) + imag(z)
 antiadjoint(z::Real) = -z
 
-function _mul!( A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, 
+function _mul!( A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
                 D::AbstractMatrix, tmp::AbstractMatrix)
     # COMPUTE B*C*D -> A USING tmp AS TEMPORY VARIABLES
     mul!(tmp,C,D)
@@ -42,7 +42,7 @@ function mul_block_by_block!(Γout::BlockDiagonal{<:Number}, Γin::BlockDiagonal
 end
 
 function _copy_vec_to_mat!( M::AbstractMatrix, ir_dest::AbstractRange{Int}, jr_dest::AbstractRange{Int},
-                            V::AbstractVector, ir_src::AbstractRange{Int})        
+                            V::AbstractVector, ir_src::AbstractRange{Int})
     if length(ir_dest) * length(jr_dest) != length(ir_src)
         throw(ArgumentError(LazyString("source and destination must have same size (got ",
                                 length(ir_dest)*length(jr_dest)," and ",length(ir_dest),")")))
@@ -60,7 +60,7 @@ function _copy_vec_to_mat!( M::AbstractMatrix, ir_dest::AbstractRange{Int}, jr_d
 end
 
 function _copy_mat_to_vec!( V::AbstractVector, ir_dest::AbstractRange{Int},
-                            M::AbstractMatrix, ir_src::AbstractRange{Int}, jr_src::AbstractRange{Int})        
+                            M::AbstractMatrix, ir_src::AbstractRange{Int}, jr_src::AbstractRange{Int})
     if length(ir_src) * length(jr_src) != length(ir_dest)
         throw(ArgumentError(LazyString("source and destination must have same size (got ",
                                 length(ir_dest)," and ",length(ir_src)*length(jr_src),")")))
@@ -95,10 +95,19 @@ function remove_trace(A::AbstractMatrix, B::AbstractMatrix)
 end
 
 
-function flexible_zeros(T::Type, dims::NTuple{N, Int}, lastdim::Bool) where {N}
-    if lastdim
-        return zeros(T, dims...,2)
-    else
+function flexible_zeros(T::Type, dims::NTuple{N, Int}, lastdim::Int) where {N}
+    if lastdim == 1
         return zeros(T, dims...)
+    else
+        return zeros(T, dims..., lastdim)
+    end
+end
+
+
+function flexible_zeros(T::Type, firstdim::Int, dims::NTuple{N, Int}) where {N}
+    if firstdim == 1
+        return zeros(T, dims...)
+    else
+        return zeros(T, firstdim, dims...)
     end
 end
