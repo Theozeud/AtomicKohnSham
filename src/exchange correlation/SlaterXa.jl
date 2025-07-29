@@ -8,5 +8,5 @@ struct SlaterXα <: BuiltinFunctional
     end
 end
 
-eval_zk(::SlaterXα, ρ::Real)     = - 3/4 * (3/π)^(1/3) * ρ^(1/3)
-eval_vrho(::SlaterXα, ρ::Real)   = - (3/π)^(1/3) * ρ^(1/3)
+eval_zk(::SlaterXα, ρ::Real) = - 3/4 * (3/π)^(1/3) * ρ^(1/3)
+eval_vrho(::SlaterXα, ρ::Real) = - (3/π)^(1/3) * ρ^(1/3)

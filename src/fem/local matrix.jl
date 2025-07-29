@@ -3,16 +3,15 @@
 #--------------------------------------------------------------------
 
 function _fill_local_matrix!(K::AbstractArray,
-                            method::FEMIntegrationMethod,
-                            weight::AbstractWeight,
-                            eldata::ElementData,
-                            ps::PolySet,
-                            basis::FEMBasis)
-
+        method::FEMIntegrationMethod,
+        weight::AbstractWeight,
+        eldata::ElementData,
+        ps::PolySet,
+        basis::FEMBasis)
     @unpack a, b = eldata
 
     !has_singularity(weight, (a, b)) ||
-                return fill_local_matrix_withsingularity!(K, method, weight, eldata, ps, basis)
+        return fill_local_matrix_withsingularity!(K, method, weight, eldata, ps, basis)
     return fill_local_matrix!(K, method, weight, eldata, ps, basis)
 end
 
@@ -34,13 +33,12 @@ end
     où A est une matrice de taille deg(Q)*deg(Q), donc temps négligeable
 =#
 
-
 function fill_local_matrix_withsingularity!(K::AbstractArray,
-                                            method::FEMIntegrationMethod,
-                                            ::InvX,
-                                            eldata::ElementData,
-                                            ps::PolySet,
-                                            basis::FEMBasis)
+        method::FEMIntegrationMethod,
+        ::InvX,
+        eldata::ElementData,
+        ps::PolySet,
+        basis::FEMBasis)
     # FACTORIZED POLYNOMIALS
     generators_factorized = factorize(basis.generators.polynomials, eldata.ϕ[2])
     # COMPUTE PRODUCT
@@ -56,11 +54,11 @@ function fill_local_matrix_withsingularity!(K::AbstractArray,
 end
 
 function fill_local_matrix_withsingularity!(K::AbstractArray,
-                                            method::FEMIntegrationMethod,
-                                            ::InvX2,
-                                            eldata::ElementData,
-                                            ps::PolySet,
-                                            basis::FEMBasis)
+        method::FEMIntegrationMethod,
+        ::InvX2,
+        eldata::ElementData,
+        ps::PolySet,
+        basis::FEMBasis)
     # FACTORIZED POLYNOMIALS
     generators_factorized = factorize(basis.generators.polynomials, eldata.ϕ[2])
     # COMPUTE PRODUCT
@@ -81,65 +79,64 @@ end
 #--------------------------------------------------------------------
 
 function fill_local_matrix!(K::AbstractArray,
-                            ::ExactIntegration,
-                            ::NoWeight,
-                            eldata::ElementData,
-                            ps::PolySet,
-                            basis::FEMBasis)
+        ::ExactIntegration,
+        ::NoWeight,
+        eldata::ElementData,
+        ps::PolySet,
+        basis::FEMBasis)
     @unpack binf, bsup = eldata
-    Kreshape = reshape(K,length(K),1)
+    Kreshape = reshape(K, length(K), 1)
     integrate!(Kreshape, ps, binf, bsup)
     Kreshape .*= eldata.invϕ[1]
 end
 
 function fill_local_matrix!(K::AbstractArray,
-                            ::ExactIntegration,
-                            ::InvX,
-                            eldata::ElementData,
-                            ps::PolySet,
-                            basis::FEMBasis)
+        ::ExactIntegration,
+        ::InvX,
+        eldata::ElementData,
+        ps::PolySet,
+        basis::FEMBasis)
     cach = getcache(basis.cache, eldata.s)
     @unpack binf, bsup, invϕ = eldata
-    @inbounds for i ∈ eachindex(cach)
+    @inbounds for i in eachindex(cach)
         cach[i] = _integration_monome_over_deg1(i-1, invϕ[1], invϕ[2], binf, bsup)
     end
-    Kreshape = reshape(K,length(K),1)
+    Kreshape = reshape(K, length(K), 1)
     mul!(Kreshape, ps.coeffs, cach)
     Kreshape .*= eldata.invϕ[1]
 end
 
 function fill_local_matrix!(K::AbstractArray,
-                            ::ExactIntegration,
-                            ::InvX2,
-                            eldata::ElementData,
-                            ps::PolySet,
-                            basis::FEMBasis)
+        ::ExactIntegration,
+        ::InvX2,
+        eldata::ElementData,
+        ps::PolySet,
+        basis::FEMBasis)
     cach = getcache(basis.cache, eldata.s)
     @unpack binf, bsup, invϕ = eldata
-    @inbounds for i ∈ eachindex(cach)
+    @inbounds for i in eachindex(cach)
         cach[i] = _integration_monome_over_deg2(i-1, invϕ[1], invϕ[2], binf, bsup)
     end
-    Kreshape = reshape(K,length(K),1)
+    Kreshape = reshape(K, length(K), 1)
     mul!(Kreshape, ps.coeffs, cach)
     Kreshape .*= eldata.invϕ[1]
 end
-
 
 #--------------------------------------------------------------------
 #                   QUADRATURE INTEGRATION
 #--------------------------------------------------------------------
 
 function fill_local_matrix!(K::AbstractArray,
-                            quadra::GaussLegendre,
-                            weight::FunWeight,
-                            eldata::ElementData,
-                            ::PolySet,
-                            basis::FEMBasis)
+        quadra::GaussLegendre,
+        weight::FunWeight,
+        eldata::ElementData,
+        ::PolySet,
+        basis::FEMBasis)
     @unpack x, w, shiftx, fx, Qgenx = quadra
     @unpack invϕ = eldata
-    shiftx .= invϕ[1].*x .+ invϕ[2]
+    shiftx .= invϕ[1] .* x .+ invϕ[2]
     weight(fx, shiftx)
-    @. fx  *= w
-    @tensor K[i,j] = Qgenx[i,j,k] * fx[k]
+    @. fx *= w
+    @tensor K[i, j] = Qgenx[i, j, k] * fx[k]
     K .*= eldata.invϕ[1]
 end

@@ -16,28 +16,27 @@ Encodes physical and modeling parameters for atomic or ionic simulations.
 - `exc::ExchangeCorrelation = NoExchangeCorrelation()`: Exchange–correlation model used in the simulation.
 """
 struct KSEModel{T <: Real,
-                TEX,
-                TCO}
-
+    TEX,
+    TCO}
     z::T                # Charge of the nucleus
     N::T                # Number of electrons
 
     hartree::T          # Coefficient multiply to the Hartree Term :
-                        # 0 -> no hartree term,
-                        # 1-> full hartree term
+    # 0 -> no hartree term,
+    # 1-> full hartree term
 
     exchange::TEX       # Exchange functional
     correlation::TCO    # Correlation functional
 
     n_spin::Int         # Spin Polarization
-                        # 1 -> No Polarization
-                        # 2 -> Polarisation
+    # 1 -> No Polarization
+    # 2 -> Polarisation
 
     function KSEModel(; z::Real,
-                        N::Real,
-                        hartree::Real = 1,
-                        ex = NoFunctional(1),
-                        ec = NoFunctional(1))
+            N::Real,
+            hartree::Real = 1,
+            ex = NoFunctional(1),
+            ec = NoFunctional(1))
         T = promote_type(typeof(z), typeof(N), typeof(hartree))
         n_spin = max(ex.n_spin, ec.n_spin)
         new{T,
@@ -46,55 +45,50 @@ struct KSEModel{T <: Real,
     end
 end
 
-has_exchange(model::KSEModel)       = !(model.exchange isa NoFunctional)
-has_correlation(model::KSEModel)    = !(model.correlation isa NoFunctional)
-has_exchcorr(model::KSEModel)       = has_exchange(model) || has_correlation(model)
-
-
+has_exchange(model::KSEModel) = !(model.exchange isa NoFunctional)
+has_correlation(model::KSEModel) = !(model.correlation isa NoFunctional)
+has_exchcorr(model::KSEModel) = has_exchange(model) || has_correlation(model)
 
 function evaluate_vrhox(model::KSEModel; rho::AbstractArray{<:Real})
-    evaluate_functional(model.exchange; rho=rho, derivatives=1)
+    evaluate_functional(model.exchange; rho = rho, derivatives = 1)
 end
 
-
 function evaluate_vrhoc(model::KSEModel; rho::AbstractArray{<:Real})
-    evaluate_functional(model.correlation; rho=rho, derivatives=1)
+    evaluate_functional(model.correlation; rho = rho, derivatives = 1)
 end
 
 function evaluate_vrhox!(
-    model::KSEModel;
-    rho::AbstractArray{<:Real},
-    vrho::AbstractArray{<:Real})
-    evaluate_functional!(model.exchange; rho=rho, vrho=vrho)
+        model::KSEModel;
+        rho::AbstractArray{<:Real},
+        vrho::AbstractArray{<:Real})
+    evaluate_functional!(model.exchange; rho = rho, vrho = vrho)
 end
 
 function evaluate_vrhoc!(
-    model::KSEModel;
-    rho::AbstractArray{<:Real},
-    vrho::AbstractArray{<:Real})
-    evaluate_functional!(model.correlation; rho=rho, vrho=vrho)
+        model::KSEModel;
+        rho::AbstractArray{<:Real},
+        vrho::AbstractArray{<:Real})
+    evaluate_functional!(model.correlation; rho = rho, vrho = vrho)
 end
 
-
 function evaluate_vrho!(model::KSEModel;
-    rho::AbstractArray{<:Real},
-    vrho::AbstractArray{<:Real},
-    cache::AbstractArray{<:Real})
-    evaluate_vrhoc!(model; rho=rho, vrho=cache)
-    evaluate_vrhox!(model; rho=rho, vrho=vrho)
+        rho::AbstractArray{<:Real},
+        vrho::AbstractArray{<:Real},
+        cache::AbstractArray{<:Real})
+    evaluate_vrhoc!(model; rho = rho, vrho = cache)
+    evaluate_vrhox!(model; rho = rho, vrho = vrho)
     @. vrho += cache
 end
 
 function evaluate_zk!(
-    model::KSEModel;
-    rho::AbstractArray{<:Real},
-    zk::AbstractArray{<:Real},
-    cache::AbstractArray{<:Real})
-    evaluate_functional!(model.correlation; rho=rho, zk=cache)
-    evaluate_functional!(model.exchange; rho=rho, zk=zk)
+        model::KSEModel;
+        rho::AbstractArray{<:Real},
+        zk::AbstractArray{<:Real},
+        cache::AbstractArray{<:Real})
+    evaluate_functional!(model.correlation; rho = rho, zk = cache)
+    evaluate_functional!(model.exchange; rho = rho, zk = zk)
     @. zk += cache
 end
-
 
 #--------------------------------------------------------------------
 #                         SHORT MODEL CONSTRUCTOR
@@ -114,8 +108,7 @@ disables the exchange–correlation.
 # Returns
 - `KSEModel` with no exchange–correlation and no Hartree term.
 """
-RHF(; z::Real, N::Real) = KSEModel(z=z, N=N)
-
+RHF(; z::Real, N::Real) = KSEModel(z = z, N = N)
 
 """
     Slater(; z::Real, N::Real)
@@ -132,8 +125,8 @@ and uses the Slater exchange-only approximation (no correlation term and no Hart
 # Returns
 - `KSEModel` using the Slater Xα exchange functional.
 """
-function Slater(;z::Real, N::Real, n_spin::Int = 1)
-    ex = BuiltinFunctional(:lda_x; n_spin=n_spin)
+function Slater(; z::Real, N::Real, n_spin::Int = 1)
+    ex = BuiltinFunctional(:lda_x; n_spin = n_spin)
     ec = NoFunctional(n_spin)
-    return KSEModel(z=z, N=N, ex=ex, ec=ec)
+    return KSEModel(z = z, N = N, ex = ex, ec = ec)
 end

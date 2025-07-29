@@ -5,8 +5,8 @@ original_stdout = stdout
 output_file = open("tests/Performance/polynomial.txt", "w")
 redirect_stdout(output_file)
 
-P = RandPolynomial(30,-30)
-Q = RandPolynomial(30,-30)
+P = RandPolynomial(30, -30)
+Q = RandPolynomial(30, -30)
 x = 10.0
 n = 10
 
@@ -31,7 +31,6 @@ println("P + Q")
 @btime P + Q
 println("P * Q")
 @btime P * Q
-
 
 redirect_stdout(original_stdout)
 close(output_file)

@@ -4,7 +4,8 @@
 #                          STRUCTURE
 #####################################################################
 
-mutable struct CombinedMethod{typeMethod1 <: SCFAlgorithm, typeMethod2 <: SCFAlgorithm} <: SCFAlgorithm
+mutable struct CombinedMethod{typeMethod1 <: SCFAlgorithm, typeMethod2 <: SCFAlgorithm} <:
+               SCFAlgorithm
     method1::typeMethod1
     method2::typeMethod2
     state::Int
@@ -22,7 +23,6 @@ function create_cache_alg(method::CombinedMethod, discretization::KSEDiscretizat
     CombinedCache{typeof(cache1), typeof(cache2)}(cache1, cache2)
 end
 
-
 #####################################################################
 #                              STEPS
 #####################################################################
@@ -39,7 +39,7 @@ function loopheader!(cache::CombinedCache, method::CombinedMethod)
     end
 end
 
-function performstep!(cache::CombinedCache, method::CombinedMethod, solver::KSESolver) 
+function performstep!(cache::CombinedCache, method::CombinedMethod, solver::KSESolver)
     if method.state == 1
         performstep!(cache.cache1, method.method1, solver)
     else
@@ -55,7 +55,6 @@ function loopfooter!(cache::CombinedCache, method::CombinedMethod)
     end
 end
 
-
 function monitor(cache::CombinedCache, method::CombinedMethod)
     if method.state == 1
         monitor(cache.cache1, method.method1)
@@ -64,13 +63,11 @@ function monitor(cache::CombinedCache, method::CombinedMethod)
     end
 end
 
-
 #####################################################################
 #                              SWITCH
 #####################################################################
 #=
 function switch!(cache2::CacheQuadratic, cache1::RCACache)
-
 
 end
 =#

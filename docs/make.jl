@@ -1,6 +1,5 @@
-push!(LOAD_PATH,"../src/")
+push!(LOAD_PATH, "../src/")
 
 using Documenter, AtomicKohnSham
 
-makedocs(sitename="AtomicKohnSham Documentation")
-
+makedocs(sitename = "AtomicKohnSham Documentation")

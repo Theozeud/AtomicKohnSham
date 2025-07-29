@@ -28,27 +28,27 @@ Legendre(n::Int) = Legendre(n, Float64)
 const LEGENDRE_DEGMAX_STORED = 2
 
 const LEGENDRE_COEFFS = [1//1 0//1 0//1;
-                        0//1 1//1 0//1;
-                        -1//2 0//1 3//2;]
+                         0//1 1//1 0//1;
+                         -1//2 0//1 3//2;]
 
 function Legendre(n::Int, ::Type{T}) where {T}
     if n ≤ LEGENDRE_DEGMAX_STORED
-        @views polys = T.(LEGENDRE_COEFFS[1:n+1,1:n+1])
+        @views polys = T.(LEGENDRE_COEFFS[1:(n + 1), 1:(n + 1)])
         return PolySet(polys)
     else
-        polys = zeros(T,n+1,n+1)
-        @views vpolys = polys[1:LEGENDRE_DEGMAX_STORED+1,1:LEGENDRE_DEGMAX_STORED+1]
+        polys = zeros(T, n+1, n+1)
+        @views vpolys = polys[
+            1:(LEGENDRE_DEGMAX_STORED + 1), 1:(LEGENDRE_DEGMAX_STORED + 1)]
         vpolys .= LEGENDRE_COEFFS
-        for m ∈ LEGENDRE_DEGMAX_STORED+1:n
-            @views Pₘ₋₁ = polys[m,1:m]
-            @views Pₘ₋₂ = polys[m-1,1:m-1]
-            @views polys[m+1,2:m+1]  .= (2*m-1)//m .*  Pₘ₋₁ 
-            @views polys[m+1,1:m-1] .-= (m - 1)//m .* Pₘ₋₂
+        for m in (LEGENDRE_DEGMAX_STORED + 1):n
+            @views Pₘ₋₁ = polys[m, 1:m]
+            @views Pₘ₋₂ = polys[m - 1, 1:(m - 1)]
+            @views polys[m + 1, 2:(m + 1)] .= (2*m-1)//m .* Pₘ₋₁
+            @views polys[m + 1, 1:(m - 1)] .-= (m - 1)//m .* Pₘ₋₂
         end
         return PolySet(polys)
     end
 end
-
 
 """
     IntLegendre(n::Int, ::Type{T}) where {T}
@@ -75,20 +75,21 @@ IntLegendre(n::Int) = IntLegendre(n, Float64)
 
 const INTLEGENDRE_DEGMAX_STORED = 1
 
-const INTLEGENDRE_COEFFS = [1//1    1//1    0//1;
-                            -1//2   0//1    1//2]
+const INTLEGENDRE_COEFFS = [1//1 1//1 0//1;
+                            -1//2 0//1 1//2]
 
 function IntLegendre(n::Int, ::Type{T}) where {T}
     if n ≤ INTLEGENDRE_DEGMAX_STORED
-        @views polys = T.(INTLEGENDRE_COEFFS[1:n+1,1:n+2])
+        @views polys = T.(INTLEGENDRE_COEFFS[1:(n + 1), 1:(n + 2)])
         return PolySet(polys)
     else
-        polys = zeros(T,n+1,n+2)
-        @views vpolys = polys[1:INTLEGENDRE_DEGMAX_STORED+1,1:INTLEGENDRE_DEGMAX_STORED+2]
+        polys = zeros(T, n+1, n+2)
+        @views vpolys = polys[
+            1:(INTLEGENDRE_DEGMAX_STORED + 1), 1:(INTLEGENDRE_DEGMAX_STORED + 2)]
         vpolys .= INTLEGENDRE_COEFFS
         legendre = Legendre(n, Rational{Int64})
-        @views vpolys = polys[INTLEGENDRE_DEGMAX_STORED+2:end,:]
-        @views vlegendre = legendre.coeffs[INTLEGENDRE_DEGMAX_STORED+2:end,:]
+        @views vpolys = polys[(INTLEGENDRE_DEGMAX_STORED + 2):end, :]
+        @views vlegendre = legendre.coeffs[(INTLEGENDRE_DEGMAX_STORED + 2):end, :]
         integrate!(PolySet(vpolys), PolySet(vlegendre), -1)
         return PolySet(polys)
     end

@@ -22,14 +22,13 @@ This function creates a `KSESolver` object with the given model, discretization,
 - `KSESolution`: The computed ground state, including orbitals, energies, density, etc.
 """
 function groundstate(model::KSEModel,
-                     discretization::KSEDiscretization,
-                     alg::SCFAlgorithm;
-                     name::String = "", kwargs...)
+        discretization::KSEDiscretization,
+        alg::SCFAlgorithm;
+        name::String = "", kwargs...)
     solver = KSESolver(model, discretization, alg; kwargs...)
     solve!(solver)
     KSESolution(solver, name)
 end
-
 
 """
     groundstate(prob::AtomProblem) -> KSESolution
@@ -54,7 +53,6 @@ function groundstate(prob::AtomProblem)
     groundstate(prob.model, discretization, prob.alg; name = prob.name, prob.solveropts...)
 end
 
-
 #--------------------------------------------------------------------
 #                           GROUNDSTATE STEPS
 #--------------------------------------------------------------------
@@ -64,10 +62,10 @@ end
 #                method devrait être suffisant
 ##
 
-
 #  SOLVE
 function solve!(solver::KSESolver)
-    while (solver.stopping_criteria > solver.opts.scftol || iszero(solver.niter)) && solver.niter < solver.opts.maxiter
+    while (solver.stopping_criteria > solver.opts.scftol || iszero(solver.niter)) &&
+        solver.niter < solver.opts.maxiter
         loopheader!(solver)
         performstep!(solver.cache, solver.alg, solver)
         loopfooter!(solver)
@@ -75,14 +73,12 @@ function solve!(solver::KSESolver)
     end
 end
 
-
 # LOOPHEADER
 function loopheader!(solver::KSESolver)
     # LOOPHEADER SPECIFIC FOR THE METHOD
     loopheader!(solver.cache, solver.alg, solver)
     nothing
 end
-
 
 # LOOPFOOTER
 function loopfooter!(solver::KSESolver)
@@ -100,7 +96,6 @@ function loopfooter!(solver::KSESolver)
     nothing
 end
 
-
 # MONITOR : DISPLAY CURRENT STATE OF SOLVER
 function monitor(solver::KSESolver)
     if solver.opts.verbose > 0
@@ -117,12 +112,10 @@ function monitor(solver::KSESolver)
     end
 end
 
-
 # COMPUTE THE STOPPING CRITERIA
 function stopping_criteria!(solver::KSESolver)
-    solver.stopping_criteria =  stopping_criteria!(solver.cache, solver.alg, solver)
+    solver.stopping_criteria = stopping_criteria!(solver.cache, solver.alg, solver)
 end
-
 
 # UPDATE THE LOG : STORE INTERMEDIATE STATE
 function register!(solver::KSESolver)
@@ -134,7 +127,7 @@ function register!(solver::KSESolver)
 
     # STORE THE TOTAL ENERGY
     if energies
-        for k ∈ keys(solver.energies)
+        for k in keys(solver.energies)
             push!(solver.logbook.energies[k], solver.energies[k])
         end
     end

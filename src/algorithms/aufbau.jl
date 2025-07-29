@@ -1,22 +1,21 @@
 function convert_index(discretization::KSEDiscretization, idx::Int)
-    @unpack lₕ, nₕ, n_spin  = discretization
+    @unpack lₕ, nₕ, n_spin = discretization
     if n_spin == 1
         l = rem(idx - 1, lₕ+1)
-        k = div(idx-1,lₕ+1)+1
-        return (l,k,1)
+        k = div(idx-1, lₕ+1)+1
+        return (l, k, 1)
     else
-        σ       = div(idx-1, (lₕ+1)*nₕ)+1
-        idxσ    = rem(idx-1, (lₕ+1)*nₕ)
+        σ = div(idx-1, (lₕ+1)*nₕ)+1
+        idxσ = rem(idx-1, (lₕ+1)*nₕ)
         l = rem(idxσ, lₕ+1)
-        k = div(idxσ,lₕ+1)+1
-        return (l,k,σ)
+        k = div(idxσ, lₕ+1)+1
+        return (l, k, σ)
     end
 end
 
-
 function degeneracy(discretization::KSEDiscretization, idx::Int)
     @unpack n_spin = discretization
-    l,_ = convert_index(discretization, idx)
+    l, _ = convert_index(discretization, idx)
     if n_spin == 1
         return 4 * l + 2
     else
@@ -24,14 +23,11 @@ function degeneracy(discretization::KSEDiscretization, idx::Int)
     end
 end
 
-
 #####################################################################
 #                        AUFBAU PRINCIPLE
 #####################################################################
 
-
 function aufbau!(cache::RCACache, solver::KSESolver)
-
     @unpack model, discretization, opts, energies = solver
     @unpack U, ϵ, n, Noccup, D, tmpD, tmpD2, index_aufbau, energies_prev = cache
 
@@ -50,14 +46,16 @@ function aufbau!(cache::RCACache, solver::KSESolver)
         # FIND ALL THE ORBITALS WITH THE SAME ENERGY
         indices_degen = [index_aufbau[idx]]
         idx += 1
-        while idx ≤ length(index_aufbau) && abs(ϵ[index_aufbau[idx]] - ϵ[first(indices_degen)]) < opts.degen_tol && length(indices_degen) <2
+        while idx ≤ length(index_aufbau) &&
+                  abs(ϵ[index_aufbau[idx]] - ϵ[first(indices_degen)]) < opts.degen_tol &&
+                  length(indices_degen) < 2
             push!(indices_degen, index_aufbau[idx])
             idx += 1
         end
 
         # COMPUTE DEGENERACY
         degen = zeros(Int, length(indices_degen))
-        for i ∈ eachindex(indices_degen)
+        for i in eachindex(indices_degen)
             degen[i] = degeneracy(discretization, indices_degen[i])
         end
         total_degen = sum(degen)
@@ -68,7 +66,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
 
             for i in eachindex(indices_degen)
                 n[indices_degen[i]] = degen[i]
-                normalization!(discretization, U, convert_index(discretization,i)...)
+                normalization!(discretization, U, convert_index(discretization, i)...)
             end
             remain -= total_degen
             Noccup[1] += length(indices_degen)
@@ -78,7 +76,8 @@ function aufbau!(cache::RCACache, solver::KSESolver)
             Noccup[2] += 1
 
             n[first(indices_degen)] = remain
-            normalization!(discretization, U, convert_index(discretization,first(indices_degen))...)
+            normalization!(
+                discretization, U, convert_index(discretization, first(indices_degen))...)
             break
 
         elseif length(indices_degen) == 2
@@ -87,14 +86,14 @@ function aufbau!(cache::RCACache, solver::KSESolver)
             Noccup[2] += 2
 
             # NORMALIZATION OF COEFFICIENTS OF ORBITAL
-            
-            for i ∈ indices_degen
-                normalization!(discretization, U, convert_index(discretization,i)...)
+
+            for i in indices_degen
+                normalization!(discretization, U, convert_index(discretization, i)...)
             end
 
             # DISJONCTION DEPENDING ON THE TYPE OF ORBITALS THAT DEGENERATE
-            l1,k1,σ1 = convert_index(discretization,indices_degen[1])
-            l2,k2,σ2 = convert_index(discretization,indices_degen[2])
+            l1, k1, σ1 = convert_index(discretization, indices_degen[1])
+            l2, k2, σ2 = convert_index(discretization, indices_degen[2])
 
             if l1 == l2 && k1 == k2 && σ1 != σ2
                 # IN THIS CASE, THE ORBITALS DIFFERS ONLY BY THEIR SPIN QUANTUM NUMBER
@@ -107,7 +106,8 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                 energies[:Ecou] = compute_coulomb_energy(discretization, U, n)
                 energies[:Ehar] = compute_hartree_energy(discretization, D)
                 if has_exchcorr(model)
-                    energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D)
+                    energies[:Eexc] = compute_exchangecorrelation_energy(
+                        discretization, model, D)
                 end
             else
 
@@ -153,12 +153,13 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                 energy_har10 = compute_hartree_mix_energy(discretization, tmpD, D)
 
                 # FIND THE OPTIMUM OCCUPATION
-                cache.tdegen, energies[:Etot] = find_minima_oda(energy_kin0, energy_kin1,
-                                                                energy_cou0, energy_cou1,
-                                                                energy_har0, energy_har1,
-                                                                energy_har01, energy_har10,
-                                                                D, tmpD, tmpD2, model, discretization)
-            
+                cache.tdegen,
+                energies[:Etot] = find_minima_oda(energy_kin0, energy_kin1,
+                    energy_cou0, energy_cou1,
+                    energy_har0, energy_har1,
+                    energy_har01, energy_har10,
+                    D, tmpD, tmpD2, model, discretization)
+
                 # UPDATE THE OCCUPATION NUMBERS
                 n[indices_degen[1]] = cache.tdegen * n1_0 + (1-cache.tdegen) * n1_1
                 n[indices_degen[2]] = cache.tdegen * n2_0 + (1-cache.tdegen) * n2_1
@@ -170,9 +171,11 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                 t = cache.tdegen
                 energies[:Ekin] = t*energy_kin0 + (1-t)*energy_kin1
                 energies[:Ecou] = t*energy_cou0 + (1-t)*energy_cou1
-                energies[:Ehar] = t^2*energy_har0 + (1-t)^2*energy_har1 + t*(1-t) * (energy_har01 + energy_har10)
+                energies[:Ehar] = t^2*energy_har0 + (1-t)^2*energy_har1 +
+                                  t * (1-t) * (energy_har01 + energy_har10)
                 if has_exchcorr(model)
-                    energies[:Eexc] = compute_exchangecorrelation_energy(discretization, model, D)
+                    energies[:Eexc] = compute_exchangecorrelation_energy(
+                        discretization, model, D)
                 end
             end
             break
@@ -180,7 +183,6 @@ function aufbau!(cache::RCACache, solver::KSESolver)
             @error("This case of degeneracy is not coded.")
             break
         end
-
     end
     Noccup[3] = length(ϵ) - Noccup[1] - Noccup[2]
     nothing

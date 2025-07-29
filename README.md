@@ -3,8 +3,7 @@
 [![Build Status](https://github.com/Theozeud/AtomicKohnSham/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/Theozeud/AtomicKohnSham/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/Theozeud/AtomicKohnSham/branch/master/graph/badge.svg)](https://codecov.io/gh/Theozeud/AtomicKohnSham)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-[![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/JuliaDiff/BlueStyle)
-
+[![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
 **AtomicKohnSham.jl** is a Julia package designed to **compute the ground state of isolated atoms and ions** within the framework of **Extended Kohn-Sham models**. Originally developed to investigate the existence of negative ions, the code can also serve as a versatile tool for testing new density functionals and exploring numerical precision issues.
 
 These models require solving a nonlinear eigenvalue partial differential equation (PDE) in three dimensions. The nonlinearity arises from the Kohn–Sham potential, which depends on a finite number of eigenfunctions. As is standard in computational chemistry, a fixed-point iterative scheme (Self-Consistent Field or SCF) is used, alternating with the solution of the eigenvalue problem.

@@ -24,14 +24,13 @@ and algorithm-specific data.
 - `log::LogBook`: Object that records iteration history and diagnostics.
 - `name::String`: Name of the solution (can be used for identification, labeling results, etc.).
 """
-struct KSESolution{ optsType <: SolverOptions,
-                    T <: Real,
-                    solutionType <: SCFSolution,
-                    logbookType <: LogBook,
-                    D <: KSEDiscretization}
-
+struct KSESolution{optsType <: SolverOptions,
+    T <: Real,
+    solutionType <: SCFSolution,
+    logbookType <: LogBook,
+    D <: KSEDiscretization}
     success::String                     # Print the final state of the solver
-                                        #   Can be : SUCCESS or MAXITERS
+    #   Can be : SUCCESS or MAXITERS
 
     solveropts::optsType                # Option of the solver used
 
@@ -61,17 +60,16 @@ struct KSESolution{ optsType <: SolverOptions,
             typeof(datas),
             typeof(solver.logbook),
             typeof(discretization)}(success,
-                                    solver.opts,
-                                    solver.niter,
-                                    solver.stopping_criteria,
-                                    solver.energies,
-                                    datas,
-                                    solver.logbook,
-                                    name,
-                                    discretization)
+            solver.opts,
+            solver.niter,
+            solver.stopping_criteria,
+            solver.energies,
+            datas,
+            solver.logbook,
+            name,
+            discretization)
     end
 end
-
 
 function Base.getproperty(sol::KSESolution, s::Symbol)
     if s ∈ fieldnames(KSESolution)
@@ -82,7 +80,6 @@ function Base.getproperty(sol::KSESolution, s::Symbol)
         throw(ErrorException("type KSESolution has no field $(s)"))
     end
 end
-
 
 #--------------------------------------------------------------------
 #                  DISPLAY A SUMMARY OF THE SOLUTION
@@ -101,18 +98,21 @@ function Base.show(io::IO, sol::KSESolution)
     printstyled(io, "niter = "; bold = true)
     println(io, string(sol.niter))
     printstyled(io, "Stopping criteria = "; bold = true)
-    println(io, string(sol.stopping_criteria ))
+    println(io, string(sol.stopping_criteria))
     printstyled(io, "All Energies :\n"; bold = true, color = :green)
-    for s ∈ keys(sol.energies)
-        printstyled(io, "            $(s) = $(sol.energies[s]) \n"; bold = true, color = :green)
+    for s in keys(sol.energies)
+        printstyled(
+            io, "            $(s) = $(sol.energies[s]) \n"; bold = true, color = :green)
     end
     printstyled(io, "Occupation number = \n"; bold = true, color = :blue)
-    for i ∈ eachindex(sol.occupation_number)
+    for i in eachindex(sol.occupation_number)
         occupation_number = sol.occupation_number[i]
-        printstyled(io, "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n"; bold = true, color = :blue)
+        printstyled(io,
+            "            $(occupation_number[1]) : ($(occupation_number[2]),$(occupation_number[3])) \n";
+            bold = true,
+            color = :blue)
     end
 end
-
 
 #--------------------------------------------------------------------
 #                  POST-PROCESSING COMPUTATIONS
@@ -120,52 +120,48 @@ end
 
 # COMPUTE EIGENVECTORS
 function eigenvector(
-    sol::KSESolution,
-    n::Int,
-    l::Int,
-    X::AbstractVector{<:Real})
+        sol::KSESolution,
+        n::Int,
+        l::Int,
+        X::AbstractVector{<:Real})
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
     @assert sol.discretization.n_spin == 1 "The discretization is spin-polarized. Please give a spin σ."
-    evaluate(sol.discretization.basis, sol.orbitals[:, n-l,l+1], X)
+    evaluate(sol.discretization.basis, sol.orbitals[:, n - l, l + 1], X)
 end
 
 function eigenvector(sol::KSESolution, n::Int, l::Int, σ::Int, X::AbstractVector{<:Real})
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
-    evaluate(sol.discretization.basis, sol.orbitals[:, n-l,l+1,σ], X)
+    evaluate(sol.discretization.basis, sol.orbitals[:, n - l, l + 1, σ], X)
 end
-
-
 
 # COMPUTE DENSITY
 function eval_density(
-    sol::KSESolution,
-    X::AbstractVector{<:Real})
+        sol::KSESolution,
+        X::AbstractVector{<:Real})
     if sol.discretization.n_spin == 1
         eval_density(sol.discretization, sol.density_coeffs, X)
     else
-        @views DUP = sol.density_coeffs[:,:,1]
+        @views DUP = sol.density_coeffs[:, :, 1]
         ρUP = eval_density(sol.discretization, DUP, X)
-        @views DDOWN = sol.density_coeffs[:,:,1]
+        @views DDOWN = sol.density_coeffs[:, :, 1]
         ρDOWN = eval_density(sol.discretization, DDOWN, X)
         ρUP .+ ρDOWN
     end
 end
 
-
 function eval_density(
-    sol::KSESolution,
-    X::AbstractVector{<:Real},
-    σ::Int)
-    @assert 1≤ σ ≤ sol.discretization.n_spin
-    @views Dσ = sol.density_coeffs[:,:,σ]
+        sol::KSESolution,
+        X::AbstractVector{<:Real},
+        σ::Int)
+    @assert 1 ≤ σ ≤ sol.discretization.n_spin
+    @views Dσ = sol.density_coeffs[:, :, σ]
     eval_density(sol.discretization, Dσ, X)
 end
-
 
 # TOTAL CHARGE OF THE SYSTEM
 function total_charge(sol::KSESolution)
     @unpack Rmax = sol.problem.discretization
-    f(x,p) = density(sol, x) * x^2
-    prob = IntegralProblem(f, (zero(Rmax),Rmax))
+    f(x, p) = density(sol, x) * x^2
+    prob = IntegralProblem(f, (zero(Rmax), Rmax))
     return 4π * solve(prob, QuadGKJL(); reltol = 1e-13, abstol = 1e-13).u
 end

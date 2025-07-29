@@ -2,7 +2,7 @@ using UnPack
 using LinearAlgebra
 using SparseArrays
 
-struct PolySet{T, typeData<:AbstractVecOrMat}
+struct PolySet{T, typeData <: AbstractVecOrMat}
     coeffs::typeData
     function PolySet(polys::AbstractVecOrMat)
         new{eltype(polys), typeof(polys)}(polys)
@@ -16,23 +16,24 @@ function Base.show(io::IO, ::MIME"text/plain", ps::PolySet)
 end
 
 Base.eltype(p::PolySet) = eltype(p.coeffs)
-Base.getindex(p::PolySet, i::Int, j::Int) = p.coeffs[i,j]
+Base.getindex(p::PolySet, i::Int, j::Int) = p.coeffs[i, j]
 
 Base.size(ps::PolySet) = size(ps.coeffs)
-Base.size(ps::PolySet, n::Int) = size(ps.coeffs,n)
+Base.size(ps::PolySet, n::Int) = size(ps.coeffs, n)
 npolys(ps::PolySet) = size(ps.coeffs, 1)
 maxdeg(ps::PolySet) = size(ps.coeffs, 2) - 1
 
-allocate_polyset(T::DataType, nbpoly::Int, degmax::Int) = PolySet(zeros(T,nbpoly, degmax+1))
-
+function allocate_polyset(T::DataType, nbpoly::Int, degmax::Int)
+    PolySet(zeros(T, nbpoly, degmax+1))
+end
 
 function Base.getindex(ps::PolySet, row::Int)
-    @views v = ps.coeffs[row,:]
+    @views v = ps.coeffs[row, :]
     return PolySet(v')
 end
 
 function Base.getindex(ps::PolySet, rows::AbstractVector{Int})
-    @views v = ps.coeffs[rows,:]
+    @views v = ps.coeffs[rows, :]
     return PolySet(v)
 end
 
@@ -43,14 +44,13 @@ end
 
 function evaluate(ps::PolySet, x::Number)
     NewT = promote_type(typeof(x), eltype(ps))
-    y = zeros(NewT, size(ps,1))
+    y = zeros(NewT, size(ps, 1))
     evaluate!(y, ps, x)
 end
 
-
 function evaluate(ps::PolySet, x::AbstractVector)
     NewT = promote_type(eltype(x), eltype(ps))
-    y = zeros(NewT, size(ps,1), length(x))
+    y = zeros(NewT, size(ps, 1), length(x))
     evaluate!(y, ps, x)
 end
 
@@ -70,14 +70,13 @@ Evaluates a set of polynomials represented by `ps` at the scalar point `x`, writ
 """
 function evaluate!(y::AbstractVector, ps::PolySet, x::Number)
     @unpack coeffs = ps
-    @views y .= coeffs[:,end]
-    @inbounds for i ∈ maxdeg(ps):-1:1
-        @views coeffsi = coeffs[:,i]
+    @views y .= coeffs[:, end]
+    @inbounds for i in maxdeg(ps):-1:1
+        @views coeffsi = coeffs[:, i]
         @. y = y * x + coeffsi
     end
     y
 end
-
 
 """
     evaluate!(y::AbstractMatrix, ps::PolySet, x::AbstractVector)
@@ -97,15 +96,14 @@ Evaluates a set of polynomials represented by `ps` at multiple scalar points giv
 function evaluate!(y::AbstractMatrix, ps::PolySet, x::AbstractVector)
     @unpack coeffs = ps
     fill!(y, 0)
-    @views pend = coeffs[:,end]
+    @views pend = coeffs[:, end]
     y .+= pend
-    @inbounds for i ∈ maxdeg(ps):-1:1
-        @views coeffsi = coeffs[:,i]
+    @inbounds for i in maxdeg(ps):-1:1
+        @views coeffsi = coeffs[:, i]
         @. y = y * x' + coeffsi
     end
     y
 end
-
 
 """
     integrate!(y::AbstractVector, ps::PolySet{TPS}, a::Real, b::Real) where TPS
@@ -122,36 +120,35 @@ This version allocates a temporary vector internally.
 - `ps`: A `PolySet` structure containing the coefficient matrix.
 - `a`, `b`: Integration bounds.
 """
-function integrate!(y::AbstractVecOrMat, ps::PolySet{TPS}, a::Real, b::Real) where TPS
+function integrate!(y::AbstractVecOrMat, ps::PolySet{TPS}, a::Real, b::Real) where {TPS}
     @unpack coeffs = ps
-    (_,m) = size(ps)
+    (_, m) = size(ps)
     newT = promote_type(TPS, typeof(a), typeof(b))
     if a != -b
-        vec = zeros(newT,m)
+        vec = zeros(newT, m)
         apow = one(newT)
         bpow = one(newT)
         @inbounds for j in 1:m
             apow *= a
             bpow *= b
-            vec[j] = (bpow - apow) / j    
+            vec[j] = (bpow - apow) / j
         end
-        mul!(y,coeffs,vec)
+        mul!(y, coeffs, vec)
         return y
-    else     
-        s = div(m+1,2)
-        vec = zeros(newT,s)
+    else
+        s = div(m+1, 2)
+        vec = zeros(newT, s)
         bpow = one(newT)
         @inbounds for j in 1:s
             bpow *= b
-            vec[j] = 2*bpow / (2*j -1)
+            vec[j] = 2*bpow / (2*j - 1)
             bpow *= b
         end
-        @views coeffsv = coeffs[:,1:2:m]
-        mul!(y,coeffsv,vec)
+        @views coeffsv = coeffs[:, 1:2:m]
+        mul!(y, coeffsv, vec)
         return y
     end
 end
-
 
 """
     integrate!(y::AbstractVector, ps::PolySet{TPS}, a::Real, b::Real, cache::AbstractVector) where TPS
@@ -165,9 +162,10 @@ Same as `integrate!(y, ps, a, b)` but avoids allocation by reusing the provided 
 - `cache`: Pre-allocated vector of length equal to the polynomial degree, used to store powers.
 
 """
-function integrate!(y::AbstractVecOrMat, ps::PolySet{TPS}, a::Real, b::Real, cache::AbstractVector) where TPS
+function integrate!(y::AbstractVecOrMat, ps::PolySet{TPS}, a::Real,
+        b::Real, cache::AbstractVector) where {TPS}
     @unpack coeffs = ps
-    (_,m) = size(ps)
+    (_, m) = size(ps)
     newT = promote_type(TPS, typeof(a), typeof(b))
     apow = one(newT)
     bpow = one(newT)
@@ -176,10 +174,9 @@ function integrate!(y::AbstractVecOrMat, ps::PolySet{TPS}, a::Real, b::Real, cac
         bpow *= b
         cache[j] = (bpow - apow) / j
     end
-    mul!(y,coeffs,cache)
+    mul!(y, coeffs, cache)
     y
 end
-
 
 """
     integrate!(ips::PolySet, ps::PolySet{TPS}, a::Real) where TPS
@@ -203,50 +200,41 @@ ips = allocate_polyset(Float64, 2, 3)
 integrate!(ips, ps, 0.0)                                         
 ```
 """
-function integrate!(ips::PolySet, ps::PolySet{TPS}, a::Real) where TPS
-    x = 1 ./(1:(maxdeg(ps)+1))
-    @views vips = ips.coeffs[:,2:maxdeg(ps)+2]
+function integrate!(ips::PolySet, ps::PolySet{TPS}, a::Real) where {TPS}
+    x = 1 ./ (1:(maxdeg(ps) + 1))
+    @views vips = ips.coeffs[:, 2:(maxdeg(ps) + 2)]
     mul!(vips, ps.coeffs, Diagonal(x))
     NewT = promote_type(TPS, typeof(a))
     y = zeros(NewT, npolys(ps))
     evaluate!(y, ips, a)
-    @views vips = ips.coeffs[:,1]
+    @views vips = ips.coeffs[:, 1]
     vips .-= y
     ips
 end
 
-
-
-
-
 function fill_upper_diagonals!(A::AbstractArray, vals::Base.AbstractVecOrTuple)
     m, n = size(A)
-    for d in 1:(length(vals))  
+    for d in 1:(length(vals))
         val = vals[d]
-        for i in 1:min(m, n - d +1)
-            A[i, i + d-1] = val
+        for i in 1:min(m, n - d + 1)
+            A[i, i + d - 1] = val
         end
     end
 end
 
-function factorize(ps::PolySet{TP}, racine::T) where {TP,T}
-    NewT = promote_type(TP,T)
+function factorize(ps::PolySet{TP}, racine::T) where {TP, T}
+    NewT = promote_type(TP, T)
     y = evaluate(ps, racine)
-    idx = findall(iszero,y)
+    idx = findall(iszero, y)
     qs = allocate_polyset(NewT, npolys(ps), maxdeg(ps)-1)
-    @views vps = ps.coeffs[idx,:]
-    @views vqs = qs.coeffs[idx,:]
-    M = zeros(NewT,maxdeg(ps)+1,maxdeg(ps)+1)
-    fill_upper_diagonals!(M,[-racine,1])
-    @views vc = (vps/M)[:,1:end-1]
+    @views vps = ps.coeffs[idx, :]
+    @views vqs = qs.coeffs[idx, :]
+    M = zeros(NewT, maxdeg(ps)+1, maxdeg(ps)+1)
+    fill_upper_diagonals!(M, [-racine, 1])
+    @views vc = (vps / M)[:, 1:(end - 1)]
     vqs .= vc
     qs
 end
-
-
-
-
-
 
 """
     mul(ps::PolySet{TP}, qs::PolySet{TQ}) where {TP, TQ}
@@ -265,20 +253,19 @@ Returns a new `PolySet` containing the product of every polynomial in `ps` with 
 This function constructs a temporary matrix `M` used to perform the polynomial multiplication via matrix multiplication. 
 For each polynomial in `qs`, it fills `M` with shifted copies of its coefficients along diagonals, then computes all products with `ps` in one matrix-matrix multiplication.
 """
-function mul(ps::PolySet{TP}, qs::PolySet{TQ}) where {TP,TQ}
+function mul(ps::PolySet{TP}, qs::PolySet{TQ}) where {TP, TQ}
     (np, degp) = size(ps)
     (nq, degq) = size(qs)
-    NewT = promote_type(TP,TQ)
+    NewT = promote_type(TP, TQ)
     result = allocate_polyset(NewT, np*nq, degp+degq-2)
-    M = zeros(NewT,degp,degp+degq-1)
-     @inbounds for i ∈ 1:nq
-        @views coeffs = qs.coeffs[i,:]
+    M = zeros(NewT, degp, degp+degq-1)
+    @inbounds for i in 1:nq
+        @views coeffs = qs.coeffs[i, :]
         fill_upper_diagonals!(M, coeffs)
-        @views vresult = result.coeffs[(i-1)*np+1:i*np,:]
+        @views vresult = result.coeffs[((i - 1) * np + 1):(i * np), :]
         mul!(vresult, ps.coeffs, M)
     end
-    result 
+    result
 end
 
-pairwiseproduct(ps::PolySet) = mul(ps,ps)
-
+pairwiseproduct(ps::PolySet) = mul(ps, ps)

@@ -28,8 +28,8 @@ function _integration_monome_over_deg1(k::Int, A::Real, B::Real, a::Real, b::Rea
         return 1/(B * (k+1)) * (b^(k+1) - a^(k+1))
     else
         C = B/A
-        right =  b^(k+1)*pFq((1,k+1),(k+2,),-b/C)
-        left = a^(k+1)*pFq((1,k+1),(k+2,),-a/C)
+        right = b^(k+1)*pFq((1, k+1), (k+2,), -b/C)
+        left = a^(k+1)*pFq((1, k+1), (k+2,), -a/C)
         return (right-left)/(A*(C*k+C))
     end
 end
@@ -57,7 +57,7 @@ function _integration_monome_over_deg2(k::Int, A::Real, B::Real, a::Real, b::Rea
     if iszero(A)
         return 1/(B^2 * (k+1)) * (b^(k+1) - a^(k+1))
     elseif iszero(B)
-        if k == 0   
+        if k == 0
             return 1/A^2 * (1/a - 1/b)
         elseif k == 1
             return 1/A^2 * log(b/a)
@@ -66,8 +66,8 @@ function _integration_monome_over_deg2(k::Int, A::Real, B::Real, a::Real, b::Rea
         end
     else
         rac = -B/A
-        right = b^(k+1)*pFq((2,k+1),(k+2,), b/rac) 
-        left  = a^(k+1)*pFq((2,k+1),(k+2,), a/rac) 
+        right = b^(k+1)*pFq((2, k+1), (k+2,), b/rac)
+        left = a^(k+1)*pFq((2, k+1), (k+2,), a/rac)
         return 1/(B^2 * (k+1)) * (right - left)
     end
 end

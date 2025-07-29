@@ -25,13 +25,13 @@ function project_trace_blocks(M_blocks::Vector{Matrix{Float64}}, alphas::Vector{
     set_silent(model)
 
     @variable(model, t[1:L]) # projected traces
-    @objective(model, Min, sum( (t[ℓ] - tr_M[ℓ])^2 / d[ℓ] for ℓ in 1:L ))
+    @objective(model, Min, sum((t[ℓ] - tr_M[ℓ])^2 / d[ℓ] for ℓ in 1:L))
 
     @constraint(model, sum(t) == 0)
     @constraint(model, [ℓ=1:L], t[ℓ] >= alphas[ℓ])
 
     x = zero(alphas[1])
-    for i ∈ 1:L-1
+    for i in 1:(L - 1)
         set_start_value(t[i], alphas[i])
         x += alphas[i]
     end
@@ -47,7 +47,6 @@ function project_trace_blocks(M_blocks::Vector{Matrix{Float64}}, alphas::Vector{
     return M_proj
 end
 
-
 function init_t(α::AbstractVector{<:Real})
     t0 = copy(α)
     t0[end] = - sum(α) + α[end]
@@ -55,13 +54,15 @@ function init_t(α::AbstractVector{<:Real})
 end
 
 function check_constrains(t::AbstractVector{<:Real}, α::AbstractVector{<:Real})
-    all(t.≥ α)
+    all(t .≥ α)
 end
 
 # Exemple : 3 blocs
-M1 = randn(2,2); M1 = (M1 + M1')/2
-M2 = randn(3,3); M2 = (M2 + M2')/2
-M3 = randn(1,1)
+M1 = randn(2, 2);
+M1 = (M1 + M1')/2
+M2 = randn(3, 3);
+M2 = (M2 + M2')/2
+M3 = randn(1, 1)
 
 M_blocks = [M1, M2, M3]
 alphas = [-1.0, 0.0, 0.6]

@@ -8,12 +8,11 @@ struct SolverOptions{T <: Real}
     degen_tol::T                            # Tolerance to consider degenescence of orbitals energy
 
     verbose::UInt8                          # Say how many details are printed at the end 
-                                            # of each iterations :
-                                            # 0 : Zero details
-                                            # 1 : Iterations
-                                            # 2 : Computations                
+    # of each iterations :
+    # 0 : Zero details
+    # 1 : Iterations
+    # 2 : Computations                
 end
-
 
 #--------------------------------------------------------------------
 #                           SOLVER STRUCTURE
@@ -57,14 +56,13 @@ Use `solve!(solver)` to run the self-consistent procedure, and access solution d
 # Returns
 - A fully initialized `KSESolver` ready for use with `solve!`.
 """
-mutable struct KSESolver{   discretizationType <: KSEDiscretization,
-                            modelType <: KSEModel,
-                            algType <: SCFAlgorithm,
-                            cacheType <: SCFCache,
-                            optsType <: SolverOptions,
-                            logbookType <: LogBook,
-                            dataType <: Real}
-                            
+mutable struct KSESolver{discretizationType <: KSEDiscretization,
+    modelType <: KSEModel,
+    algType <: SCFAlgorithm,
+    cacheType <: SCFCache,
+    optsType <: SolverOptions,
+    logbookType <: LogBook,
+    dataType <: Real}
     niter::Int                                  # Number of iterations
     stopping_criteria::dataType                 # Current stopping criteria
     discretization::discretizationType          # Discretization parameters
@@ -72,40 +70,40 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
     alg::algType                                # SCF Algorithm
     cache::cacheType                            # Cache associated to the algorithm
     opts::optsType                              # Solver options
-    energies::Dict{Symbol,dataType}             # Storages of the energies
+    energies::Dict{Symbol, dataType}             # Storages of the energies
     logbook::logbookType                        # LogBook
-    
-    function KSESolver( model::KSEModel, 
-                        discretization::KSEDiscretization, 
-                        alg::SCFAlgorithm; 
-                        scftol::Real, 
-                        maxiter::Int = 100,
-                        degen_tol::Real = eps(eltype(discretization.basis)),
-                        logconfig = LogConfig(),
-                        verbose::Int = 3)
-    
+
+    function KSESolver(model::KSEModel,
+            discretization::KSEDiscretization,
+            alg::SCFAlgorithm;
+            scftol::Real,
+            maxiter::Int = 100,
+            degen_tol::Real = eps(eltype(discretization.basis)),
+            logconfig = LogConfig(),
+            verbose::Int = 3)
+
         # Set the data type as the one of the discretization basis
         T = eltype(discretization)
-        
+
         # Init Cache of the Discretisation
         init_cache!(discretization, model)
-        
+
         # Init Cache of the Method
         cache = create_cache_alg(alg, discretization)
-        
+
         # Init Energies 
         energies = zero_energies(discretization, model)
-        
+
         #  SolverOptions
-        opts = SolverOptions(   T(scftol), 
-                                maxiter, 
-                                T(degen_tol),
-                                UInt8(verbose))
-        
+        opts = SolverOptions(T(scftol),
+            maxiter,
+            T(degen_tol),
+            UInt8(verbose))
+
         # Init log parameters
         niter = 0
         stopping_criteria = zero(T)
-        
+
         logbook = LogBook(logconfig, T, energies, alg)
 
         new{typeof(discretization),
@@ -114,14 +112,14 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
             typeof(cache),
             typeof(opts),
             typeof(logbook),
-            typeof(stopping_criteria)}( niter, 
-                                        stopping_criteria, 
-                                        discretization, 
-                                        model, 
-                                        alg, 
-                                        cache, 
-                                        opts,
-                                        energies,
-                                        logbook)
+            typeof(stopping_criteria)}(niter,
+            stopping_criteria,
+            discretization,
+            model,
+            alg,
+            cache,
+            opts,
+            energies,
+            logbook)
     end
 end

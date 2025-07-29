@@ -6,7 +6,7 @@ redirect_stdout(output_file)
 
 # Création des éléments puis de la base
 T = Float64
-mesh = linmesh(0,10,1000)
+mesh = linmesh(0, 10, 1000)
 
 # Tests Creation of elements
 println("Elements")

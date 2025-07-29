@@ -27,21 +27,21 @@ the ground-state electronic structure of an atom or ion.
 - `solveropts`: Additional solver options.
 """
 struct AtomProblem{T <: Real,
-                   A <: SCFAlgorithm,
-                   M <: KSEModel,
-                   S <: AbstractString,
-                   TZ, TN, FM,
-                   OM <: NamedTuple,
-                   OB <: NamedTuple,
-                   OS,
-                   TM,
-                   TB}
+    A <: SCFAlgorithm,
+    M <: KSEModel,
+    S <: AbstractString,
+    TZ, TN, FM,
+    OM <: NamedTuple,
+    OB <: NamedTuple,
+    OS,
+    TM,
+    TB}
     lh::Int
     nh::Int
     alg::A
     z::TZ
     N::TN
-    hartree
+    hartree::Any
     integration_method::FM
     Rmax::T
     Nmesh::Int
@@ -76,20 +76,20 @@ Constructor for `AtomProblem` from keyword arguments.
 - `kwargs`: Additional solver options.
 """
 function AtomProblem(;
-    T,
-    lh,
-    nh,
-    alg,
-    z,
-    N,
-    hartree,
-    integration_method,
-    Rmax,
-    Nmesh,
-    typemesh,
-    optsmesh,
-    typebasis, optsbasis,
-    name = "", kwargs...)
+        T,
+        lh,
+        nh,
+        alg,
+        z,
+        N,
+        hartree,
+        integration_method,
+        Rmax,
+        Nmesh,
+        typemesh,
+        optsmesh,
+        typebasis, optsbasis,
+        name = "", kwargs...)
     return AtomProblem{
         T,
         typeof(alg),
@@ -103,21 +103,21 @@ function AtomProblem(;
         typeof(typemesh),
         typeof(typebasis),
         typeof(name)}(
-            lh,
-            nh,
-            alg,
-            z,
-            N,
-            hartree,
-            integration_method,
-            Rmax,
-            Nmesh,
-            typemesh,
-            optsmesh,
-            typebasis,
-            optsbasis,
-            name,
-            kwargs
+        lh,
+        nh,
+        alg,
+        z,
+        N,
+        hartree,
+        integration_method,
+        Rmax,
+        Nmesh,
+        typemesh,
+        optsmesh,
+        typebasis,
+        optsbasis,
+        name,
+        kwargs
     )
 end
 
@@ -129,39 +129,37 @@ Copy constructor for `AtomProblem` with optional overrides.
 Useful for creating a new problem from an existing one while updating fields.
 """
 function AtomProblem(prob::AtomProblem;
-                     T = typeof(prob.Rmax),
-                     lh = prob.lh, nh = prob.nh,
-                     alg = prob.alg, z = prob.z, N = prob.N,
-                     hartree = prob.hartree,
-                     integration_method = prob.integration_method,
-                     Rmax = prob.Rmax, Nmesh = prob.Nmesh,
-                     typemesh = prob.typemesh, optsmesh = prob.optsmesh,
-                     typebasis = prob.typebasis, optsbasis = prob.optsbasis,
-                     name = prob.name, kwargs = prob.solveropts)
+        T = typeof(prob.Rmax),
+        lh = prob.lh, nh = prob.nh,
+        alg = prob.alg, z = prob.z, N = prob.N,
+        hartree = prob.hartree,
+        integration_method = prob.integration_method,
+        Rmax = prob.Rmax, Nmesh = prob.Nmesh,
+        typemesh = prob.typemesh, optsmesh = prob.optsmesh,
+        typebasis = prob.typebasis, optsbasis = prob.optsbasis,
+        name = prob.name, kwargs = prob.solveropts)
     return AtomProblem{T, typeof(alg), typeof(z), typeof(N), typeof(hartree),
-                       typeof(integration_method), typeof(optsmesh),
-                       typeof(optsbasis), typeof(kwargs),
-                       typeof(typemesh), typeof(typebasis), typeof(name)}(
+        typeof(integration_method), typeof(optsmesh),
+        typeof(optsbasis), typeof(kwargs),
+        typeof(typemesh), typeof(typebasis), typeof(name)}(
         lh, nh, alg, z, N, hartree, integration_method,
         Rmax, Nmesh, typemesh, optsmesh,
         typebasis, optsbasis, name, kwargs
     )
 end
 
-
 datatype(::AtomProblem{T}) where {T} = T
 
-
 const ATOMIC_NUMBER_TO_NAME = Dict(
-     1 => "Hydrogen",
-     2 => "Helium",
-     3 => "Lithium",
-     4 => "Beryllium",
-     5 => "Boron",
-     6 => "Carbon",
-     7 => "Nitrogen",
-     8 => "Oxygen",
-     9 => "Fluorine",
+    1 => "Hydrogen",
+    2 => "Helium",
+    3 => "Lithium",
+    4 => "Beryllium",
+    5 => "Boron",
+    6 => "Carbon",
+    7 => "Nitrogen",
+    8 => "Oxygen",
+    9 => "Fluorine",
     10 => "Neon",
     11 => "Sodium",
     12 => "Magnesium",
@@ -252,38 +250,37 @@ const ATOMIC_NUMBER_TO_NAME = Dict(
     97 => "Berkelium",
     98 => "Californium",
     99 => "Einsteinium",
-   100 => "Fermium",
-   101 => "Mendelevium",
-   102 => "Nobelium",
-   103 => "Lawrencium",
-   104 => "Rutherfordium",
-   105 => "Dubnium",
-   106 => "Seaborgium",
-   107 => "Bohrium",
-   108 => "Hassium",
-   109 => "Meitnerium",
-   110 => "Darmstadtium",
-   111 => "Roentgenium",
-   112 => "Copernicium",
-   113 => "Nihonium",
-   114 => "Flerovium",
-   115 => "Moscovium",
-   116 => "Livermorium",
-   117 => "Tennessine",
-   118 => "Oganesson"
+    100 => "Fermium",
+    101 => "Mendelevium",
+    102 => "Nobelium",
+    103 => "Lawrencium",
+    104 => "Rutherfordium",
+    105 => "Dubnium",
+    106 => "Seaborgium",
+    107 => "Bohrium",
+    108 => "Hassium",
+    109 => "Meitnerium",
+    110 => "Darmstadtium",
+    111 => "Roentgenium",
+    112 => "Copernicium",
+    113 => "Nihonium",
+    114 => "Flerovium",
+    115 => "Moscovium",
+    116 => "Livermorium",
+    117 => "Tennessine",
+    118 => "Oganesson"
 )
 
-
 const ATOMIC_NUMBER_TO_SYMBOL = Dict(
-     1 => "H",
-     2 => "He",
-     3 => "Li",
-     4 => "Be",
-     5 => "B",
-     6 => "C",
-     7 => "N",
-     8 => "O",
-     9 => "F",
+    1 => "H",
+    2 => "He",
+    3 => "Li",
+    4 => "Be",
+    5 => "B",
+    6 => "C",
+    7 => "N",
+    8 => "O",
+    9 => "F",
     10 => "Ne",
     11 => "Na",
     12 => "Mg",
@@ -374,23 +371,23 @@ const ATOMIC_NUMBER_TO_SYMBOL = Dict(
     97 => "Bk",
     98 => "Cf",
     99 => "Es",
-   100 => "Fm",
-   101 => "Md",
-   102 => "No",
-   103 => "Lr",
-   104 => "Rf",
-   105 => "Db",
-   106 => "Sg",
-   107 => "Bh",
-   108 => "Hs",
-   109 => "Mt",
-   110 => "Ds",
-   111 => "Rg",
-   112 => "Cn",
-   113 => "Nh",
-   114 => "Fl",
-   115 => "Mc",
-   116 => "Lv",
-   117 => "Ts",
-   118 => "Og"
+    100 => "Fm",
+    101 => "Md",
+    102 => "No",
+    103 => "Lr",
+    104 => "Rf",
+    105 => "Db",
+    106 => "Sg",
+    107 => "Bh",
+    108 => "Hs",
+    109 => "Mt",
+    110 => "Ds",
+    111 => "Rg",
+    112 => "Cn",
+    113 => "Nh",
+    114 => "Fl",
+    115 => "Mc",
+    116 => "Lv",
+    117 => "Ts",
+    118 => "Og"
 )

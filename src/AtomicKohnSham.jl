@@ -1,140 +1,133 @@
 module AtomicKohnSham
 
-    # -------------------------------------
-    #               DEPENDANCIES
-    # -------------------------------------
-    using LinearAlgebra
-    using SparseArrays
-    using FillArrays
-    using BlockDiagonals
+# -------------------------------------
+#               DEPENDANCIES
+# -------------------------------------
+using LinearAlgebra
+using SparseArrays
+using FillArrays
+using BlockDiagonals
 
-    using TensorOperations
+using TensorOperations
 
-    using FastGaussQuadrature
-    using KrylovKit
-    using Arpack
-    using Optim
-    using Integrals
+using FastGaussQuadrature
+using KrylovKit
+using Arpack
+using Optim
+using Integrals
 
-    using HypergeometricFunctions
+using HypergeometricFunctions
 
-    using UnPack
+using UnPack
 
-    using Base.Threads
-    using AtomicKohnSham
+using Base.Threads
+using AtomicKohnSham
 
-    using Libxc: Functional, OptArray
-    import Libxc: is_lda
-    import Libxc: evaluate as evaluate_functional
-    import Libxc: evaluate! as evaluate_functional!
+using Libxc: Functional, OptArray
+import Libxc: is_lda
+import Libxc: evaluate as evaluate_functional
+import Libxc: evaluate! as evaluate_functional!
 
-    # -------------------------------------
-    #               UTILS
-    # -------------------------------------
-    include("utils/free allocation.jl")
-    include("utils/sparse tools.jl")
+# -------------------------------------
+#               UTILS
+# -------------------------------------
+include("utils/free allocation.jl")
+include("utils/sparse tools.jl")
 
+# -------------------------------------
+#               POLYSET
+# -------------------------------------
+# ALL THESE TOOLS SHOULD MOVE TO A NEW PACKAGE POLYSET
+export PolySet, Legendre, IntLegendre
+export evaluate!, integrate!, allocate_polyset, mul, npolys, maxdeg
 
-    # -------------------------------------
-    #               POLYSET
-    # -------------------------------------
-    # ALL THESE TOOLS SHOULD MOVE TO A NEW PACKAGE POLYSET
-    export PolySet, Legendre, IntLegendre
-    export evaluate!, integrate!, allocate_polyset, mul, npolys, maxdeg
+include("fem/polynomial.jl")
+include("fem/legendre polynomial.jl")
 
-    include("fem/polynomial.jl")
-    include("fem/legendre polynomial.jl")
+# -------------------------------------
+#               FEM TOOLS
+# -------------------------------------
+export FEMBasis
 
+export P1IntLegendreGenerator, P1IntLegendreBasis
 
-    # -------------------------------------
-    #               FEM TOOLS
-    # -------------------------------------
-    export FEMBasis
+export mass_matrix, sparse_mass_matrix,
+       stiffness_matrix, sparse_stiffness_matrix,
+       mass_tensor
 
-    export P1IntLegendreGenerator, P1IntLegendreBasis
+export FEMIntegrationMethod, ExactIntegration, QuadratureIntegration, GaussLegendre
 
-    export mass_matrix, sparse_mass_matrix,
-           stiffness_matrix, sparse_stiffness_matrix,
-           mass_tensor
+abstract type AbstractGenerator{T} end
+@inline Base.eltype(::AbstractGenerator{T}) where {T} = T
+@inline Base.length(gen::AbstractGenerator) = gen.size
+@inline getpolynomial(gen::AbstractGenerator, n::Int) = gen[n]
+@inline getderivpolynomial(gen::AbstractGenerator, n::Int) = getderivpolynomial(gen)[n]
 
-    export FEMIntegrationMethod, ExactIntegration, QuadratureIntegration, GaussLegendre
+export Mesh, linmesh, geometricmesh, polynomialmesh, expmesh
+include("fem/mesh.jl")
 
-    abstract type AbstractGenerator{T} end
-    @inline Base.eltype(::AbstractGenerator{T}) where T = T
-    @inline Base.length(gen::AbstractGenerator) = gen.size
-    @inline getpolynomial(gen::AbstractGenerator, n::Int) = gen[n]
-    @inline getderivpolynomial(gen::AbstractGenerator, n::Int) = getderivpolynomial(gen)[n]
+include("fem/generators.jl")
+include("fem/basis.jl")
+include("fem/integration methods.jl")
+include("fem/weights.jl")
+include("fem/matrices.jl")
+include("fem/local matrix.jl")
+include("fem/integration_formula.jl")
 
-    export Mesh, linmesh, geometricmesh, polynomialmesh, expmesh
-    include("fem/mesh.jl")
+# -------------------------------------
+#               MODELISATION
+# -------------------------------------
+export NoFunctional, BuiltinFunctional
+export evaluate_functional, evaluate_functional!
+export KSEModel, RHF, Slater
 
-    include("fem/generators.jl")
-    include("fem/basis.jl")
-    include("fem/integration methods.jl")
-    include("fem/weights.jl")
-    include("fem/matrices.jl")
-    include("fem/local matrix.jl")
-    include("fem/integration_formula.jl")
+include("exchange correlation/BuiltinFunctional.jl")
+include("exchange correlation/SlaterXa.jl")
+#include("exchange correlation/PW92.jl")
+include("models.jl")
 
+# -------------------------------------
+#               DISCRETIZATION
+# -------------------------------------
+export KSEDiscretization
+include("discretization/discretization.jl")
+include("discretization/operator.jl")
+include("discretization/energies.jl")
+include("discretization/density.jl")
 
-    # -------------------------------------
-    #               MODELISATION
-    # -------------------------------------
-    export NoFunctional, BuiltinFunctional
-    export evaluate_functional, evaluate_functional!
-    export KSEModel, RHF, Slater
+include("algorithms/abstract.jl")
 
-    include("exchange correlation/BuiltinFunctional.jl")
-    include("exchange correlation/SlaterXa.jl")
-    #include("exchange correlation/PW92.jl")
-    include("models.jl")
+# -------------------------------------
+#               LogBook
+# -------------------------------------
+export LogConfig, LogBook
+include("log.jl")
 
+# -------------------------------------
+#            SCF ALGORITHMS
+# -------------------------------------
+export KSESolver, SolverOptions
+export SCFAlgorithm, CDA, ODA, Quadratic
 
-    # -------------------------------------
-    #               DISCRETIZATION
-    # -------------------------------------
-    export KSEDiscretization
-    include("discretization/discretization.jl")
-    include("discretization/operator.jl")
-    include("discretization/energies.jl")
-    include("discretization/density.jl")
+include("solver.jl")
 
+include("algorithms/rca.jl")
+include("algorithms/oda_procedure.jl")
+#include("algorithms/quadratic.jl")
+include("algorithms/combined.jl")
 
-    include("algorithms/abstract.jl")
-    
-    # -------------------------------------
-    #               LogBook
-    # -------------------------------------
-    export LogConfig, LogBook
-    include("log.jl")
+export aufbau!
+include("algorithms/aufbau.jl")
 
-    # -------------------------------------
-    #            SCF ALGORITHMS
-    # -------------------------------------
-    export KSESolver, SolverOptions
-    export SCFAlgorithm, CDA, ODA, Quadratic
+# -------------------------------------
+#       PROBLEM-groundstate-SOLUTION
+# -------------------------------------
+export AtomProblem, atomic_number_to_symbol, atomic_number_to_name
+include("problem.jl")
 
-    
+export KSESolution, eigenvector, eval_density, total_charge
+include("solution.jl")
 
-    include("solver.jl")
-
-    include("algorithms/rca.jl")
-    include("algorithms/oda_procedure.jl")
-    #include("algorithms/quadratic.jl")
-    include("algorithms/combined.jl")
-
-    export aufbau!
-    include("algorithms/aufbau.jl")
-
-    # -------------------------------------
-    #       PROBLEM-groundstate-SOLUTION
-    # -------------------------------------
-    export AtomProblem, atomic_number_to_symbol, atomic_number_to_name
-    include("problem.jl")
-
-    export KSESolution, eigenvector, eval_density, total_charge
-    include("solution.jl")
-
-    export groundstate
-    include("groundstate.jl")
+export groundstate
+include("groundstate.jl")
 end
