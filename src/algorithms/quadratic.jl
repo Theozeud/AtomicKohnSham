@@ -1,15 +1,22 @@
-#####################################################################
+#--------------------------------------------------------------------
 #                          Quadratic Method
-#####################################################################
+#--------------------------------------------------------------------
+"""
+    QuadraticMethod
 
-struct Quadratic{typeMethod, typeOpts<:NamedTuple} <: SCFAlgorithm
-    method::typeMethod  # Method  to solve the linear system
-    opts::typeOpts      # Options to solve the linear system
-end
-
-name(::Quadratic) = "Quadratic" 
+Implement the quadratic algorithm of "Quadratically convergent algorithm for fractional occupation numbers
+in density functional theory" by Cancès, Kudin, Scuseria, Turinici. 
+"""
+struct QuadraticMethod<: SCFAlgorithm end
 
 
+name(::QuadraticMethod) = "Quadratic-CancesTurinici" 
+
+"""
+    CacheQuadratic
+
+Cache structure to handle the `QuadraticMethod`.
+"""
 struct CacheQuadratic{  densityType <: AbstractArray{<:Real},
                         densitymatrixType <: AbstractArray{<:Real},
                         operatorType <: AbstractArray{<:Real},
@@ -25,8 +32,9 @@ struct CacheQuadratic{  densityType <: AbstractArray{<:Real},
                              0      Λ  0
                              0      0  0 )   
     where we have :
+
             - Γmo   : the density matrix in the molecular basis
-                                Γmo = Ω' * Γ * Ω
+                                Γmo = Ω' * Γao * Ω
             - m     : the multiplicty of orbitals.
     
     The size of Γmo is (Nf + Np + Nv) x (Nf + Np + Nv)
@@ -40,15 +48,17 @@ struct CacheQuadratic{  densityType <: AbstractArray{<:Real},
     in a vectorize way : B -> vecB which gives vecX -> (A,M)
     =#
 
-    # DIAGONALIZED DENSITY MATRIX :  Γmo = Ω' * Γao * Ω
-    D::densityType  
+    # DIAGONALIZED DENSITY MATRIX :  Γmo = Ω' * Γao * Ω 
     Γao::densitymatrixType 
+    Γmo
     Ω::operatorType  
     A::operatorType
     Λ::ΛType
-    M::ΛType         
+    M::ΛType      
+
     B::operatorType
     m::Int
+
     # REPARTITION ORBITALS
     repart_orbitals::Matrix{Int}    # Number of types of orbital for each section 
                                     # of the density matrix Γ :
@@ -56,21 +66,9 @@ struct CacheQuadratic{  densityType <: AbstractArray{<:Real},
                                     #   - Np : number of partially occupied orbitals,
                                     #   - Nv : number of virtual orbitals. 
     # VECTOR CONVERSION FOR THE LINEAR SYSTEM
-    vecX::Vector{T}
+    vecA::Vector{T}
     vecB::Vector{T}
     indexconv::Vector{Tuple{Int, Int}}
-    # INTERMEDIATE VARIABLES
-    Fmo::operatorType 
-    d::operatorType   
-    Jd::singopType  
-    Qd::singopType  
-    Gmo::singopType 
-    X::singopType   
-    Y::singopType   
-    Z::singopType    
-     # CACHES VARIABLES
-    tmp1::Matrix{T}
-    tmp2::Matrix{T} 
 end
 
 
@@ -87,44 +85,65 @@ function vec_slice_orbitals(Nf::Int, Np::Int, Nv::Int)
      Nvf+Nvp+Npf+1:Nvf+Nvp+Npf+Npp)
 end
 
-#####################################################################
+
+struct QuadraticOp
+    Fmo::opType 
+
+
+    function QuadraticOp()
+
+
+    end
+end
+
+
+
+function (Op::QuadraticOp)(X)
+    Avf, Avp, Apf, M = X 
+
+    @unpack _commutator!(tmp1, A, Dmo)   = Op
+
+end
+
+
+#--------------------------------------------------------------------
 #                        Initialization
-#####################################################################
+#--------------------------------------------------------------------
 
-function create_cache_alg(::Quadratic, discretization::KohnShamDiscretization,
-                                rcacache::RCACache)
-
-    @unpack n = rcacache
+function create_cache_alg(::Quadratic, 
+                          discretization::KohnShamDiscretization,
+                          rcacache::RCACache)
 
     @unpack matrices, lₕ, elT = discretization
+    @unpack n, Noccup = rcacache
     @unpack M₀, S, H = matrices
+
+    Nf, Np, Nv = Noccup
+
 
     # ORBITALS NUMBERS
     repart_orbitals = orbitals_repartion(discretization, n)
 
-    # INDEX VECTOR CONVERSION
-    indexconv = Vector{Tuple{Int,Int}}(undef,nbsection(discretization))
-    i = 0
-    for I ∈ eachsection(discretization)
-        Nf = repart_orbitals[1,I...]
-        Np = repart_orbitals[2,I...]
-        Nv = repart_orbitals[3,I...]
-        sizesys = Nv*Nf + Nv*Np + Np*Nf + Np*Np
-        indexconv[I] = (i+1, i+sizesys)
-        i += sizesys
-    end
+    # VECTOR 
+    Avf = zeros(elT, Nv, Nf)
+    Avp = zeros(elT, Nv, Np)
+    Apf = zeros(elT, Np, Nf)
+    M   = zeros(elT, Np, Np)
+    vecA = [Avf, Avp, Apf, M]
 
-    # VECTOR
-    vecX = zeros(elT, i)
+
     vecB = zeros(elT, i)
 
     # DENSITY MATRIX
-    Γ = init_density_matrix(discretization)
+    Γao = zero_density_matrix(discretization)
+    
     density_matrix!(discretization, U, n, Γ)
 
     m = multiplicty(discretization)
     Λ = Vector{Matrix{elT}}(undef, nbsection(discretization))
-    Sq = sqrt(Symmetric(M₀))
+   
+
+
     for I ∈ eachsection(discretization)
         @views ΓaoI = Γao[:,:,I...]
         @views ΩI   = Ω[:,:,I...]
@@ -141,19 +160,6 @@ function create_cache_alg(::Quadratic, discretization::KohnShamDiscretization,
     A = init_operator(discretization)
     B = init_operator(discretization)
 
-    # INTERMEDIATE VARIABLES
-    Fmo = init_operator(discretization)
-    d   = init_operator(discretization)
-    Jd  = init_single_operator(discretization)
-    Qd  = init_single_operator(discretization)
-    Gmo = init_single_operator(discretization)
-    X   = init_single_operator(discretization)
-    Y   = init_single_operator(discretization)
-    Z   = init_single_operator(discretization)
-
-    # CACHES VARIABLES 
-    tmp1 = init_single_operator(discretization)
-    tmp2 = init_single_operator(discretization)
 
     CacheQuadratic{ typeof(D),
                     typeof(Γao), 
@@ -171,22 +177,12 @@ function create_cache_alg(::Quadratic, discretization::KohnShamDiscretization,
                         repart_orbitals,
                         vecX,
                         vecB, 
-                        indexconv,
-                        Fmo,
-                        d,
-                        Jd,
-                        Qd,
-                        Gmo,
-                        X,
-                        Y,
-                        Z,
-                        tmp1,
-                        tmp2)
+                        indexconv)
 end
 
-#####################################################################
+#--------------------------------------------------------------------
 #                             PERFORMSTEP
-#####################################################################
+#--------------------------------------------------------------------
 
 function performstep!(cache::CacheQuadratic, ::Quadratic, solver::KohnShamSolver)
     @unpack discretization, model, opts, energies = solver
@@ -205,51 +201,38 @@ function performstep!(cache::CacheQuadratic, ::Quadratic, solver::KohnShamSolver
 end
 
 
-#####################################################################
-#                        PREPARE LINEAR SYSTEM
-#####################################################################
 function prepare_linear_system!(cache::CacheQuadratic, 
                                 discretization::KohnShamDiscretization, 
                                 model::KohnShamExtended, 
                                 hartree::Real = 1.0)
 
-    @unpack Γmo, Γao, D, Ω, B, vecB, Fmo = cache
-    @unpack tmp1 = cache
-    @unpack H = discretization.matrices
+    @unpack quadop, Λ, m, Γmo, Γao, Ω, Fmo, B = cache 
+    @unpack tmp1, tmp2 = quadop 
 
-    # COMPUTE THE DENSITY Dkao
-    density!(discretization, Γao, D)
+    # COMPUTE Γmo 
+    block(Γmo)[2] .= Λ
 
-    # COMPUTE B AND Fmo
-    for I ∈ eachsection(discretization)
+    # COMPUTE Γao
+    _mul!(Γao, Ω, Γmo, Ω',tmp1)
 
-        @views Γv     = Γao[:,:,I...]
-        @views Ωv     = Ω[:,:,I...]
-        @views Bv     = B[:,:, I...]
-        @views vecBv  = vecB[:,I...]
-        @views Fmov   = Fmo[:,:,I...]
+    # COMPUTE Fao
+    prepare_eigenvalue_problem!(discretization, model, D, hartree)
+    @. Fao = discretization.matrices.H  
 
-        Nf, Np, Nv = Noccup[:,I...]
-        _, slicep, _ = slice_orbitals(Nf, Np, Nv)
+    # COMPUTE Fmo
+    _mul!(Fmo, Ω', H, Ω, tmp1)
 
-        # COMPUTE Fao
-        prepare_eigenvalue_problem!(discretization, model, D, hartree)
+    # COMPUTE B 
+    _commutator!(tmp2, Fmo, Γmo, tmp1)
 
-        # COMPUTE Fmo
-        _mul!(Fmo, Ωv', H, Ωv, tmp1)
 
-        # COMPUTE B
-        _commutator!(Bv, Fmo, Γmo, tmp1)
-        @views Bpp = Bv[slicep, slicep]
-        remove_trace!(Bpp)
-        _copy_mat_to_vec!(vecBv, axes(vecBv,1), Bv, axes(Bv,1), axes(Bv,2))
-    end
+    @views Bpf = tmp2
+    B[3]
+    
     nothing
 end
 
-#####################################################################
-#                        LINEAR SYSTEM
-#####################################################################
+
 
 function linearsystem(  cache::CacheQuadratic, 
                         discretization::KohnShamDiscretization,
@@ -334,16 +317,12 @@ function linearsystem(  cache::CacheQuadratic,
     vecOUT
 end
 
-#####################################################################
-#                        SOLVE LINEAR SYSTEM
-#####################################################################
+
 function solve_linear_system!(cache::CacheQuadratic, method::Quadratic)
 
     @unpack vecIn, vecB, A, M, Nf, Np, Nv = cache
 
-    L(X::AbstractVector) = linearsystem(cache, discretization, X; method.opts...)
-
-    sol = linsolve(L, vecB)
+    sol = linsolve(quadop, B; issymetric = true, isposdef = true)
 
     vecIn .= sol[1]
 
@@ -358,25 +337,23 @@ function solve_linear_system!(cache::CacheQuadratic, method::Quadratic)
 end
 
 
-#####################################################################
-#                     UPDATE DENSITY MATRIX
-#####################################################################
+function update_density!(cache::CacheQuadratic)
+    @unpack Ω, Λ, M, A = cache
 
-function update_density!(cache::CacheQuadratic, discretization::KohnShamDiscretization)
-    @unpack Ω, M, A = cache
-    
-    for I ∈ eachsection(discretization)
-        @views Av   = A[:,:,I...]
-        @views Ωv   = Ω[:,:,I...]
-        @views Mv   = M[I]
-        @views Fmov = Fmo[:,:,I...]
-        # UPDATE Ω
-        mul!(tmp1, Ωv, exp(Av))
-        Ωv .= tmp1 
-        # UPDATE Λ 
-        block(Γv)[2] .+= M
-    end
-    nothing
+    # UPDATE Ω
+    Ω .= Ω * exp(A)
+    Λ 
+    # UPDATE Λ 
+    block(Γv)[2] .+= M
+
+    @unpack quadop, Λ, m, Γmo, Γao, Ω, Fmo, B = cache 
+    @unpack tmp1, tmp2 = quadop 
+
+    # COMPUTE Γmo 
+    block(Γmo)[2] .= Λ
+
+    # COMPUTE Γao
+    _mul!(Γao, Ω, Γmo, Ω',tmp1)
 end
 
 #####################################################################
