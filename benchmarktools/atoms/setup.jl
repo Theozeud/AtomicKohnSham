@@ -1,7 +1,8 @@
 using AtomicKohnSham
-using Plots
+using CairoMakie
+using LaTeXStrings
 using UnPack
 
 include("convergence.jl")
-include("stopping_criteria.jl")
+include("makie.jl")
 
