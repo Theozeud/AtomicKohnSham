@@ -40,6 +40,7 @@ struct DiscretizationCache{T <: Real, Tρ}
                                     #   Second row -> ρ↓
     tmp_vρ::Tρ                      # Similary to tmpρ but to store the exchange-correlation
                                     # potential.
+    tmp_vρ2::Tρ
 end
 
 
@@ -67,9 +68,10 @@ function create_cache_discretization(lₕ::Int, Nₕ::Int, T::Type, n_spin::Int,
     tmp_vect        = zeros(T, Nₕ)
     tmp_ρ           = flexible_zeros(T, n_spin, (n_eval,))
     tmp_vρ          = flexible_zeros(T, n_spin, (n_eval,))
+    tmp_vρ2         = flexible_zeros(T, n_spin, (n_eval,))
     KSEMatrices{T, typeof(A), typeof(Hfix), typeof(H)}(A, M₀, M₋₁, M₋₂, F, S, Sinv,
                                             H, Kin, Coulomb, Hfix, Hartree, VxcUP, VxcDOWN),
-    DiscretizationCache{T, typeof(tmp_ρ)}(tmp_MV, tmp_B, tmp_C, tmp_vect, tmp_ρ, tmp_vρ)
+    DiscretizationCache{T, typeof(tmp_ρ)}(tmp_MV, tmp_B, tmp_C, tmp_vect, tmp_ρ, tmp_vρ, tmp_vρ2)
 end
 
 
@@ -179,7 +181,7 @@ function zero_energies(kd::KSEDiscretization, model::KSEModel)
                 :Ehar => zero(elT))                                     # Hartree energy
     if has_exchcorr(model)
         (d[:Eexc] = zero(elT))                                          # Exchange-correlation energy
-        kd.n_spin != :lsda || (d[:Ekincorr] = zero(elT))                   # Kinetic-correlation energy
+        kd.n_spin != :lsda || (d[:Ekincorr] = zero(elT))                # Kinetic-correlation energy
     end
     d
 end
@@ -193,10 +195,10 @@ zero_single_operator(kd::KSEDiscretization) = zeros(eltype(kd), kd.Nₕ, kd.Nₕ
 #--------------------------------------------------------------------
 function build_hamiltonian!(discretization::KSEDiscretization,
                             model::KSEModel,
-                            D::AbstractMatrix{<:Real},
+                            D::AbstractArray{<:Real},
                             hartree::Real = true)
 
-    @unpack H, Hfix, Hartree, VxcUP = discretization.matrices
+    @unpack H, Hfix, Hartree, VxcUP, VxcDOWN = discretization.matrices
 
     # COMPUTE HARTREE MATRIX
     iszero(hartree) || hartree_matrix!(discretization, D, hartree)
@@ -222,7 +224,7 @@ end
 
 function find_orbital!( discretization::KSEDiscretization,
                         U::AbstractArray{<:Real},
-                        ϵ::AbstractMatrix{<:Real})
+                        ϵ::AbstractArray{<:Real})
 
     @unpack lₕ, nₕ, matrices, n_spin = discretization
     @unpack S, H = matrices
@@ -244,7 +246,7 @@ end
 #--------------------------------------------------------------------
 function normalization!(discretization::KSEDiscretization,
                         U::AbstractArray{<:Real},
-                        n::AbstractMatrix{<:Real})
+                        n::AbstractArray{<:Real})
     @unpack M₀ = discretization.matrices
     @unpack lₕ, nₕ, n_spin = discretization
     @inbounds for k ∈ 1:nₕ
@@ -281,7 +283,7 @@ end
 
 multiplicity(::KSEDiscretization, l::Int) = 4l+2
 
-function orbitals_repartion(kd::KSEDiscretization, n::AbstractMatrix{<:Real})
+function orbitals_repartion(kd::KSEDiscretization, n::AbstractArray{<:Real})
     @unpack lₕ, nₕ, Nₕ = kd
     repart_orbitals = zeros(Int, 3, lₕ+1)
     for l ∈ 1:lₕ+1

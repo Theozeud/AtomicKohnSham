@@ -20,7 +20,8 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
     shiftx::Vector{T}
     fx::Vector{T}
     fy::Vector{T}
-    function GaussLegendre(basis::FEMBasis, npoints::Int = 100)
+    fx2::Matrix{T}
+    function GaussLegendre(basis::FEMBasis, npoints::Int = 1000)
         @unpack binf, bsup = basis.generators
         # GENERATION OF GAUSS POINTS AND WEIGHTS
         x, w = gausslegendre(npoints)
@@ -35,10 +36,11 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
         fx = similar(x)
         fy = similar(fx)
         shiftx = similar(fx)
+        fx2 = similar(fx, 2, length(fx))
         # EVALUATE POLYNOMIALS
         Qgenx = evaluate(basis.cache.prodMG, x)
         a = Int(sqrt(size(Qgenx,1)))
         Qgenxreshape = reshape(Qgenx, a, a, size(Qgenx,2))
-        new{eltype(x)}(npoints, x, w, Qgenxreshape, y, wy, shiftx, fx, fy)
+        new{eltype(x)}(npoints, x, w, Qgenxreshape, y, wy, shiftx, fx, fy, fx2)
     end
 end

@@ -55,7 +55,9 @@ function tensor_vector_dict!(B::AbstractMatrix{<:Real}, D::AbstractVector{<:Real
 end
 
 
-function hartree_matrix!(discretization::KSEDiscretization, D::AbstractMatrix{<:Real}, coeff::Real = true)
+function hartree_matrix!(discretization::KSEDiscretization, 
+                         D::AbstractArray{<:Real}, 
+                         coeff::Real = true)
     @unpack Rmax, matrices, cache, n_spin = discretization
     @unpack A, M₀, F, Hartree = matrices
     @unpack tmp_MV, tmp_B, tmp_C = cache
@@ -83,9 +85,9 @@ end
 #--------------------------------------------------------------------
 function exchange_corr_matrix!( discretization::KSEDiscretization,
                                 model::KSEModel,
-                                D::AbstractMatrix{<:Real})
+                                D::AbstractArray{<:Real})
     @unpack matrices, basis, n_spin, fem_integration_method, cache = discretization
-    @unpack tmp_ρ, tmp_vρ = cache
+    @unpack tmp_ρ, tmp_vρ, tmp_vρ2 = cache
     @unpack VxcUP, VxcDOWN = matrices
     if n_spin == 1
         function _weight!(Y::AbstractVector, X::AbstractVector)
@@ -99,10 +101,28 @@ function exchange_corr_matrix!( discretization::KSEDiscretization,
     else
         @views DUP = D[:,:,1]
         @views DDOWN = D[:,:,2]
-        ρUP(x) = compute_densityUP(discretization, DUP, x)
-        ρDOWN(x) = compute_densityDOWN(discretization, DDOWN, x)
-        weightUP    = FunWeight(x -> vxcUP(model.exc, ρUP(x), ρDOWN(x)))
-        weightDOWN  = FunWeight(x -> vxcDOWN(model.exc, ρUP(x), ρDOWN(x)))
+        function _weight_up!(Y::AbstractVector, X::AbstractVector)
+            @views tmp_ρ_up      = tmp_ρ[1,:]
+            @views tmp_ρ_down    = tmp_ρ[2,:]
+            optimized_eval_density!(tmp_ρ_up, discretization, DUP, X)
+            optimized_eval_density!(tmp_ρ_down, discretization, DDOWN, X)
+            evaluate_vrho!(model; vrho=tmp_vρ2, rho=tmp_ρ, cache=tmp_vρ)
+            @views tmp_vρ2up = tmp_vρ2[1,:]
+            Y .= tmp_vρ2up
+        end
+
+        function _weight_down!(Y::AbstractVector, X::AbstractVector)
+            @views tmp_ρ_up      = tmp_ρ[1,:]
+            @views tmp_ρ_down    = tmp_ρ[2,:]
+            optimized_eval_density!(tmp_ρ_up, discretization, DUP, X)
+            optimized_eval_density!(tmp_ρ_down, discretization, DDOWN, X)
+            evaluate_vrho!(model; vrho=tmp_vρ2, rho=tmp_ρ, cache=tmp_vρ)
+            @views tmp_vρ2down = tmp_vρ2[2,:]
+            Y .= tmp_vρ2down
+        end
+
+        weightUP    = FunWeight(_weight_up!; is_inplace = true, is_vectorized = true)
+        weightDOWN  = FunWeight(_weight_down!; is_inplace = true, is_vectorized = true)
         fill!(VxcUP, 0)
         fill!(VxcDOWN, 0)
         fill_mass_matrix!(basis, VxcUP; weight=weightUP, method=fem_integration_method)

@@ -8,12 +8,12 @@ function density!(  discretization::KSEDiscretization,
     @unpack lₕ, nₕ, Nₕ, n_spin  = discretization
     elT = eltype(discretization)
     fill!(D, zero(elT))
-    @inbounds for k ∈ 1:nₕ
-        @inbounds for σ ∈ 1:n_spin
+    @inbounds for σ ∈ 1:n_spin
+        @inbounds for k ∈ 1:nₕ
             @inbounds for l ∈ 1:lₕ+1
                 if !iszero(n[l,k,σ])
                     @inbounds for i ∈ 1:Nₕ
-                        val = n[l,k] * U[i,k,l,σ]
+                        val = n[l,k,σ] * U[i,k,l,σ]
                         @inbounds @simd for j ∈ 1:i
                             D[i,j,σ] += val * U[j,k,l,σ]
                         end
@@ -33,7 +33,7 @@ end
 
 function density!(  discretization::KSEDiscretization,
                     Γ::BlockDiagonal{<:Real, <:AbstractMatrix{<:Real}},
-                    D::AbstractMatrix{<:Real})
+                    D::AbstractArray{<:Real})
     @unpack lₕ, Nₕ, elT  = discretization
     fill!(D, zero(elT))
     @inbounds @simd for l ∈ 1:lₕ+1

@@ -127,14 +127,18 @@ end
 # UPDATE THE LOG : STORE INTERMEDIATE STATE
 function register!(solver::KSESolver)
     @unpack logbook = solver
-    @unpack occupation_number, orbitals_energy, stopping_criteria, energy, density = logbook.config
+    @unpack stopping_criteria, energies = logbook.config
 
     # STORE THE STOPPING CRITERIA
-    !stopping_criteria || push!(solver.logbook.stopping_criteria_log, solver.stopping_criteria)
+    !stopping_criteria || push!(solver.logbook.stopping_criteria, solver.stopping_criteria)
 
     # STORE THE TOTAL ENERGY
-    !energy || push!(solver.logbook.energy_log, solver.energies[:Etot])
+    if energies
+        for k ∈ keys(solver.energies)
+            push!(solver.logbook.energies[k], solver.energies[k])
+        end
+    end
 
     # REGISTER DATA SPECIFIC TO THE METHODS
-    #register!(solver.cache, solver.alg, solver)
+    register!(solver.cache, solver.alg, solver)
 end

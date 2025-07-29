@@ -100,6 +100,8 @@ module AtomicKohnSham
     include("discretization/density.jl")
 
 
+    include("algorithms/abstract.jl")
+    
     # -------------------------------------
     #               LogBook
     # -------------------------------------
@@ -112,7 +114,7 @@ module AtomicKohnSham
     export KSESolver, SolverOptions
     export SCFAlgorithm, CDA, ODA, Quadratic
 
-    include("algorithms/abstract.jl")
+    
 
     include("solver.jl")
 

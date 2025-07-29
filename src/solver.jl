@@ -106,7 +106,7 @@ mutable struct KSESolver{   discretizationType <: KSEDiscretization,
         niter = 0
         stopping_criteria = zero(T)
         
-        logbook = LogBook(logconfig, T)
+        logbook = LogBook(logconfig, T, energies, alg)
 
         new{typeof(discretization),
             typeof(model),
