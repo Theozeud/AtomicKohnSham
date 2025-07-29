@@ -99,6 +99,24 @@ function make_occupation_number(kd::KSEDiscretization, cache::RCACache)
     end
 end
 
+#####################################################################
+#                          RCA LOG
+#####################################################################
+struct RCALog <: AbstractLogBook
+    orbitals
+    orbitals_energy
+    density
+    occupation_number
+end
+
+function create_logbook(::RCAAlgorithm)
+    orbitals = []
+    orbitals_energy = []
+    density = []
+    occupation_number = []
+    RCALog(orbitals, orbitals_energy, density, occupation_number)
+end
+
 
 #####################################################################
 #                          RCA STEPS
@@ -163,6 +181,26 @@ function monitor(cache::RCACache, ::RCAAlgorithm, ::KSESolver)
     println("degeneracy ? : $(cache.flag_degen)")
     if cache.flag_degen
         println("Interpolation parameters : $(cache.tdegen)")
+    end
+end
+
+
+function register!(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
+    @unpack D, U, ϵ, n = cache
+    log = solver.logbook.methodlog
+    config = solver.logbook.config.methodlogconfig
+    for k ∈ keys(config)
+        if config[k]
+            if k == :orbitals
+                push!(getfield(log,k),copy(U))
+            elseif k == :orbitals_energy
+                push!(getfield(log,k),copy(ϵ))
+            elseif k == :density 
+                push!(getfield(log,k),copy(D))
+            elseif k == :occupation_number
+                push!(getfield(log,k),copy(n))
+            end
+        end
     end
 end
 

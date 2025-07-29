@@ -1,46 +1,55 @@
 #--------------------------------------------------------------------
 #                               LogConfig
 #--------------------------------------------------------------------
-struct LogConfig
-    occupation_number::Bool
-    orbitals_energy::Bool
+struct LogConfig{C}
     stopping_criteria::Bool
-    energy::Bool
-    density::Bool
-
-    function LogConfig(;occupation_number = false, orbitals_energy = false, stopping_criteria = true, energy = false, density = false)
-        new(occupation_number, orbitals_energy, stopping_criteria, energy, density)
+    energies::Bool
+    methodlogconfig::C
+    function LogConfig(;stopping_criteria = true, energies = true, kwargs...)
+        new{typeof(kwargs)}(stopping_criteria, energies, kwargs)
     end
 end
 
 
 function Base.show(io::IO, lc::LogConfig)
     println(io, "LogConfig:")
-    println(io, "  occupation_number  = ", lc.occupation_number)
-    println(io, "  orbitals_energy    = ", lc.orbitals_energy)
-    println(io, "  stopping_criteria  = ", lc.stopping_criteria)
-    println(io, "  energy             = ", lc.energy)
-    println(io, "  density            = ", lc.density)
+    println(io, "  stopping_criteria      = ", lc.stopping_criteria)
+    println(io, "  energies               = ", lc.energies)
+    for k ∈ keys(lc.methodlogconfig)
+        mk = lc.methodlogconfig[k]
+        smk = string(mk)
+        println(io, "  ",smk,repeat(" ",23 - length(mk)),"= ", mk)
+    end
 end
 
 
 #--------------------------------------------------------------------
 #                               LogBook
 #--------------------------------------------------------------------
-struct LogBook
-    config::LogConfig
-    occupation_number_log
-    orbitals_energy_log
-    stopping_criteria_log
-    energy_log
-    density_log
+abstract type AbstractLogBook end 
 
-    function LogBook(config, T)
-        occupation_number_log = []                  # To see
-        orbitals_energy_log   = []                  # To see
-        stopping_criteria_log = T[]                 # To see
-        energy_log            = T[]                 # To see
-        density_log           = []                  # To see
-        new(config, occupation_number_log, orbitals_energy_log, stopping_criteria_log, energy_log, density_log)
+
+struct LogBook{T<:Real, L<:AbstractLogBook} <: AbstractLogBook 
+    config::LogConfig
+    stopping_criteria::Vector{T}
+    energies::Dict{Symbol, Vector{T}}
+    methodlog::L
+
+    function LogBook(config, T, energies::Dict, alg::SCFAlgorithm)
+        stopping_criteria   = T[]               
+        energies            = Dict(k => T[] for k in keys(energies))                
+        methodlog           = create_logbook(alg)                 
+        new{T, typeof(methodlog)}(config, stopping_criteria, energies, methodlog)
+    end
+end
+
+
+function Base.getproperty(logbook::LogBook, s::Symbol)
+    if s ∈ fieldnames(LogBook)
+        getfield(logbook, s)
+    elseif s ∈ propertynames(getfield(logbook, :methodlog))
+        getfield(getfield(logbook, :methodlog), s)
+    else
+        throw(ErrorException("type LogBook has no field $(s)"))
     end
 end
