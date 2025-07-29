@@ -27,10 +27,11 @@ and algorithm-specific data.
 struct KSESolution{ optsType <: SolverOptions,
                     T <: Real,
                     solutionType <: SCFSolution,
-                    logbookType <: LogBook}
+                    logbookType <: LogBook,
+                    D <: KSEDiscretization}
 
     success::String                     # Print the final state of the solver
-                                        #        Can be : SUCCESS or MAXITERS
+                                        #   Can be : SUCCESS or MAXITERS
 
     solveropts::optsType                # Option of the solver used
 
@@ -45,6 +46,8 @@ struct KSESolution{ optsType <: SolverOptions,
 
     name::String                        # Name of the solution
 
+    discretization::D                   # Discretization used to compute the solution
+
     function KSESolution(solver::KSESolver, name::String)
 
         # FLAG ON THE SUCCESS (OR NOT) OF THE MINIMIZATION
@@ -52,18 +55,20 @@ struct KSESolution{ optsType <: SolverOptions,
 
         # DATAS
         datas = makesolution(solver.cache, solver.alg, solver)
-
+        discretization = solver.discretization
         new{typeof(solver.opts),
             typeof(solver.stopping_criteria),
             typeof(datas),
-            typeof(solver.logbook)}(success,
+            typeof(solver.logbook),
+            typeof(discretization)}(success,
                                     solver.opts,
                                     solver.niter,
                                     solver.stopping_criteria,
                                     solver.energies,
                                     datas,
                                     solver.logbook,
-                                    name)
+                                    name,
+                                    discretization)
     end
 end
 
@@ -114,48 +119,46 @@ end
 #--------------------------------------------------------------------
 
 # COMPUTE EIGENVECTORS
-function eigenvector(discretization::KSEDiscretization,
+function eigenvector(
     sol::KSESolution,
     n::Int,
     l::Int,
     X::AbstractVector{<:Real})
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
-    @assert !discretization.polarized "The discretization is spin-polarized. Please give a spin σ."
-    evaluate(discretization.basis, sol.orbitals[:, n-l,l+1], X)
+    @assert sol.discretization.n_spin == 1 "The discretization is spin-polarized. Please give a spin σ."
+    evaluate(sol.discretization.basis, sol.orbitals[:, n-l,l+1], X)
 end
 
-function eigenvector(discretization::KSEDiscretization, sol::KSESolution, n::Int, l::Int, σ::Int, X::AbstractVector{<:Real})
+function eigenvector(sol::KSESolution, n::Int, l::Int, σ::Int, X::AbstractVector{<:Real})
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
-    evaluate(discretization.basis, sol.orbitals[:, n-l,l+1,σ], X)
+    evaluate(sol.discretization.basis, sol.orbitals[:, n-l,l+1,σ], X)
 end
 
 
 
 # COMPUTE DENSITY
 function eval_density(
-    discretization::KSEDiscretization,
     sol::KSESolution,
     X::AbstractVector{<:Real})
-    if discretization.n_spin == 1
-        eval_density(discretization, sol.density_coeffs, X)
+    if sol.discretization.n_spin == 1
+        eval_density(sol.discretization, sol.density_coeffs, X)
     else
         @views DUP = sol.density_coeffs[:,:,1]
-        ρUP = eval_density(discretization, DUP, X)
+        ρUP = eval_density(sol.discretization, DUP, X)
         @views DDOWN = sol.density_coeffs[:,:,1]
-        ρDOWN = eval_density(discretization, DDOWN, X)
+        ρDOWN = eval_density(sol.discretization, DDOWN, X)
         ρUP .+ ρDOWN
     end
 end
 
 
 function eval_density(
-    discretization::KSEDiscretization,
     sol::KSESolution,
     X::AbstractVector{<:Real},
     σ::Int)
-    @assert 1≤ σ ≤ discretization.polarized+1
+    @assert 1≤ σ ≤ sol.discretization.n_spin
     @views Dσ = sol.density_coeffs[:,:,σ]
-    eval_density(discretization, Dσ, X)
+    eval_density(sol.discretization, Dσ, X)
 end
 
 

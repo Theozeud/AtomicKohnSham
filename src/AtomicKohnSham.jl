@@ -129,7 +129,7 @@ module AtomicKohnSham
     # -------------------------------------
     #       PROBLEM-groundstate-SOLUTION
     # -------------------------------------
-    export AtomProblem
+    export AtomProblem, atomic_number_to_symbol, atomic_number_to_name
     include("problem.jl")
 
     export KSESolution, eigenvector, eval_density, total_charge

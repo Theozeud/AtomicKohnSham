@@ -1,3 +1,11 @@
+# TO DO
+- Réparation de LSDA
+- Utilisation de la bibliothèqe Libxc
+- CairoMakie pour les plots
+- Documentation du code 
+- Implémentation de l'algorithme quadratique
+
+
 ## TO LOOK AT :
 
 - Réorganiser les scripts et les résultats
@@ -14,7 +22,6 @@
         --> Approche hybride entre Libxc en Float64 et mes propres fonctionnells pour Double64
 
     - Regarder pour les méthodes GGA
-
 
 - Postprocess : plot the orbitals + plot the density
 
