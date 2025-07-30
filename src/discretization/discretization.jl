@@ -243,25 +243,6 @@ end
 #--------------------------------------------------------------------
 function normalization!(discretization::KSEDiscretization,
         U::AbstractArray{<:Real},
-        n::AbstractArray{<:Real})
-    @unpack M₀ = discretization.matrices
-    @unpack lₕ, nₕ, n_spin = discretization
-    @inbounds for k in 1:nₕ
-        @inbounds for σ in 1:n_spin
-            @inbounds for l in 1:(lₕ + 1)
-                if !iszero(n[l, k, σ])
-                    @views Ulkσ = U[:, k, l, σ]
-                    coeff = sqrt(Ulkσ'*M₀*Ulkσ)
-                    Ulkσ .= Ulkσ .* 1.0/coeff
-                end
-            end
-        end
-    end
-    nothing
-end
-
-function normalization!(discretization::KSEDiscretization,
-        U::AbstractArray{<:Real},
         l::Int,
         k::Int,
         σ::Int = 1)
