@@ -2,7 +2,8 @@ push!(LOAD_PATH, "../src/")
 
 using Documenter, AtomicKohnSham
 
-makedocs(sitename = "AtomicKohnSham Documentation",
+makedocs(sitename = "AtomicKohnSham.jl",
+  authors = "Théo Duez",
     pages = [
         "index.md",
         "Tutorials" => [
