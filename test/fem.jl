@@ -51,7 +51,7 @@ end
     s = 0.9
     exp_mesh = polynomialmesh(a, b, n; T = T, s = s)
 
-    basis = P1IntLegendreGenerator(exp_mesh, T; ordermax = 2)
+    basis = P1IntLegendreBasis(exp_mesh, T; ordermax = 2)
 
     # Overlap Matrix
     @test_nowarn mass_matrix(basis)

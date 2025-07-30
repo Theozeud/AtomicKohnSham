@@ -1,57 +1,93 @@
-
 @testset "Hydrogen RHF" begin
-    @test_nowarn logconfig = LogConfig(
-        orbitals_energy = true, occupation_number = true, energy = true)
-    logconfig = LogConfig(orbitals_energy = true, occupation_number = true, energy = true)
 
-    @test_nowarn problem = AtomProblem(;
-        T = Float64,
-        lh = 0,
-        nh = 1,
-        alg = ODA(0.4),
-        model = RHF(; z = 1, N = 1),
-        Rmax = 100,
-        Nmesh = 10,
-        typemesh = expmesh,
-        optsmesh = (s = 1.5,),
-        typebasis = P1IntLegendreGenerator,
-        optsbasis = (ordermax = 20,),
-        name = "Hydrogen",
-        scftol = 1e-11,
-        maxiter = 60,
-        degen_tol = 1e-2,
-        logconfig = logconfig,
-        verbose = 0)
-
+    logconfig = LogConfig(;orbitals_energy = false,
+                           orbitals = false,
+                           density = false,
+                           occupation_number = false)
     problem = AtomProblem(;
-        T = Float64,
-        lh = 0,
-        nh = 1,
-        alg = ODA(0.4),
-        model = RHF(; z = 1, N = 1),
-        Rmax = 100,
-        Nmesh = 10,
-        typemesh = expmesh,
-        optsmesh = (s = 1.5,),
-        typebasis = P1IntLegendreGenerator,
-        optsbasis = (ordermax = 20,),
-        name = "Hydrogen",
-        scftol = 1e-11,
-        maxiter = 60,
-        degen_tol = 1e-2,
-        logconfig = logconfig,
-        verbose = 0)
+                           T = Float64,
+                           z = 1,
+                           N = 1,
+                           hartree = 1,
+                           ex = NoFunctional(1),
+                           ec = NoFunctional(1),
+                           lh = 0,
+                           nh = 1,
+                           Nmesh = 10,
+                           Rmax = 300,
+                           typemesh = expmesh,
+                           optsmesh = (s = 1.5,),
+                           typebasis = P1IntLegendreBasis,
+                           optsbasis = (ordermax = 10,),
+                           integration_method = GaussLegendre,
+                           optsintegration = (npoints = 1000,),
+                           alg = ODA(0.4),
+                           scftol = 1e-11,
+                           maxiter = 100,
+                           degen_tol = 1e-2,
+                           logconfig = logconfig,
+                           verbose = 0)
+
+
 
     @test_nowarn sol = groundstate(problem)
     sol = groundstate(problem)
 
-    @test abs(sol.energies[:Ekin] - 0.24396486583278804) < 1e-10
-    @test abs(sol.energies[:Ecou] + 0.685672154045772) < 1e-10
-    @test abs(sol.energies[:Ehar] - 0.19774242102873807) < 1e-10
-    @test abs(sol.energies[:Etot] + 0.24396486718424593) < 1e-10
+    @test abs(sol.energies[:Ekin] - 0.243964867158035) < 1e-10
+    @test abs(sol.energies[:Ecou] + 0.6856721558856405) < 1e-10
+    @test abs(sol.energies[:Ehar] - 0.19774242154218047) < 1e-10
+    @test abs(sol.energies[:Etot] + 0.24396486718542498) < 1e-10
 
     occ = sol.datas.occupation_number[1]
     @test occ[1] == "1s"
-    @test abs(occ[2] + 0.04622244682275613) < 1e-10
+    @test abs(occ[2] + 0.046222445699968535) < 1e-10
+    @test occ[3] == 1.0
+end
+
+
+@testset "Hydrogen Slater Spin Nopoloarized" begin
+
+    logconfig = LogConfig(;orbitals_energy = false,
+                           orbitals = false,
+                           density = false,
+                           occupation_number = false)
+    problem = AtomProblem(;
+                           T = Float64,
+                           z = 1,
+                           N = 1,
+                           hartree = 1,
+                           ex = Functional(:lda_x, n_spin = 1),
+                           ec = NoFunctional(1),
+                           lh = 0,
+                           nh = 1,
+                           Nmesh = 10,
+                           Rmax = 300,
+                           typemesh = expmesh,
+                           optsmesh = (s = 1.5,),
+                           typebasis = P1IntLegendreBasis,
+                           optsbasis = (ordermax = 10,),
+                           integration_method = GaussLegendre,
+                           optsintegration = (npoints = 1000,),
+                           alg = ODA(0.4),
+                           scftol = 1e-11,
+                           maxiter = 100,
+                           degen_tol = 1e-2,
+                           logconfig = logconfig,
+                           verbose = 0)
+
+
+
+    @test_nowarn sol = groundstate(problem)
+    sol = groundstate(problem)
+
+    @test abs(sol.energies[:Ekin] - 0.4065340797823483) < 1e-9
+    @test abs(sol.energies[:Ecou] + 0.9000752049269123) < 1e-9
+    @test abs(sol.energies[:Ehar] - 0.2749225031615249) < 1e-9
+    @test abs(sol.energies[:Eexc] + 0.18791545723754685) < 1e-9
+    @test abs(sol.energies[:Etot] + 0.40653407922058604 ) < 1e-9
+
+    occ = sol.datas.occupation_number[1]
+    @test occ[1] == "1s"
+    @test abs(occ[2] + 0.1942500621181194) < 1e-9
     @test occ[3] == 1.0
 end

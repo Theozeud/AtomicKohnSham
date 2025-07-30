@@ -2,29 +2,27 @@
 #                           GROUNDSTATE
 #--------------------------------------------------------------------
 """
-    groundstate(model::KSEModel,
-                discretization::KSEDiscretization,
-                method::SCFAlgorithm;
+    groundstate(model::KSEModel, discretization::KSEDiscretization, method::SCFAlgorithm;
                 name::String = "", kwargs...) -> KSESolution
 
-Computes the ground state solution of a Kohn–Sham model using a specified discretization and SCF method.
-
-This function creates a `KSESolver` object with the given model, discretization, and method, then solves the nonlinear eigenvalue problem via `solve!`. The result is returned as a `KSESolution` object.
+Compute the ground-state solution of a Kohn–Sham model using a given discretization and SCF
+algorithm. The result is returned as a `KSESolution`.
 
 # Arguments
-- `model::KSEModel`: The Kohn–Sham extended model.
+- `model::KSEModel`: Kohn–Sham extended model.
 - `discretization::KSEDiscretization`: Discretization of the radial Kohn–Sham equations.
-- `method::SCFAlgorithm`: Self-consistent field (SCF) method to solve the nonlinear problem (e.g., `ODA()`, `Quadratic()`).
-- `name::String` (optional): Name for the simulation, stored in the output.
+- `method::SCFAlgorithm`: SCF algorithm to solve the nonlinear problem (e.g., `ODA()`,
+  `Quadratic()`).
+
+# Keywords
+- `name::String`: Optional simulation name stored in the result (default: `""`).
 - `kwargs`: Additional keyword arguments forwarded to `KSESolver`.
 
 # Returns
-- `KSESolution`: The computed ground state, including orbitals, energies, density, etc.
+- `KSESolution`: Ground-state solution including orbitals, energies, density, etc.
 """
-function groundstate(model::KSEModel,
-        discretization::KSEDiscretization,
-        alg::SCFAlgorithm;
-        name::String = "", kwargs...)
+function groundstate(model::KSEModel, discretization::KSEDiscretization, alg::SCFAlgorithm;
+                     name::String = "", kwargs...)
     solver = KSESolver(model, discretization, alg; kwargs...)
     solve!(solver)
     KSESolution(solver, name)
@@ -33,24 +31,28 @@ end
 """
     groundstate(prob::AtomProblem) -> KSESolution
 
-Convenience function to compute the ground state from an `AtomProblem`.
+Compute the ground-state solution of an atomic system described by an `AtomProblem`.
 
-This function constructs the mesh, basis, and discretization from the problem specification, then calls `groundstate` with the appropriate arguments.
+This convenience method builds the mesh, basis, integration method, and discretization from
+the fields of the `AtomProblem`, then calls `groundstate` using the SCF algorithm and model
+contained in the problem.
 
 # Arguments
-- `prob::AtomProblem`: A fully specified atomic problem including model, mesh and basis types, SCF method, cutoffs, and solver options.
+- `prob::AtomProblem`: Fully specified atomic problem, including model, mesh and basis
+    types, SCF method, cutoffs, and solver options.
 
 # Returns
-- `KSESolution`: The computed ground state solution for the atomic system.
+- `KSESolution`: Ground-state solution for the atomic or ionic system.
 """
 function groundstate(prob::AtomProblem)
-    T = datatype(prob)
-    typemesh = prob.typemesh
-    typebasis = prob.typebasis
-    mesh = typemesh(zero(T), prob.Rmax, prob.Nmesh; T = T, prob.optsmesh...)
-    basis = typebasis(mesh, T; prob.optsbasis...)
-    discretization = KSEDiscretization(prob.lh, basis, mesh, prob.model.n_spin, prob.nh)
-    groundstate(prob.model, discretization, prob.alg; name = prob.name, prob.solveropts...)
+    T = _datatype(prob)
+    mesh = prob.typemesh(zero(T), prob.Rmax, prob.Nmesh; T = T, prob.optsmesh...)
+    basis = prob.typebasis(mesh, T; prob.optsbasis...)
+    model = KSEModel(;z=prob.z, N=prob.N, hartree=prob.hartree, ex=prob.ex, ec=prob.ec)
+    fem_integration_method = prob.integration_method(basis, prob.optsintegration...)
+    discretization = KSEDiscretization(prob.lh, basis, mesh, model.n_spin, prob.nh,
+                                       fem_integration_method)
+    groundstate(model, discretization, prob.alg; name = prob.name, prob.solveropts...)
 end
 
 #--------------------------------------------------------------------

@@ -21,22 +21,24 @@ struct KSEModel{T <: Real,
     z::T                # Charge of the nucleus
     N::T                # Number of electrons
 
-    hartree::T          # Coefficient multiply to the Hartree Term :
+    # Coefficient multiply to the Hartree Term :
     # 0 -> no hartree term,
     # 1-> full hartree term
+    hartree::T
 
     exchange::TEX       # Exchange functional
     correlation::TCO    # Correlation functional
 
-    n_spin::Int         # Spin Polarization
+    # Spin Polarization
     # 1 -> No Polarization
     # 2 -> Polarisation
+    n_spin::Int
 
     function KSEModel(; z::Real,
-            N::Real,
-            hartree::Real = 1,
-            ex = NoFunctional(1),
-            ec = NoFunctional(1))
+                        N::Real,
+                        hartree::Real = 1,
+                        ex = NoFunctional(1),
+                        ec = NoFunctional(1))
         T = promote_type(typeof(z), typeof(N), typeof(hartree))
         n_spin = max(ex.n_spin, ec.n_spin)
         new{T,

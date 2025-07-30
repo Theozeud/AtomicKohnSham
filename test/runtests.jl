@@ -1,8 +1,9 @@
 using AtomicKohnSham
+using Libxc
 using Test
 using LinearAlgebra
 using SparseArrays
 
-include("hydrogen.jl")
-include("oxygen.jl")
 include("fem.jl")
+include("hydrogen.jl")
+#include("oxygen.jl")

@@ -10,146 +10,190 @@ This structure gathers all the physical and numerical parameters needed to solve
 the ground-state electronic structure of an atom or ion.
 
 # Fields
+- `z::Real`: Nuclear charge.
+- `N::Real`: Number of electrons.
+- `hartree::Real` : Prefactor in front of the Hartree term.
+- `ex` : Exchange functional.
+- `ec` : Correlation functional.
 - `lh::Int`: Maximum orbital angular momentum quantum number `l`.
 - `nh::Int`: Maximum principal quantum number `n`.
-- `alg::SCFAlgorithm`: SCF algorithm (e.g. `ODA`, `Quadratic`).
-- `z::TZ`: Nuclear charge.
-- `N::TN`: Number of electrons.
-- `hartree`: Prefactor in front of the Hartree term.
-- `integration_method::FM`: Integration method for radial quadrature.
-- `Rmax::T`: Radial domain cut-off.
 - `Nmesh::Int`: Number of discretization points.
+- `Rmax::Real`: Radial domain cut-off.
 - `typemesh`: Mesh constructor (e.g. `ExponentialMesh`).
 - `optsmesh::NamedTuple`: Mesh options.
-- `typebasis`: Basis constructor (e.g. `IntLegendre`).
+- `typebasis`: Basis constructor (e.g. `P1IntLegendreBasis`).
 - `optsbasis::NamedTuple`: Basis options.
+- `integration_method::FEMIntegrationMethod`: Integration method for radial quadrature.
+- `optsintegration::NamedTuple`: FEL Integration method options.
+- `alg::SCFAlgorithm`: SCF algorithm (e.g. `ODA`, `Quadratic`).
 - `name::AbstractString`: Optional problem name.
 - `solveropts`: Additional solver options.
 """
 struct AtomProblem{T <: Real,
-    A <: SCFAlgorithm,
-    M <: KSEModel,
-    S <: AbstractString,
-    TZ, TN, FM,
-    OM <: NamedTuple,
-    OB <: NamedTuple,
-    OS,
-    TM,
-    TB}
+                   EX,
+                   EC,
+                   TM,
+                   OM <: NamedTuple,
+                   TB,
+                   OB <: NamedTuple,
+                   FM,
+                   OFM <: NamedTuple,
+                   A <: SCFAlgorithm,
+                   S <: AbstractString,
+                   OS }
+    # Model parameters
+    z::T
+    N::T
+    hartree::T
+    ex::EX
+    ec::EC
+    # Discretization parameters
     lh::Int
     nh::Int
-    alg::A
-    z::TZ
-    N::TN
-    hartree::Any
-    integration_method::FM
-    Rmax::T
     Nmesh::Int
+    Rmax::T
     typemesh::TM
     optsmesh::OM
     typebasis::TB
     optsbasis::OB
+    integration_method::FM
+    optsintegration::OFM
+    # Algorithm
+    alg::A
+    # Metadata
     name::S
     solveropts::OS
 end
+# --------------------------------------------------------------------
+#                        CONSTRUCTORS
+# --------------------------------------------------------------------
 
 """
-    AtomProblem(; T, lh, nh, alg, z, N, hartree, integration_method,
-                  Rmax, Nmesh, typemesh, optsmesh, typebasis, optsbasis,
+    AtomProblem(; T, z, N, hartree, ex, ec,
+                  lh, nh, Nmesh, Rmax,
+                  typemesh, optsmesh,
+                  typebasis, optsbasis,
+                  integration_method, optsintegration,
+                  alg;
                   name = "", kwargs...)
 
-Constructor for `AtomProblem` from keyword arguments.
+Constructs an `AtomProblem` from keyword arguments.
 
-# Keyword
+# Keyword Arguments
 
-- `T`: Number type (e.g. `Float64`, `Double64`).
-- `lh`, `nh`: Cutoffs for angular and principal quantum numbers.
-- `alg`: SCF algorithm.
-- `z`: Nuclear charge.
-- `N`: Number of electrons.
-- `hartree`: Coefficient in front of Hartree term.
-- `integration_method`: Quadrature integration method.
-- `Rmax`, `Nmesh`: Domain size and discretization.
-- `typemesh`, `optsmesh`: Mesh constructor and options.
-- `typebasis`, `optsbasis`: Basis constructor and options.
-- `name`: Optional string name.
+## Physical model
+- `z::Real`: Nuclear charge.
+- `N::Real`: Number of electrons.
+- `hartree::Real`: Hartree prefactor.
+- `ex`: Exchange functional.
+- `ec`: Correlation functional.
+
+## Discretization
+- `T::DataType`: Number type used for numerical computations (e.g., `Float64`, `Double64`).
+- `lh::Int`: Angular quantum number truncations.
+- `nh::Int`: Principal quantum number truncations.
+- `Nmesh::Int`: Number of discretization points.
+- `Rmax::Real`: Radial cut-off.
+- `typemesh`: Mesh constructor.
+- `optsmesh::NamedTuple`: Mesh options.
+- `typebasis`: Basis constructor.
+- `optsbasis::NamedTuple`: Basis options.
+- `integration_method`: Quadrature method.
+- `optsintegration::NamedTuple`: FEL Integration method options.
+
+## Algorithm
+- `alg::SCFAlgorithm`: SCF algorithm.
+
+## Optional
+- `name::AbstractString`: Name of the problem.
 - `kwargs`: Additional solver options.
 """
-function AtomProblem(;
-        T,
-        lh,
-        nh,
-        alg,
-        z,
-        N,
-        hartree,
-        integration_method,
-        Rmax,
-        Nmesh,
-        typemesh,
-        optsmesh,
+function AtomProblem(; T::DataType, z::Real, N::Real, hartree::Real, ex::EX, ec::EC,
+                      lh::Int, nh::Int, Nmesh::Int, Rmax::Real,
+                      typemesh, optsmesh::NamedTuple,
+                      typebasis, optsbasis::NamedTuple,
+                      integration_method, optsintegration::NamedTuple,
+                      alg::SCFAlgorithm,
+                      name::AbstractString = "", kwargs...) where {EX, EC}
+    _name = if name == "" && floor(z) == z
+        charge_diff = z - N
+        if iszero(charge_diff)
+            ATOMIC_NUMBER_TO_NAME[Int(z)]
+        else
+            symbol_ion = charge_diff > 0 ? "+" : "-"
+            ATOMIC_NUMBER_TO_NAME[Int(z)]*string(abs(charge_diff))*symbol_ion
+        end
+    else
+        name
+    end
+    return AtomProblem{T, typeof(ex), typeof(ec),
+                       typeof(typemesh), typeof(optsmesh),
+                       typeof(typebasis), typeof(optsbasis),
+                       typeof(integration_method), typeof(optsintegration),
+                       typeof(alg), typeof(_name), typeof(kwargs)}(
+        T(z), T(N), T(hartree), ex, ec,
+        lh, nh, Nmesh, T(Rmax),
+        typemesh, optsmesh,
         typebasis, optsbasis,
-        name = "", kwargs...)
-    return AtomProblem{
-        T,
-        typeof(alg),
-        typeof(z),
-        typeof(N),
-        typeof(hartree),
-        typeof(integration_method),
-        typeof(optsmesh),
-        typeof(optsbasis),
-        typeof(kwargs),
-        typeof(typemesh),
-        typeof(typebasis),
-        typeof(name)}(
-        lh,
-        nh,
-        alg,
-        z,
-        N,
-        hartree,
-        integration_method,
-        Rmax,
-        Nmesh,
-        typemesh,
-        optsmesh,
-        typebasis,
-        optsbasis,
-        name,
-        kwargs
+        integration_method, optsintegration,
+        alg, _name, kwargs
     )
 end
 
 """
-    AtomProblem(prob::AtomProblem; kwargs...)
+    AtomProblem(prob::AtomProblem; overrides...)
 
-Copy constructor for `AtomProblem` with optional overrides.
+Copy constructor for `AtomProblem`, allowing field overrides.
 
-Useful for creating a new problem from an existing one while updating fields.
+Useful for creating a modified version of an existing problem.
+
+All fields default to `prob.<field>`, and can be selectively overridden.
 """
 function AtomProblem(prob::AtomProblem;
-        T = typeof(prob.Rmax),
-        lh = prob.lh, nh = prob.nh,
-        alg = prob.alg, z = prob.z, N = prob.N,
-        hartree = prob.hartree,
-        integration_method = prob.integration_method,
-        Rmax = prob.Rmax, Nmesh = prob.Nmesh,
-        typemesh = prob.typemesh, optsmesh = prob.optsmesh,
-        typebasis = prob.typebasis, optsbasis = prob.optsbasis,
-        name = prob.name, kwargs = prob.solveropts)
-    return AtomProblem{T, typeof(alg), typeof(z), typeof(N), typeof(hartree),
-        typeof(integration_method), typeof(optsmesh),
-        typeof(optsbasis), typeof(kwargs),
-        typeof(typemesh), typeof(typebasis), typeof(name)}(
-        lh, nh, alg, z, N, hartree, integration_method,
-        Rmax, Nmesh, typemesh, optsmesh,
-        typebasis, optsbasis, name, kwargs
+                     z::Real = prob.z,
+                     N::Real = prob.N,
+                     hartree::Real = prob.hartree,
+                     ex::Ex = prob.ex,
+                     ec::Ec = prob.ec,
+                     lh::Int = prob.lh,
+                     nh::Int = prob.nh,
+                     Nmesh::Int = prob.Nmesh,
+                     Rmax::Real = prob.Rmax,
+                     typemesh = prob.typemesh,
+                     optsmesh::NamedTuple = prob.optsmesh,
+                     typebasis = prob.typebasis,
+                     optsbasis::NamedTuple = prob.optsbasis,
+                     integration_method = prob.integration_method,
+                     optsintegration::NamedTuple = prob.optsintegration,
+                     alg::SCFAlgorithm = prob.alg,
+                     name::AbstractString = prob.name,
+                     kwargs = prob.solveropts) where {Ex, Ec}
+    T = _datatype(prob)
+    return AtomProblem{T, typeof(ex), typeof(ec),
+                       typeof(typemesh), typeof(optsmesh),
+                       typeof(typebasis), typeof(optsbasis),
+                       typeof(integration_method), typeof(optsintegration),
+                       typeof(alg), typeof(name), typeof(kwargs)}(
+        T, z, N, hartree, ex, ec,
+        lh, nh, Nmesh, Rmax,
+        typemesh, optsmesh,
+        typebasis, optsbasis,
+        integration_method, optsintegration,
+        alg, name, kwargs
     )
 end
 
-datatype(::AtomProblem{T}) where {T} = T
 
+_datatype(::AtomProblem{T}) where {T} = T
+
+
+"""
+    ATOMIC_NUMBER_TO_NAME
+
+Dictionary mapping atomic numbers (Z) to element names in English.
+
+Useful for labeling atoms in periodic table computations or visualizations.
+"""
 const ATOMIC_NUMBER_TO_NAME = Dict(
     1 => "Hydrogen",
     2 => "Helium",
@@ -271,6 +315,14 @@ const ATOMIC_NUMBER_TO_NAME = Dict(
     118 => "Oganesson"
 )
 
+
+"""
+    ATOMIC_NUMBER_TO_SYMBOL
+
+Dictionary mapping atomic numbers (Z) to atomic symbols.
+
+Useful for displaying or labeling atoms in scientific applications.
+"""
 const ATOMIC_NUMBER_TO_SYMBOL = Dict(
     1 => "H",
     2 => "He",
