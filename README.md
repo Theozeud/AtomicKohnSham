@@ -4,36 +4,32 @@
 [![Coverage](https://codecov.io/gh/Theozeud/AtomicKohnSham/branch/master/graph/badge.svg)](https://codecov.io/gh/Theozeud/AtomicKohnSham)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 [![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
+
 **AtomicKohnSham.jl** is a Julia package designed to **compute the ground state of isolated atoms and ions** within the framework of **Extended Kohn-Sham models**. Originally developed to investigate the existence of negative ions, the code can also serve as a versatile tool for testing new density functionals and exploring numerical precision issues.
 
-These models require solving a nonlinear eigenvalue partial differential equation (PDE) in three dimensions. The nonlinearity arises from the Kohn–Sham potential, which depends on a finite number of eigenfunctions. As is standard in computational chemistry, a fixed-point iterative scheme (Self-Consistent Field or SCF) is used, alternating with the solution of the eigenvalue problem.
+## Installation 
+
+You can install the package via Julia's package manager:
+```julia
+] add AtomicKohnSham
+```
+## Overview 
+
+Extended Kohn-Sham models involve solving nonlinear eigenvalue PDEs in 3D, where the Kohn–Sham potential depends on a finite set of eigenfunctions. The standard approach applies a fixed-point (Self-Consistent Field, SCF) iteration, alternating with eigenvalue solves.
 
 Assuming spherical symmetry, the eigenvalue problem can be reduced to a family of radial 1D equations. This package implements a **high-precision finite element method (FEM)** for solving these equations, using **polynomials of degree up to 20** on exponential meshes. This approach allows for highly accurate results with relatively few mesh points, often outperforming low-order methods on refined meshes.
 
 The code supports both **double (Float64)** and **quadruple (Double64)** floating-point precision. This level of precision is crucial for resolving subtle numerical questions that remain open in the literature. For example, in certain Extended Kohn–Sham models, it is still unclear whether the energy of the outermost orbital in some atoms is exactly zero or simply very close to zero but negative—a distinction that this package is designed to investigate numerically.
 
-## Features
+## Key Features
 Currently supported functionalities:
 
-- **SCF Algorithms**:
-  - Constant Damping Algorithm (CDA)
-  - Optimal Damping Algorithm (ODA)
-  - Quadratic damping schemes
-    
-- **Symmetry**:
-  - Spherical symmetry reduction to radial equations
-    
-- **Finite Element Basis**:
-  - Integrated Legendre polynomials (up to order 20)
-    
-- **Exchange–Correlation Functionals**:
-    - LDA, LSDA
-      
-- **Mesh types**:
-    - Linear, geometric, exponential
-      
-- **Floating-point precision**:
-    - Float64, Double64 (quadruple precision via DoubleFloats.jl)
+- **SCF Algorithms:** CDA | ODA | Quadratic  
+- **Symmetry:** Spherical → radial  
+- **FEM Basis:** Integrated Legendre polynomials (order ≤ 20)  
+- **Exchange–Correlation:** LDA, LSDA  
+- **Mesh Types:** Linear, Geometric, Exponential  
+- **Precision:** Float64 (double), Double64 (quadruple)
 
 ## Recommendations
 Based on our experiments, the following setup provides excellent results:
@@ -50,33 +46,65 @@ This combination offers a good balance between numerical accuracy and computatio
 
 ## Example
 
-Here is one example on the hydrogen atom with the Reduced-Hartree Fock model. 
+Here is one example on the hydrogen atom with the Slater exchange. You can directly create the whole problem with
+all parameters.
 ```julia
 problem = AtomProblem(;
-                T               = Float64,                    # Data type for computations
-                model           = RHF(;z=1, N=1),             # Model : Reduced-Hartree Fock
-                                                              # with nuclear chare z=1  and N=1 electrons
-                                                              # (= Hydrogen)
-                name            = "Hydrogen",                 # A custom name that you chan choose
-                
-                alg             = ODA(0.4),                   # SCF algorithm : Optimal Dampling with initial
-                                                              # parameter equal to 0.4
-                scftol          = 1e-11,                      # Tolerance for the scf procedure
-                maxiter         = 60,                         # Maximum number of SCF iterations :
-                                                              # If this number is reached, the algorithm stops
-                                                              # regardless of convergence 
-                degen_tol       = 1e-2,                       # Tolerance to detect degeneracy between orbital energies
+                       # MODEL PARAMETERS
+                       
+                       z = 1,                               # Nuclear Charge
+                       N = 1,                               # Number of electrons
+                       ex = Functional(:lda_x, n_spin = 1), # Exchange Functional
+                       ec = NoFunctional(1),                # Correlation Functional
 
-                lh              = 0,                          # Angular momentum cutoff (ℓ ≤ lh)
-                                                              # only the s-orbital is needed for the hydrogen atom
-                Rmax            = 100,                        # Radial domain cutoff
-                Nmesh           = 10,                         # Number of points of the mesh
-                typemesh        = expmesh,                    # The mesh used is an exponential mesh
-                optsmesh        = (s = 1.5,),                 # Mesh parameters: here, s = 1.5
-                typebasis       = P1IntLegendreGenerator,     # The FEM Basis is composed of the integrated legendre 
-                                                              # polynomials with the P1 elements
-                optsbasis       = (ordermax = 20,),           # Polynomials up to order 20 are used
+                       # DISCRETIZATION PARAMETERS
+                       lh = 0,                              # Angular momentum cutoff       
+                       Nmesh = 10,                          # Number of points of the mesh
+                       Rmax = 300,                          # Radial domain cutoff
 
-                verbose         = 0)                          # Verbosity level: 0 = silent, 3 = maximum verbosity
-```
+                       typemesh = expmesh,                  # How the mesh is generated
+                       optsmesh = (s = 1.5,),               # Options to this generation
+
+                       typebasis = P1IntLegendreBasis,      # Choice of FEM Basis
+                       optsbasis = (ordermax = 10,),        # Polynomials up to order 10.
+
+                       integration_method = GaussLegendre,  # Method for integrals quadrature
+                       optsintegration = (npoints = 1000,)  # Options for this method
+
+                       # ALGORITHMS
+                       alg = ODA(0.4),                      # SCF alg : Optimal Dampling
+
+                       # SOLVER OPTIONS
+                       T = Float64,                         # Data type for computations
+                       scftol = 1e-11,                      # SCF Tolerance
+                       maxiter = 100,                       # Max number of SCF iterations
+                       degen_tol = 1e-2,                    # Tolerance between orbital
+                                                            # energies to detect degeneracy
+                       verbose = 0)                         # Verbosity level: 
+                                                            # 0 = silent, 3 = maximum verbosity
+``` 
 Additional options are available but have been omitted here for simplicity.
+
+Then, you can find the groundstate :
+
+```julia
+sol = groundstate(problem)
+
+julia> sol
+Name : Hydrogen
+Sucess = SUCCESS
+niter = 20
+Stopping criteria = 7.588619340831631e-12
+All Energies :
+            Ekin = 0.40653407924275053 
+            Ecou = -0.9000752043172076 
+            Ehar = 0.27492250294985154 
+            Eexc = -0.1879154570959805 
+            Etot = -0.40653407922058604 
+Occupation number = 
+            1s : (-0.19425006196620562,1.0) 
+``` 
+The associated density can be plotted with a logarithmic y-axis: 
+
+![](assets/readme_density.png)
+
