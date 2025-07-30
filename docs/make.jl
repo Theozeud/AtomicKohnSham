@@ -6,10 +6,10 @@ makedocs(sitename = "AtomicKohnSham Documentation",
     pages = [
         "index.md",
         "Tutorials" => [
-            "Models" => "tutorials/model.jl",
-            "AtomProblem" => "tutorials/problem.jl",
-            "Groundstate" => "tutorials/groundstate.jl",
-            "Analysing results" => "tutorials/solution.jl"
+            "Models" => "tutorials/model.md",
+            "AtomProblem" => "tutorials/problem.md",
+            "Groundstate" => "tutorials/groundstate.md",
+            "Analysing results" => "tutorials/solution.md"
         ]
     ])
 
