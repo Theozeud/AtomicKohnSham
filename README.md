@@ -1,4 +1,7 @@
 # AtomicKohnSham.jl
+<p align="center">
+<img src="assets/logov1.png" style="width: 20%; height: auto;">
+</p>
 
 [![Build Status](https://github.com/Theozeud/AtomicKohnSham/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/Theozeud/AtomicKohnSham/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/Theozeud/AtomicKohnSham/branch/master/graph/badge.svg)](https://codecov.io/gh/Theozeud/AtomicKohnSham)
