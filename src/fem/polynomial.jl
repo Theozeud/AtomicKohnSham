@@ -109,7 +109,7 @@ end
     integrate!(y::AbstractVector, ps::PolySet{TPS}, a::Real, b::Real) where TPS
 
 Evaluate the definite integral of each polynomial in the `PolySet` `ps` over the interval [`a`, `b`],
-and store the result in the output vector `y`. 
+and store the result in the output vector `y`.
 
 The result `y[i]` is the integral of the `i`-th polynomial from `a` to `b`.
 
@@ -181,30 +181,30 @@ end
 """
     integrate!(ips::PolySet, ps::PolySet{TPS}, a::Real) where TPS
 
-Computes the indefinite integral of each polynomial in the `PolySet` `ps`, evaluated to be zero at `x = a`, 
+Computes the indefinite integral of each polynomial in the `PolySet` `ps`, evaluated to be zero at `x = a`,
 and stores the result in `ips`.
 
 # Arguments
-- `ips::PolySet`: A preallocated `PolySet` where the result will be stored. It must have the same number of 
+- `ips::PolySet`: A preallocated `PolySet` where the result will be stored. It must have the same number of
 polynomials as `ps` and one more degree.
 - `ps::PolySet{TPS}`: A set of polynomials represented as a `PolySet` with scalar type `TPS`.
-- `a::Real`: The point at which the antiderivative is set to zero. 
+- `a::Real`: The point at which the antiderivative is set to zero.
 
 # Returns
 - `ips::PolySet`: The modified `ips`, containing the integrated polynomials.
 
 # Example
 ```julia
-ps = PolySet([[1.0, 2.0], [0.0, 3.0]])             
-ips = allocate_polyset(Float64, 2, 3)               
-integrate!(ips, ps, 0.0)                                         
+ps = PolySet([[1.0, 2.0], [0.0, 3.0]])
+ips = allocate_polyset(Float64, 2, 3)
+integrate!(ips, ps, 0.0)
 ```
 """
-function integrate!(ips::PolySet, ps::PolySet{TPS}, a::Real) where {TPS}
+function integrate!(ips::PolySet{TIPS}, ps::PolySet{TPS}, a::Real) where {TIPS,TPS}
     x = 1 ./ (1:(maxdeg(ps) + 1))
     @views vips = ips.coeffs[:, 2:(maxdeg(ps) + 2)]
     mul!(vips, ps.coeffs, Diagonal(x))
-    NewT = promote_type(TPS, typeof(a))
+    NewT = promote_type(TIPS,TPS, typeof(a))
     y = zeros(NewT, npolys(ps))
     evaluate!(y, ips, a)
     @views vips = ips.coeffs[:, 1]
@@ -246,11 +246,11 @@ Returns a new `PolySet` containing the product of every polynomial in `ps` with 
 - `qs::PolySet{TQ}`: A set of `nq` polynomials, each of degree `degq`.
 
 # Returns
-- `PolySet{NewT}`: A new `PolySet` of `np × nq` polynomials, each of degree at most `degp + degq`, 
+- `PolySet{NewT}`: A new `PolySet` of `np × nq` polynomials, each of degree at most `degp + degq`,
    where `NewT` is the promoted type of `TP` and `TQ`.
 
 # Details
-This function constructs a temporary matrix `M` used to perform the polynomial multiplication via matrix multiplication. 
+This function constructs a temporary matrix `M` used to perform the polynomial multiplication via matrix multiplication.
 For each polynomial in `qs`, it fills `M` with shifted copies of its coefficients along diagonals, then computes all products with `ps` in one matrix-matrix multiplication.
 """
 function mul(ps::PolySet{TP}, qs::PolySet{TQ}) where {TP, TQ}
