@@ -63,7 +63,7 @@ abstract type AbstractGenerator{T} end
 @inline getpolynomial(gen::AbstractGenerator, n::Int) = gen[n]
 @inline getderivpolynomial(gen::AbstractGenerator, n::Int) = getderivpolynomial(gen)[n]
 
-export Mesh, linmesh, geometricmesh, polynomialmesh, expmesh
+export Mesh, linmesh, geometricmesh, polynomialmesh, expmesh, explinmesh
 include("fem/mesh.jl")
 
 include("fem/generators.jl")
