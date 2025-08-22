@@ -1,4 +1,4 @@
-# AtomicKohnSham Documentation
+# AtomicKohnSham
 
 ```@contents
 ``` 

@@ -31,6 +31,7 @@ TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+Aqua = "0.8"
 Arpack = "0.5.4"
 BlockDiagonals = "0.1.42"
 CairoMakie = "0.15.4"
@@ -52,6 +53,7 @@ SparseArrayKit = "0.2.1"
 StaticArrays = "1.9.13"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
 Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
@@ -60,4 +62,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [targets]
-test = ["Test", "Plots", "DoubleFloats", "BenchmarkTools", "TimerOutputs", "Latexify"]
+test = ["Test", "Plots", "DoubleFloats", "BenchmarkTools", "TimerOutputs", "Latexify", "Aqua"]

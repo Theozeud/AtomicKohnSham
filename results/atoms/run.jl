@@ -5,40 +5,47 @@ using AtomicKohnSham
 using Libxc
 
 # LOG CONFIG
-logconfig = LogConfig(; orbitals_energy = false,
+logconfig = LogConfig(; orbitals_energy = true,
                         orbitals = false,
                         density = false,
-                        occupation_number = false)
+                        occupation_number = true
+                        )
 
 
 problem = AtomProblem(;
-                        T = Float64,
-                        z = 1,
-                        N = 1,
+                        T =Double64,
+                        z = 26,
+                        N = 26,
                         hartree = 1,
-                        ex = Functional(:lda_x, n_spin = 1),
+                        ex = NoFunctional(1),#Functional(:lda_x, n_spin = 2),
                         ec = NoFunctional(1),#Functional(:lda_c_pw, n_spin = 2),
-                        lh = 0,
-                        nh = 1,
-                        Nmesh = 15,
-                        Rmax = 300,
-                        typemesh = expmesh,
-                        optsmesh = (s = 1.5,),
+                        lh = 2,
+                        nh = 5,
+                        Nmesh =  20,
+                        Rmax = 10000,
+                        typemesh = explinmesh,
+                        optsmesh = (s = 2.0,rswitch=800, nlin=10),
                         typebasis = P1IntLegendreBasis,
-                        optsbasis = (ordermax = 10,),
+                        optsbasis = (ordermax = 14,),
                         integration_method = GaussLegendre,
-                        optsintegration = (npoints = 1000,),
+                        optsintegration = (npoints = 2000,),
                         alg = ODA(0.4),
-                        scftol = 1e-10,
-                        maxiter = 50,
+                        scftol = 1e-15,
+                        maxiter = 200,
                         degen_tol = 1e-2,
                         logconfig = logconfig,
-                        verbose = 3)
+                        verbose = 1)
 
 # RESOLUTION
 @time sol = groundstate(problem);
+print(sol)
 
-plot_stopping_criteria([sol])
+# PLOT STOPPING CRITERIA
+p = plot_stopping_criteria([sol])
 
-# TESTS
-plot_density([sol], AtomicKohnSham.exprange(0, 299, 1000; s = 1.5))
+# PLOT DENSITY
+X = AtomicKohnSham.exprange(0.001,9999.5, 10000; s = 1.2)
+ρ = plot_density([sol], X)
+
+# PLOT EIGENVECTOR
+E = plot_eigenvector(sol,X)
