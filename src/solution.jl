@@ -84,8 +84,8 @@ end
 #--------------------------------------------------------------------
 #                  DISPLAY A SUMMARY OF THE SOLUTION
 #--------------------------------------------------------------------
-const L_QUANTUM_LABELS = ("s", "p", "d", "f", "g", "h", "i")
-const SPIN_LABELS = ("↑", "↓")
+const L_QUANTUM_LABELS = ('s', 'p', 'd', 'f', 'g', 'h', 'i')
+const SPIN_LABELS = ('↑', '↓')
 
 function Base.show(io::IO, sol::KSESolution)
     printstyled(io, "Name : " * (sol.name) * "\n"; bold = true)
@@ -134,6 +134,19 @@ function eigenvector(sol::KSESolution, n::Int, l::Int, σ::Int, X::AbstractVecto
     evaluate(sol.discretization.basis, sol.orbitals[:, n - l, l + 1, σ], X)
 end
 
+
+function eigenvector(sol::KSESolution, idx::String, X::AbstractVector{<:Real})
+    n = parse(Int, idx[1])
+    l = findfirst(x->x==idx[2],L_QUANTUM_LABELS) - 1
+    @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
+    if length(idx) > 2
+        σ = findfirst(x->x==idx[3],SPIN_LABELS)
+        return eigenvector(sol, n, l, σ, X)
+    else
+        return eigenvector(sol, n, l, X)
+    end
+end
+
 # COMPUTE DENSITY
 function eval_density(
         sol::KSESolution,
@@ -143,7 +156,7 @@ function eval_density(
     else
         @views DUP = sol.density_coeffs[:, :, 1]
         ρUP = eval_density(sol.discretization, DUP, X)
-        @views DDOWN = sol.density_coeffs[:, :, 1]
+        @views DDOWN = sol.density_coeffs[:, :, 2]
         ρDOWN = eval_density(sol.discretization, DDOWN, X)
         ρUP .+ ρDOWN
     end

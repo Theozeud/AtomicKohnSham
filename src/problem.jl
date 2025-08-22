@@ -108,7 +108,7 @@ Constructs an `AtomProblem` from keyword arguments.
 - `name::AbstractString`: Name of the problem.
 - `kwargs`: Additional solver options.
 """
-function AtomProblem(; T::DataType, z::Real, N::Real, hartree::Real, ex::EX, ec::EC,
+function AtomProblem(; T::DataType = Float64, z::Real, N::Real, hartree::Real = 1.0, ex::EX, ec::EC,
                       lh::Int, nh::Int, Nmesh::Int, Rmax::Real,
                       typemesh, optsmesh::NamedTuple,
                       typebasis, optsbasis::NamedTuple,

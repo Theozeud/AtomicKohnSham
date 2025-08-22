@@ -5,23 +5,24 @@ struct SolverOptions{T <: Real}
     scftol::T                               # SCF tolerance
     maxiter::Int                            # Maximum of iteration done
 
-    degen_tol::T                            # Tolerance to consider degenescence of orbitals energy
+    degen_tol::T                            # Tolerance to consider degenescence of orbitals
+                                            # energy
 
-    verbose::UInt8                          # Say how many details are printed at the end 
+    verbose::UInt8                          # Say how many details are printed at the end
     # of each iterations :
     # 0 : Zero details
     # 1 : Iterations
-    # 2 : Computations                
+    # 2 : Computations
 end
 
 #--------------------------------------------------------------------
 #                           SOLVER STRUCTURE
 #--------------------------------------------------------------------
 """
-    KSESolver(  model::KSEModel, 
-                discretization::KSEDiscretization, 
-                alg::SCFAlgorithm; 
-                scftol::Real, 
+    KSESolver(  model::KSEModel,
+                discretization::KSEDiscretization,
+                alg::SCFAlgorithm;
+                scftol::Real,
                 maxiter::Int = 100,
                 degen_tol::Real = eps(eltype(discretization.basis)),
                 logconfig = LogConfig(),
@@ -29,7 +30,7 @@ end
 
 Builds a Kohn-Sham-Extended solver object to apply the self-consistent field (SCF) algorithms.
 
-The `KSESolver` contains all internal data required for iterative SCF procedures including the model, discretization, algorithm, and solver options. 
+The `KSESolver` contains all internal data required for iterative SCF procedures including the model, discretization, algorithm, and solver options.
 Use `solve!(solver)` to run the self-consistent procedure, and access solution data via `KSESolution(solver)`.
 
 # Arguments
@@ -80,7 +81,7 @@ mutable struct KSESolver{discretizationType <: KSEDiscretization,
             maxiter::Int = 100,
             degen_tol::Real = eps(eltype(discretization.basis)),
             logconfig = LogConfig(),
-            verbose::Int = 3)
+            verbose::Int = 0)
 
         # Set the data type as the one of the discretization basis
         T = eltype(discretization)
@@ -91,7 +92,7 @@ mutable struct KSESolver{discretizationType <: KSEDiscretization,
         # Init Cache of the Method
         cache = create_cache_alg(alg, discretization)
 
-        # Init Energies 
+        # Init Energies
         energies = zero_energies(discretization, model)
 
         #  SolverOptions
