@@ -95,7 +95,8 @@ function aufbau!(cache::RCACache, solver::KSESolver)
             l1, k1, σ1 = convert_index(discretization, indices_degen[1])
             l2, k2, σ2 = convert_index(discretization, indices_degen[2])
 
-            if l1 == l2 && k1 == k2 && σ1 != σ2
+
+            if solver.niter == 0 && l1 == l2 && k1 == k2 && σ1 != σ2
                 # IN THIS CASE, THE ORBITALS DIFFERS ONLY BY THEIR SPIN QUANTUM NUMBER
                 # THE RADIAL SYMMETRY LEADS TO EQUALLY DISTRIBUTED OCCUPATION NUMBER.
                 cache.tdegen = 0.5
@@ -109,8 +110,8 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                     energies[:Eexc] = compute_exchangecorrelation_energy(
                         discretization, model, D)
                 end
-            else
 
+            else
                 # COMPUTE ENERGIES FOR ONE EXTREMA
                 degen_first = degen[1]
                 if degen_first ≥ remain
@@ -158,7 +159,7 @@ function aufbau!(cache::RCACache, solver::KSESolver)
                     energy_cou0, energy_cou1,
                     energy_har0, energy_har1,
                     energy_har01, energy_har10,
-                    D, tmpD, tmpD2, model, discretization)
+                    D, tmpD, tmpD2, model, discretization; occup = true)
 
                 # UPDATE THE OCCUPATION NUMBERS
                 n[indices_degen[1]] = cache.tdegen * n1_0 + (1-cache.tdegen) * n1_1

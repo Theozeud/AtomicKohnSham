@@ -24,6 +24,7 @@ mutable struct RCACache{dataType <: Real,
 
     U::orbitalsType                             # Coefficient of orbitals at current time
     ϵ::orbitalsenergyType                       # Orbitals energy at current time
+    ϵprev::orbitalsenergyType                   # Orbitals energy at previous time
     n::occupationType                           # Occupation number at current time
     Noccup::Vector{Int}                         # Triplet (Nf,Np,Nv) where
     #     - Nf is the number of fully occupied  orbitals,
@@ -46,6 +47,7 @@ function create_cache_alg(alg::RCAAlgorithm, discretization::KSEDiscretization)
     tmpD2 = zero_density(discretization)
     U = zero_orbitals(discretization)
     ϵ = zero_orbitals_energy(discretization)
+    ϵprev = zero_orbitals_energy(discretization)
     n = zero_occupation_number(discretization)
     Noccup = zeros(Int, 3)
     tdegen = zero(elT)
@@ -59,7 +61,7 @@ function create_cache_alg(alg::RCAAlgorithm, discretization::KSEDiscretization)
         typeof(D),
         typeof(U),
         typeof(ϵ),
-        typeof(n)}(t, D, Dprev, tmpD, tmpD2, U, ϵ, n, Noccup,
+        typeof(n)}(t, D, Dprev, tmpD, tmpD2, U, ϵ, ϵprev, n, Noccup,
         false, tdegen, index_aufbau, energies_prev)
 end
 
@@ -70,18 +72,20 @@ end
 struct RCASolution{densityType <: AbstractArray,
     orbitalsType <: AbstractArray,
     orbitalsenergyType <: AbstractArray,
-    occupationType} <: SCFSolution
+    occupationType,
+    nType <: AbstractArray} <: SCFSolution
     density_coeffs::densityType                                 # Density Matrix at final time
     orbitals::orbitalsType                                      # Coefficient of orbitals at final time
     orbitals_energy::orbitalsenergyType                         # Orbitals energy at final time
     occupation_number::occupationType                           # Occupation number at final time
+    n::nType
     Noccup::Vector{Int}                                         # Triplet (Nf,Np,Nv)
 end
 
 function makesolution(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
     occupation = make_occupation_number(solver.discretization, cache)
-    RCASolution{typeof(cache.D), typeof(cache.U), typeof(cache.ϵ), typeof(occupation)}(
-        cache.D, cache.U, cache.ϵ, occupation, cache.Noccup)
+    RCASolution{typeof(cache.D), typeof(cache.U), typeof(cache.ϵ), typeof(occupation), typeof(cache.n)}(
+        cache.D, cache.U, cache.ϵ, occupation, cache.n, cache.Noccup)
 end
 
 # Make occupation number
@@ -123,13 +127,18 @@ end
 #####################################################################
 
 function stopping_criteria!(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
-    norm(cache.D - cache.Dprev) + abs(solver.energies[:Etot] - cache.energies_prev[:Etot])
+    stop_D = norm(cache.D - cache.Dprev)
+    stop_Etot = abs(solver.energies[:Etot] - cache.energies_prev[:Etot])
+    stop_ϵ = max([cache.ϵ[idx] .- cache.ϵprev[idx]
+                    for idx ∈ eachindex(cache.ϵ) if cache.n[idx] ≠ 0]...)
+    max(stop_D,stop_Etot,stop_ϵ)
 end
 
 function loopheader!(cache::RCACache, ::RCAAlgorithm, solver::KSESolver)
     @unpack energies = solver
-    @unpack energies_prev, Dprev, D = cache
+    @unpack energies_prev = cache
     cache.Dprev .= cache.D
+    cache.ϵprev .= cache.ϵ
     cache.flag_degen = false
     energies_prev[:Etot] = energies[:Etot]
     energies_prev[:Ekin] = energies[:Ekin]
