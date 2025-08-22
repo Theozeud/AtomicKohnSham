@@ -1,42 +1,63 @@
 # Convergence Plot with Nmesh
 
-function convergence_plot_Nmesh(sols::HydrogenoidConvergenceNmesh, nums = first(sols.num))
-    plt = plot(size = (1300, 1000), margin = 0.5Plots.cm,
-        legend = :bottomleft, xaxis = :log, yaxis = :log,
-        legendfontsize = 14,
-        titlefontsize = 18,
-        guidefontsize = 12,
-        tickfontsize = 12)
-    xlabel!(plt, "Nmesh")
-    ylabel!(plt, "Error")
-    title!(plt, "Convergence Plot")
+function convergence_plot_Nmesh(sols::HydrogenoidConvergenceNmesh; nums = (first(sols.num),))
+    fig = Figure(resolution = (1300, 1000))
+    ax = Axis(fig[1, 1];
+        title = "Convergence Plot",
+        xlabel = "Nmesh",
+        ylabel = "Error",
+        xscale = log10,
+        yscale = log10,
+        titlesize = 35,
+        xlabelsize = 25,
+        ylabelsize = 25,
+        xticklabelsize = 30,
+        yticklabelsize = 30
+    )
+
     for prob in sols.probs
         for num in nums
-            pos = findfirst(x->x==num, nums)
-            plot!(plt, sols.vecNmesh, sols.ΔΛ[prob.name][:, pos], lw = 4,
-                label = prob.name*"-$num", markershape = :x, markersize = 10)
+            pos = findfirst(==(num), nums)
+            scatterlines!(ax, sols.vecNmesh, sols.ΔΛ[prob.name][:, pos];
+                linewidth = 4,
+                label = "$(prob.name)-$num",
+                marker = :x,
+                markersize = 30
+            )
         end
     end
-    plt
+
+    axislegend(ax, position = :lb, labelsize = 30)
+    return fig
 end
 
-# Convergence Plot with Rmax
 
-function convergence_plot_Rmax(sols::HydrogenoidConvergenceRmax, nums = first(sols.num))
-    plt = plot(size = (1300, 1000), margin = 0.5Plots.cm,
-        legend = legend ? :bottomleft : false, xaxis = :log, yaxis = :log,
-        legendfontsize = 12,
-        titlefontsize = 12,
-        guidefontsize = 12,
-        tickfontsize = 12)
-    xlabel!(plt, "Rmax")
-    ylabel!(plt, "Error")
-    title!(plt, "Convergence Plot")
+function convergence_plot_Rmax(sols::HydrogenoidConvergenceRmax; nums = (first(sols.num),))
+    fig = Figure(resolution = (1300, 1000))
+    ax = Axis(fig[1, 1];
+        title = "Convergence Plot",
+        xlabel = "Rmax",
+        ylabel = "Error",
+        xscale = log10,
+        yscale = log10,
+        titlesize = 12,
+        xlabelsize = 12,
+        ylabelsize = 12,
+        xticklabelsize = 12,
+        yticklabelsize = 12
+    )
+
     for prob in sols.probs
         for num in nums
-            plot!(plt, sols.vecRmax, sols.ΔΛ[prob.name][:, num], lw = 4,
-                label = prob.name*"-$num", markershape = :x, markersize = 10)
+            scatterlines!(ax, sols.vecRmax, sols.ΔΛ[prob.name][:, num];
+                linewidth = 4,
+                label = "$(prob.name)-$num",
+                marker = :x,
+                markersize = 10
+            )
         end
     end
-    plt
+
+    axislegend(ax, position = :lb, labelsize = 12)
+    return fig
 end

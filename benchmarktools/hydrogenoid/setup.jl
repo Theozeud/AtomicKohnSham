@@ -1,6 +1,6 @@
-using KohnShamResolution
+using AtomicKohnSham
 using LinearAlgebra
-using Plots
+using CairoMakie
 using GenericLinearAlgebra
 using DoubleFloats
 using UnPack
