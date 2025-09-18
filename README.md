@@ -7,7 +7,6 @@
 [![Coverage](https://codecov.io/gh/Theozeud/AtomicKohnSham/branch/master/graph/badge.svg)](https://codecov.io/gh/Theozeud/AtomicKohnSham)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 [![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
-[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 **AtomicKohnSham.jl** is a Julia package designed to **compute the ground state of isolated atoms and ions** within the framework of **Extended Kohn-Sham models**. Originally developed to investigate the existence of negative ions, the code can also serve as a versatile tool for testing new density functionals and exploring numerical precision issues.
 
