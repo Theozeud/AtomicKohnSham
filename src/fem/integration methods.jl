@@ -11,7 +11,8 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
     # FOR FEM MATRIX COMPUTATIONS
     x::Vector{T}
     w::Vector{T}
-    Qgenx::Array{T, 3}
+    Pgenx::Matrix{T}
+    Qgenx::Matrix{T}
     # FOR ENERGY COMPUTATIONS
     y::Vector{T}
     wy::Vector{T}
@@ -37,9 +38,10 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
         shiftx = similar(fx)
         fx2 = similar(fx, 2, length(fx))
         # EVALUATE POLYNOMIALS
+        Pgenx = evaluate(basis.generators.polynomials,x)
         Qgenx = evaluate(basis.cache.prodMG, x)
-        a = Int(sqrt(size(Qgenx, 1)))
-        Qgenxreshape = reshape(Qgenx, a, a, size(Qgenx, 2))
-        new{eltype(x)}(npoints, x, w, Qgenxreshape, y, wy, shiftx, fx, fy, fx2)
+        #a = Int(sqrt(size(Qgenx, 1)))
+        #Qgenxreshape = reshape(Qgenx, a, a, size(Qgenx, 2))
+        new{eltype(x)}(npoints, x, w, Pgenx, Qgenx, y, wy, shiftx, fx, fy, fx2)
     end
 end

@@ -21,7 +21,6 @@ using HypergeometricFunctions
 using UnPack
 
 using Base.Threads
-using AtomicKohnSham
 
 using Libxc: Functional, OptArray
 import Libxc: is_lda
@@ -39,7 +38,7 @@ include("utils/sparse tools.jl")
 # -------------------------------------
 # ALL THESE TOOLS SHOULD MOVE TO A NEW PACKAGE POLYSET
 export PolySet, Legendre, IntLegendre
-export evaluate!, integrate!, allocate_polyset, mul, npolys, maxdeg
+export evaluate, evaluate!, integrate!, allocate_polyset, mul, npolys, maxdeg
 
 include("fem/polynomial.jl")
 include("fem/legendre polynomial.jl")
@@ -53,7 +52,7 @@ export P1IntLegendreGenerator, P1IntLegendreBasis
 
 export mass_matrix, sparse_mass_matrix,
        stiffness_matrix, sparse_stiffness_matrix,
-       mass_tensor
+       mass_tensor, mass_vector
 
 export FEMIntegrationMethod, ExactIntegration, QuadratureIntegration, GaussLegendre
 

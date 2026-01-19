@@ -306,3 +306,40 @@ function fill_mass_tensor!(basis::FEMBasis,
     end
     return nothing
 end
+
+
+#--------------------------------------------------------------------
+#                          MASS VECTOR
+#--------------------------------------------------------------------
+
+function mass_vector(basis::FEMBasis;
+        weight::AbstractWeight = NoWeight(),
+        method::FEMIntegrationMethod = default_method(basis, weight))
+    @unpack generators, mesh, size = basis
+    T = eltype(basis)
+    V = zeros(T, size)
+    fill_mass_vector!(basis, V; weight = weight, method = method)
+    V
+end
+
+
+function fill_mass_vector!(basis::FEMBasis,
+        V::AbstractVector{<:Real};
+        weight::AbstractWeight = NoWeight(),
+        method::FEMIntegrationMethod = default_method(basis, weight))
+    @unpack generators, mesh, cache, shifts, invshifts, cells_to_indices,
+    cells_to_generators = basis
+    @unpack K = cache
+    @views Kvec = K[:,1]
+    fill!(V, 0)
+    @inbounds for k in cellrange(mesh)
+        eldata = getelement(basis, k, :M)
+        _fill_local_matrix!(Kvec, method, weight, eldata, generators.polynomials, basis)
+        Ib = cells_to_indices[k]
+        Ig = cells_to_generators[k]
+        @views vV = V[Ib]
+        @views vK = Kvec[Ig]
+        @. vV += vK
+    end
+    nothing
+end

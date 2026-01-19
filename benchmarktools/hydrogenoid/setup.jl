@@ -1,8 +1,6 @@
 using AtomicKohnSham
 using LinearAlgebra
-using CairoMakie
 using GenericLinearAlgebra
-using DoubleFloats
 using UnPack
 
 include("problem_solution.jl")

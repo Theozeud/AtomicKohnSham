@@ -39,17 +39,17 @@ function plot_stopping_criteria(sols)
 end
 
 function plot_density(sols, X)
-    fig = Figure(size = (1500, 1200), fontsize = 30)
+    fig = Figure(size = (1500, 1200))
 
     ax = Axis(fig[1, 1],
         xlabel = L"\text{r}",
         ylabel = L"\rho",
         #xscale = log10,
         yscale = log10,
-        xticklabelsize = 40,
-        yticklabelsize = 40,
-        xlabelsize = 50,
-        ylabelsize = 50
+        xticklabelsize = 50,
+        yticklabelsize = 50,
+        xlabelsize = 60,
+        ylabelsize = 60
     )
 
     plots = []
@@ -58,7 +58,7 @@ function plot_density(sols, X)
     for sol in sols
         mesh = sol.discretization.mesh.points
         ρX = eval_density(sol, X)
-        l = lines!(ax, X, ρX; linewidth = 6)
+        l = lines!(ax, X, ρX; linewidth = 8)
         push!(plots, l)
         push!(labels, sol.name)
         #scatter!(ax, mesh, eval_density(sol, mesh); markersize = 30)
@@ -83,13 +83,14 @@ function plot_density(sols, X)
 end
 
 function plot_eigenvector(sol, X)
-    fig = Figure(size = (1500, 1200), fontsize = 30)
+    #(1500, 1200)
+    fig = Figure(size = (1000, 800), fontsize = 30)
 
     ax = Axis(fig[1, 1],
         xlabel = L"\text{r}",
-        ylabel = L"\epsilon",
-        yscale = log10,
-        #scale = log10,
+        ylabel = L"u",
+        #yscale = log10,
+        #xscale = log10,
         xticklabelsize = 40,
         yticklabelsize = 40,
         xlabelsize = 50,

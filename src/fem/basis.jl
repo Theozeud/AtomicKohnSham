@@ -56,45 +56,45 @@ end
 # 						FEM BASIS STRUCTURE
 #--------------------------------------------------------------------
 """
-    struct FEMBasis{T<:Real, 
-                           generatorsType <: AbstractGenerator, 
-                           meshType <: Mesh, 
+    struct FEMBasis{T<:Real,
+                           generatorsType <: AbstractGenerator,
+                           meshType <: Mesh,
                            dictType <: Dict,
                            cacheType <: BasisCache} <: Basis
 
-Represents a basis of polynomial functions defined over a 1D mesh. 
+Represents a basis of polynomial functions defined over a 1D mesh.
 The basis is constructed from a set of polynomial generators and adapted locally to each cell of the mesh.
 
 # Fields
 
-- `generators::generatorsType`  
+- `generators::generatorsType`
   Set of polynomial generators used to build the basis. These can be Legendre polynomials, monomials, or any other suitable family.
 
-- `mesh::meshType`  
-  The mesh over which the basis is defined. 
+- `mesh::meshType`
+  The mesh over which the basis is defined.
 
-- `size::Int`  
+- `size::Int`
   Total number of basis functions.
 
-- `indices_cells::dictType`  
+- `indices_cells::dictType`
   Dictionary mapping each basis index to the cell(s) on which its support is nonzero.
 
-- `indices_generators::dictType`  
+- `indices_generators::dictType`
   Dictionary mapping each basis index to the generator indices used to construct it.
 
-- `cells_to_indices::Dict{Int,Vector{Int}}`  
+- `cells_to_indices::Dict{Int,Vector{Int}}`
   Inverse map: associates each cell with the indices of basis functions that are supported on it.
 
-- `cells_to_generator::Dict{Int,Vector{Int}}`  
+- `cells_to_generator::Dict{Int,Vector{Int}}`
   Maps each cell to the generator indices used locally for constructing basis functions on that cell.
 
-- `shifts::Vector{Tuple{T,T}}`  
+- `shifts::Vector{Tuple{T,T}}`
   Translations applied to center each cell in a reference domain (e.g., mapping to a reference element).
 
-- `invshifts::Vector{Tuple{T,T}}`  
+- `invshifts::Vector{Tuple{T,T}}`
   Inverse translations used to map from the reference cell back to the global coordinates.
 
-- `cache::cacheType`  
+- `cache::cacheType`
   A cache structure used to store intermediate values for efficient computation.
 
 """
@@ -251,8 +251,8 @@ function _cache_Pϕx(pb::FEMBasis, ::T) where {T}
 end
 
 ```
-    Evaluation of a function defined through coefficients `coeffs` over the basis `pb` 
-	at the points of the vector `X`. 
+    Evaluation of a function defined through coefficients `coeffs` over the basis `pb`
+	at the points of the vector `X`.
 
 ```
 function evaluate(

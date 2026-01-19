@@ -1,4 +1,5 @@
 # Convergence Plot with Nmesh
+using CairoMakie
 
 function convergence_plot_Nmesh(sols::HydrogenoidConvergenceNmesh; nums = (first(sols.num),))
     fig = Figure(resolution = (1300, 1000))

@@ -132,11 +132,17 @@ function fill_local_matrix!(K::AbstractArray,
         eldata::ElementData,
         ::PolySet,
         basis::FEMBasis)
-    @unpack x, w, shiftx, fx, Qgenx = quadra
+    @unpack x, w, shiftx, fx, Pgenx, Qgenx = quadra
     @unpack invϕ = eldata
     shiftx .= invϕ[1] .* x .+ invϕ[2]
     weight(fx, shiftx)
     @. fx *= w
-    @tensor K[i, j] = Qgenx[i, j, k] * fx[k]
-    K .*= eldata.invϕ[1]
+    Kreshape = reshape(K, length(K), 1)
+    if length(K) == size(Qgenx,1)
+        mul!(Kreshape,Qgenx,fx)
+    elseif length(K) == size(Pgenx,1)
+        mul!(Kreshape,Pgenx,fx)
+    end
+    #@tensor Kreshape[i,j] = Qgenx[i, j, k] * fx[k]
+    Kreshape .*= eldata.invϕ[1]
 end
