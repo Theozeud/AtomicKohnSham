@@ -15,3 +15,20 @@ function _commutator!(
     mul!(tmp, C, B)
     @. A -= tmp
 end
+
+
+function flexible_zeros(T::Type, dims::NTuple{N, Int}, lastdim::Int) where {N}
+    if lastdim == 1
+        return zeros(T, dims...)
+    else
+        return zeros(T, dims..., lastdim)
+    end
+end
+
+function flexible_zeros(T::Type, firstdim::Int, dims::NTuple{N, Int}) where {N}
+    if firstdim == 1
+        return zeros(T, dims...)
+    else
+        return zeros(T, firstdim, dims...)
+    end
+end
