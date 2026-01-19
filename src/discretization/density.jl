@@ -30,27 +30,6 @@ function density!(discretization::KSEDiscretization,
     nothing
 end
 
-function density!(discretization::KSEDiscretization,
-        Γ::BlockDiagonal{<:Real, <:AbstractMatrix{<:Real}},
-        D::AbstractArray{<:Real})
-    @unpack lₕ, Nₕ, elT = discretization
-    fill!(D, zero(elT))
-    @inbounds @simd for l in 1:(lₕ + 1)
-        @views Γl = blocks(Γ)[l]
-        @inbounds for i in 1:Nₕ
-            @inbounds for j in 1:i
-                D[i, j] += (2*l + 1)*Γl[i, j]
-            end
-        end
-    end
-    @inbounds for i in 1:Nₕ
-        @inbounds @simd for j in 1:(i - 1)
-            D[j, i] = D[i, j]
-        end
-    end
-    nothing
-end
-
 #--------------------------------------------------------------------
 #                       Evaluation of Density
 #--------------------------------------------------------------------

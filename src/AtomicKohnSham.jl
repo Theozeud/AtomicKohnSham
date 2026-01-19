@@ -5,8 +5,6 @@ module AtomicKohnSham
 # -------------------------------------
 using LinearAlgebra
 using SparseArrays
-using FillArrays
-using BlockDiagonals
 
 using TensorOperations
 
@@ -16,7 +14,6 @@ using Arpack
 using Optim
 using Integrals
 
-using HypergeometricFunctions
 
 using UnPack
 
