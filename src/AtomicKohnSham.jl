@@ -14,6 +14,7 @@ using Arpack
 using Optim
 using Integrals
 
+using HypergeometricFunctions
 
 using UnPack
 

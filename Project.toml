@@ -16,6 +16,7 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+HypergeometricFunctions = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 
 [compat]
 Aqua = "0.8"
