@@ -36,8 +36,7 @@ Stores preallocated buffers used during the occupation procedure
 to avoid repeated allocations and improve performance.
 
 """
-mutable struct OptimizedAufbauCache{T<:Real,
-                                    densityType <: AbstractArray{<:Real}} <: AufbauCache
+mutable struct OptimizedAufbauCache{T<:Real, D <: AbstractArray{<:Real}, TF} <: AufbauCache
     max_degen::Int
     tol::T
     handle_degen_spin_1iter::Bool
@@ -45,11 +44,12 @@ mutable struct OptimizedAufbauCache{T<:Real,
     indices_sort::Vector{Int}
     indices_block::Vector{Int}
     degen_block::Vector{Int}
-    D1 ::densityType
-    D2::densityType
-    D_buf::densityType
+    D1 ::D
+    D2::D
+    Dbuf::D
+    F::TF
     postcomputations::Bool
-    energies::Dict{Symbol, T}
+    energies::Energies{T}
     function OptimizedAufbauCache(discretization::KSEDiscretization, model::KSEModel,
         aufbau::OptimizedAufbau)
         @unpack max_degen, tol, handle_degen_spin_1iter = aufbau
@@ -58,14 +58,26 @@ mutable struct OptimizedAufbauCache{T<:Real,
         indices_sort = zeros(Int,length(ϵ))
         indices_block = zeros(Int,max_degen)
         degen_block = zeros(Int,max_degen)
+
+        dT = eltype(discretization)
+
         D1 = zero_density(discretization)
         D2 = zero_density(discretization)
-        D_buf = zero_density(discretization)
+        Dbuf = zero_density(discretization)
+        F = if has_exchcorr(model)
+            t -> begin
+                @. Dbuf = t*D1 + (1-t)*D2
+                compute_exc_energy(discretization, model, Dbuf)
+            end
+        else
+            zero(dT)
+        end
+
         postcomputations = false
-        energies = zero_energies(discretization, model)
-        new{typeof(tol), typeof(D1)}(
+        energies = Energies(dT)
+        new{dT, typeof(D1), typeof(F)}(
             max_degen, tol, handle_degen_spin_1iter, ϵvec, indices_sort,
-            indices_block, degen_block, D1, D2, D_buf, postcomputations, energies)
+            indices_block, degen_block, D1, D2, Dbuf, F, postcomputations, energies)
     end
 end
 
@@ -113,7 +125,7 @@ function aufbau!(n::AbstractArray{<:Real}, ϵ::AbstractArray{<:Real},U::Abstract
         # NOT ENOUGH ELECTRONS TO DISTRIBUTE BETWEEN TWO ORBITALS
         elseif nb_degen == 2
             resolve_twofold_degeneracy!(
-                n, Nleft, U, aufbau, model, discretization, niter
+                n, Nleft, U, aufbau, discretization, niter
             )
             break
         else
@@ -208,11 +220,11 @@ Includes a special symmetric spin case.
 """
 function resolve_twofold_degeneracy!(
     n::AbstractArray{<:Real}, Nleft::Int, U::AbstractArray{<:Real},
-    aufbau::OptimizedAufbauCache, model::KSEModel, discretization::KSEDiscretization,
+    aufbau::OptimizedAufbauCache, discretization::KSEDiscretization,
     niter::Int
 )
     @unpack indices_block, handle_degen_spin_1iter, degen_block, energies,
-            D1, D2, D_buf = aufbau
+            D1, D2, D_buf, F = aufbau
 
     l1,k1,σ1 = convert_index(discretization, indices_block[1])
     l2,k2,σ2 = convert_index(discretization, indices_block[2])
@@ -262,15 +274,13 @@ function resolve_twofold_degeneracy!(
 
     # COMPUTE THE QUADRATIC TERM RELATED TO HARTREE ENERGY
     energy_har01 = compute_hartree_mix_energy(discretization, D1, D2)
-    energy_har10 = compute_hartree_mix_energy(discretization, D2, D1)
 
     # FIND THE OPTIMUM OCCUPATION
     tdegen, energies[:Etot] = line_search_energy(
         energy_kin0, energy_kin1,
         energy_cou0, energy_cou1,
         energy_har0, energy_har1,
-        energy_har01, energy_har10,
-        D1, D2, D_buf, model, discretization; occup = false)
+        energy_har01, F)
 
     # UPDATE THE OCCUPATION NUMBERS
     n[indices_block[1]] = tdegen * n1_0 + (1-tdegen) * n1_1
@@ -285,7 +295,5 @@ function resolve_twofold_degeneracy!(
     energies[:Ecou] = t*energy_cou0 + (1-t)*energy_cou1
     energies[:Ehar] = t^2*energy_har0 + (1-t)^2*energy_har1 +
                         t * (1-t) * (energy_har01 + energy_har10)
-    if has_exchcorr(model)
-        energies[:Eexc] = energies[:Etot]-energies[:Ekin]-energies[:Ecou]-energies[:Ehar]
-    end
+    energies[:Eexc] = energies[:Etot]-energies[:Ekin]-energies[:Ecou]-energies[:Ehar]
 end
