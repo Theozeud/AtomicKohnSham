@@ -7,7 +7,7 @@
                        nl::Bool = true,
                        maxiter::Int = 100,
                        abstol::T = eps(T)*1e4,
-                       retol::T = eps(T)*1e4) where {FT,T}
+                       reltol::T = eps(T)*1e4) where {FT,T}
 
 Compute the minimizer `t*` and the minimum value of the 1D energy along a mixing line
 `t ∈ [0,1]`, for an energy model of the form
@@ -25,7 +25,7 @@ The coefficients are built from the inputs as:
 - `c = A1 + energy_har1`
 
 If `nl == true`, the function minimizes `E(t)` on `[0,1]` using Brent's method
-(Optim.jl), with tolerances `abstol`, `retol` and iteration cap `maxiter`.
+(Optim.jl), with tolerances `abstol`, `reltol` and iteration cap `maxiter`.
 If `nl == false`, it minimizes the quadratic part analytically on `[0,1]`.
 
 This routine is used in ODA line-search steps, and can also be reused to optimize
@@ -43,17 +43,16 @@ appropriate nonlinear term `F`.
 `(tmin, Emin)` where `tmin ∈ [0,1]` minimizes the objective and `Emin = E(tmin)`.
 """
 function line_search_energy(energy_kin0::T, energy_kin1::T, energy_cou0::T, energy_cou1::T,
-                           energy_har0::T, energy_har1::T, energy_har01::T, energy_har10::T,
-                           F::FT = zero(T); nl::Bool = !(F isa T), maxiter::Int = 100,
-                           abstol::T = esp(T)*10^4, retol::T = esp(T)*10^4) where {FT,T}
+                           energy_har0::T, energy_har1::T, energy_har01::T, F::FT = zero(T);
+                           nl::Bool = !(F isa Real), maxiter::Int = 100,
+                           abstol::T = esp(T)*10^4, reltol::T = esp(T)*10^4) where {FT,T}
     A0 = energy_kin0 + energy_cou0
     A1 = energy_kin1 + energy_cou1
     H0 = energy_har0
     H1 = energy_har1
     H01 = energy_har01
-    H10 = energy_har10
-    a = H0 + H1 - (H01 + H10)
-    b = (A0 - A1) + (H01 + H10 - 2H1)
+    a = H0 + H1 - 2*H01
+    b = (A0 - A1) + 2*(H01 - H1)
     c = A1 + H1
     if nl
         # Perform the optimization through the Brent method
@@ -61,7 +60,7 @@ function line_search_energy(energy_kin0::T, energy_kin1::T, energy_cou0::T, ener
             a*t^2 + b*t + c + F(t)
         end
         res = optimize(f, zero(T), one(T), Brent();
-                abs_tol=abstol, rel_tol=retol, iterations=maxiter)
+                abs_tol=abstol, rel_tol=reltol, iterations=maxiter)
         fmin = res.minimum
         tmin = res.minimizer
         #=
@@ -87,18 +86,4 @@ function line_search_energy(energy_kin0::T, energy_kin1::T, energy_cou0::T, ener
         fmin = c + b*tstar + a*tstar^2
         return tstar, fmin
     end
-end
-
-
-mutable struct ExcEnergyLS{D, TD, M, Disc}
-    D0::D
-    D1::D
-    tmpD::TD
-    model::M
-    disc::Disc
-end
-
-function (E::ExcEnergyLS)(t)
-    @. E.tmpD = t*E.D0 + (1-t)*E.D1
-    return compute_exc_energy(E.disc, E.model, E.tmpD)
 end
