@@ -1,17 +1,17 @@
-#--------------------------------------------------------------------
+# ===================================================================
 #                         TOTAL ENERGY
-#--------------------------------------------------------------------
-function compute_total_energy(discretization::KSEDiscretization,
-        model::KSEModel,
-        D::AbstractArray{<:Real},
-        n::AbstractArray{<:Real},
-        ϵ::AbstractArray{<:Real})
-    @unpack Rmax, matrices, n_spin = discretization
-    @unpack VxcUP, VxcDOWN = matrices
+# ===================================================================
+"""
+Compute the Kohn–Sham total energy from eigenvalues, occupations, and density.
+"""
+function compute_total_energy(discretization::KSEDiscretization, model::KSEModel,
+                             D::AbstractArray{<:Real}, n::AbstractArray{<:Real},
+                             ϵ::AbstractArray{<:Real})
+    @unpack VxcUP, VxcDOWN = discretization.ksham
     if has_exchcorr(model)
-        energy_exc = compute_exchangecorrelation_energy(discretization, model, D)
+        energy_exc = compute_exc_energy(discretization, model, D)
         energy_har = compute_hartree_energy(discretization, D)
-        if n_spin == 1
+        if discretization.nspin == 1
             @tensor energy = n[l, k] * ϵ[l, k]
             @tensor energy_correction = VxcUP[i, j] * D[i, j]
             return energy - energy_har + energy_exc - energy_correction
@@ -25,11 +25,11 @@ function compute_total_energy(discretization::KSEDiscretization,
                    energy_correctionDOWN
         end
     else
-        if n_spin == 1
+        if discretization.nspin == 1
             @tensor energy = n[l, k] * ϵ[l, k]
             energy_har = compute_hartree_energy(discretization, D)
             return energy = energy - energy_har
-        elseif n_spin == 2
+        else
             @tensor energy = n[l, k, σ] * ϵ[l, k, σ]
             energy_har = compute_hartree_energy(discretization, D)
             return energy = energy - energy_har
@@ -38,17 +38,18 @@ function compute_total_energy(discretization::KSEDiscretization,
     nothing
 end
 
-#--------------------------------------------------------------------
+# ===================================================================
 #                        KINETIC ENERGY
-#--------------------------------------------------------------------
-function compute_kinetic_energy(discretization::KSEDiscretization,
-        U::AbstractArray{<:Real},
-        n::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, n_spin = discretization
-    elT = eltype(discretization)
-    @unpack Kin = discretization.matrices
-    energy_kin = zero(elT)
-    @inbounds for σ in 1:n_spin
+# ===================================================================
+"""
+Compute the kinetic energy from orbital coefficients and occupations.
+"""
+function compute_kinetic_energy(discretization::KSEDiscretization{T},
+                               U::AbstractArray{<:Real}, n::AbstractArray{<:Real}) where T
+    @unpack lₕ, nₕ, nspin = discretization
+    @unpack Kin = discretization.ksham
+    energy_kin = zero(T)
+    @inbounds for σ in 1:nspin
         @inbounds for l in 1:(lₕ + 1)
             @inbounds for k in 1:nₕ
                 if !iszero(n[l, k, σ])
@@ -61,17 +62,18 @@ function compute_kinetic_energy(discretization::KSEDiscretization,
     return energy_kin
 end
 
-#--------------------------------------------------------------------
+# ===================================================================
 #                        COULOMB ENERGY
-#--------------------------------------------------------------------
-function compute_coulomb_energy(discretization::KSEDiscretization,
-        U::AbstractArray{<:Real},
-        n::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, n_spin = discretization
-    elT = eltype(discretization)
-    @unpack Coulomb = discretization.matrices
-    energy_cou = zero(elT)
-    @inbounds for σ in 1:n_spin
+# ===================================================================
+"""
+Compute the nuclear Coulomb (external potential) energy from orbitals and occupations.
+"""
+function compute_coulomb_energy(discretization::KSEDiscretization{T},
+                               U::AbstractArray{<:Real},n::AbstractArray{<:Real}) where T
+    @unpack lₕ, nₕ, nspin = discretization
+    @unpack Coulomb = discretization.ksham
+    energy_cou = zero(T)
+    @inbounds for σ in 1:nspin
         @inbounds for l in 1:(lₕ + 1)
             @inbounds for k in 1:nₕ
                 if !iszero(n[l, k, σ])
@@ -84,73 +86,70 @@ function compute_coulomb_energy(discretization::KSEDiscretization,
     return energy_cou
 end
 
-#--------------------------------------------------------------------
+# ===================================================================
 #                        HARTREE ENERGY
-#--------------------------------------------------------------------
-function compute_hartree_energy(discretization::KSEDiscretization,
-        D::AbstractArray{<:Real})
-    @unpack Rmax, matrices, cache, n_spin = discretization
-    elT = eltype(discretization)
-    @unpack A, F, M₀ = matrices
-    @unpack tmp_B, tmp_C = cache
-    if n_spin == 1
-        tensor_matrix_dict!(tmp_B, D, F)
-        tmp_C .= A\tmp_B
-        @tensor Crho = D[i, j] * M₀[i, j]
-        return elT(0.5) * (dot(tmp_B, tmp_C) + Crho^2/Rmax)
+# ===================================================================
+"""
+Compute the Hartree (electrostatic) energy associated with the density matrix `D`.
+"""
+
+function compute_hartree_energy(discretization::KSEDiscretization, D::AbstractArray{<:Real})
+    @unpack Rmax, cache, nspin, N = discretization
+    @unpack A, F = discretization.femops
+    @unpack B, W = cache.hartw
+    if nspin == 1
+        tensor_matrix_dict!(B, D, F)
+        W .= A\B
+        return (dot(B, W) + N^2/Rmax)/2
     else
         @views DUP = D[:, :, 1]
         @views DDOWN = D[:, :, 2]
-        tensor_matrix_dict!(tmp_B, DUP, DDOWN, F)
-        tmp_C .= A\tmp_B
-        @tensor CrhoUP = DUP[i, j] * M₀[i, j]
-        @tensor CrhoDOWN = DDOWN[i, j] * M₀[i, j]
-        Crho = CrhoUP + CrhoDOWN
-        return elT(0.5) * (dot(tmp_B, tmp_C) + Crho^2/Rmax)
+        tensor_matrix_dict!(B, DUP, DDOWN, F)
+        W .= A\B
+        return (dot(B, W) + N^2/Rmax)/2
     end
 end
 
+"""
+Compute the mixed Hartree energy D(ρ₀,ρ₁) associated with two densities.
+"""
 function compute_hartree_mix_energy(discretization::KSEDiscretization,
-        D0::AbstractArray{<:Real},
-        D1::AbstractArray{<:Real})
-    @unpack Rmax, matrices, cache, n_spin = discretization
-    elT = eltype(discretization)
-    @unpack A, F, M₀ = matrices
-    @unpack tmp_B, tmp_C = cache
-    if n_spin == 1
-        tensor_matrix_dict!(tmp_B, D0, F)
-        tmp_C .= A\tmp_B
-        tensor_matrix_dict!(tmp_B, D1, F)
-        @tensor Crho0 = D0[i, j] * M₀[i, j]
-        @tensor Crho1 = D1[i, j] * M₀[i, j]
-        return elT(0.5) * (dot(tmp_B, tmp_C) + Crho0*Crho1/Rmax)
+                                   D0::AbstractArray{<:Real}, D1::AbstractArray{<:Real})
+    @unpack Rmax, cache, nspin, N = discretization
+    @unpack A, F = discretization.femops
+    @unpack B, W = cache.hartw
+    if nspin == 1
+        tensor_matrix_dict!(B, D0, F)
+        W .= A\B
+        tensor_matrix_dict!(B, D1, F)
+        return (dot(B, W) + N^2/Rmax)/2
     else
         @views D0UP = D0[:, :, 1]
         @views D0DOWN = D0[:, :, 2]
         @views D1UP = D1[:, :, 1]
         @views D1DOWN = D1[:, :, 2]
-        tensor_matrix_dict!(tmp_B, D0UP, D0DOWN, F)
-        tmp_C .= A\tmp_B
-        tensor_matrix_dict!(tmp_B, D1UP, D1DOWN, F)
-        @tensor Crho0UP = D0UP[i, j] * M₀[i, j]
-        @tensor Crho0DOWN = D0DOWN[i, j] * M₀[i, j]
-        @tensor Crho1UP = D1UP[i, j] * M₀[i, j]
-        @tensor Crho1DOWN = D1DOWN[i, j] * M₀[i, j]
-        Crho0 = Crho0UP + Crho0DOWN
-        Crho1 = Crho1UP + Crho1DOWN
-        return elT(0.5) * (dot(tmp_B, tmp_C) + Crho0*Crho1/Rmax)
+        tensor_matrix_dict!(B, D0UP, D0DOWN, F)
+        W .= A\B
+        tensor_matrix_dict!(B, D1UP, D1DOWN, F)
+        return (dot(B, W) + N^2/Rmax)/2
     end
 end
 
-#--------------------------------------------------------------------
+# ===================================================================
 #                  EXCHANGE CORRELATION ENERGY
-#--------------------------------------------------------------------
-function compute_exchangecorrelation_energy(discretization::KSEDiscretization,
-        model::KSEModel,
-        D::AbstractArray{<:Real})
-    @unpack Rmax, n_spin, fem_integration_method = discretization
+# ===================================================================
+"""
+Compute the exchange–correlation energy for the density matrix `D`.
+"""
+
+function compute_exc_energy(discretization::KSEDiscretization{T}, model::KSEModel,
+                           D::AbstractArray{<:Real}) where T
+    @unpack Rmax, nspin, fem_integration_method = discretization
     @unpack fx, fx2, fy, wy, y, shiftx = fem_integration_method
-    if n_spin == 1
+    if !has_exchcorr(model)
+        return zero(T)
+    end
+    if nspin == 1
         eval_density!(fx, discretization, D, y)
         evaluate_zk!(model; rho = fx, zk = fy, cache = shiftx)
         @. fx = fx * fy * y^2
@@ -169,13 +168,13 @@ function compute_exchangecorrelation_energy(discretization::KSEDiscretization,
     end
 end
 
+#=
 function compute_kinetic_correlation_energy!(discretization::KSEDiscretization,
         model::KSEModel,
         D::AbstractArray{<:Real})
-    @unpack Rmax, n_spin = discretization
-    elT = eltype(discretization)
-    if n_spin == 1
-        return zero(elT)
+    @unpack Rmax, nspin = discretization
+    if nspin == 1
+        return zero(Rmax)
     end
     @views DUP = D[:, :, 1]
     @views DDOWN = D[:, :, 2]
@@ -194,3 +193,4 @@ function compute_kinetic_correlation_energy!(discretization::KSEDiscretization,
     solver.energy_kincor = 4π * solve(prob, QuadGKJL(); reltol = 1e-10, abstol = 1e-10).u
     nothing
 end
+=#
