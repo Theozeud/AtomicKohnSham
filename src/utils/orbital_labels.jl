@@ -128,13 +128,3 @@ function shell_string(t::Tuple; style=:arrow)
         error("Tuple must be (n,l) or (n,l,σ)")
     end
 end
-
-# -------------------------
-# Examples
-# -------------------------
-# parse_shell("2s")     -> (2,0)
-# parse_shell("1sUP")   -> (1,0,1)
-# parse_shell("1s↓")    -> (1,0,2)
-# shell_string((2,0))           -> "2s"
-# shell_string((1,0,2))         -> "1s↓"
-# shell_string((1,0,2);style=:word) -> "1sDOWN"
