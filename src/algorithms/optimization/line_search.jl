@@ -45,7 +45,7 @@ appropriate nonlinear term `F`.
 function line_search_energy(energy_kin0::T, energy_kin1::T, energy_cou0::T, energy_cou1::T,
                            energy_har0::T, energy_har1::T, energy_har01::T, F::FT = zero(T);
                            nl::Bool = !(F isa Real), maxiter::Int = 100,
-                           abstol::T = esp(T)*10^4, reltol::T = esp(T)*10^4) where {FT,T}
+                           abstol::T = eps(T)*10^4, reltol::T = eps(T)*10^4) where {FT,T}
     A0 = energy_kin0 + energy_cou0
     A1 = energy_kin1 + energy_cou1
     H0 = energy_har0
@@ -76,14 +76,14 @@ function line_search_energy(energy_kin0::T, energy_kin1::T, energy_cou0::T, ener
         return tmin, fmin
     else
         # No nonlinear term : optimization of a quadratic functional on [0,1]
-        tstar = if a > 0
+        tmin = if a > 0
             clamp(-b/(2a), zero(T), one(T))
         else
             f0 = c
             f1 = c + b + a
             f0 <= f1 ? zero(T) : one(T)
         end
-        fmin = c + b*tstar + a*tstar^2
-        return tstar, fmin
+        fmin = c + b*tmin + a*tmin^2
+        return tmin, fmin
     end
 end

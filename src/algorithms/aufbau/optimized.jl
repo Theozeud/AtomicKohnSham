@@ -28,7 +28,7 @@ end
 
 
 """
-    OptimizedAufbauCache(discretization, aufbau)
+    OptimizedAufbauCache
 
 Cache structure for `OptimizedAufbau`.
 
@@ -53,7 +53,7 @@ mutable struct OptimizedAufbauCache{T<:Real, D <: AbstractArray{<:Real}, TF} <: 
     function OptimizedAufbauCache(discretization::KSEDiscretization, model::KSEModel,
         aufbau::OptimizedAufbau)
         @unpack max_degen, tol, handle_degen_spin_1iter = aufbau
-        ϵ = zero_orbitals_energy(discretization)
+        ϵ = zero_orbitals_energies(discretization)
         ϵvec = zero(vec(ϵ))
         indices_sort = zeros(Int,length(ϵ))
         indices_block = zeros(Int,max_degen)
@@ -83,11 +83,14 @@ end
 
 
 """
-    aufbau!(cache, solver)
+    aufbau!(n, ϵ, U, model, discretization, aufbau, niter; verbose=0)
 
-Fill orbital occupations using the Aufbau principle.
-Handles simple degeneracies (two orbitals) and updates
-density and energies when needed.
+Assign Kohn–Sham orbital occupations according to the Aufbau principle.
+
+Orbitals are filled in increasing energy order, with automatic handling of
+simple degeneracies (up to twofold). Fractional occupations are assigned when
+the last occupied shell is partially filled. The occupation array `n` is
+updated in place.
 """
 function aufbau!(n::AbstractArray{<:Real}, ϵ::AbstractArray{<:Real},U::AbstractArray{<:Real},
     model::KSEModel, discretization::KSEDiscretization, aufbau::OptimizedAufbauCache,
@@ -224,7 +227,7 @@ function resolve_twofold_degeneracy!(
     niter::Int
 )
     @unpack indices_block, handle_degen_spin_1iter, degen_block, energies,
-            D1, D2, D_buf, F = aufbau
+            D1, D2, F = aufbau
 
     l1,k1,σ1 = convert_index(discretization, indices_block[1])
     l2,k2,σ2 = convert_index(discretization, indices_block[2])
@@ -276,7 +279,7 @@ function resolve_twofold_degeneracy!(
     energy_har01 = compute_hartree_mix_energy(discretization, D1, D2)
 
     # FIND THE OPTIMUM OCCUPATION
-    tdegen, energies[:Etot] = line_search_energy(
+    tdegen, energies.Etot = line_search_energy(
         energy_kin0, energy_kin1,
         energy_cou0, energy_cou1,
         energy_har0, energy_har1,
@@ -291,9 +294,9 @@ function resolve_twofold_degeneracy!(
 
     # UPDATE THE ENERGIES
     t = tdegen
-    energies[:Ekin] = t*energy_kin0 + (1-t)*energy_kin1
-    energies[:Ecou] = t*energy_cou0 + (1-t)*energy_cou1
-    energies[:Ehar] = t^2*energy_har0 + (1-t)^2*energy_har1 +
-                        t * (1-t) * (energy_har01 + energy_har10)
-    energies[:Eexc] = energies[:Etot]-energies[:Ekin]-energies[:Ecou]-energies[:Ehar]
+    energies.Ekin = t*energy_kin0 + (1-t)*energy_kin1
+    energies.Ecou = t*energy_cou0 + (1-t)*energy_cou1
+    energies.Ehar = t^2*energy_har0 + (1-t)^2*energy_har1 +
+                        2 * t * (1-t) * energy_har01
+    energies.Eexc = energies.Etot-energies.Ekin-energies.Ecou-energies.Ehar
 end
