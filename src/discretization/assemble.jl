@@ -1,6 +1,9 @@
 # ===================================================================
 #                          Kinetic Matrix
 # ===================================================================
+"""
+Assemble the kinetic operators for all angular momentum channels.
+"""
 function assemble_kinetic!(discretization::KSEDiscretization)
     @unpack A, M₋₂ = discretization.femops
     @unpack Kin = discretization.ksham
@@ -13,6 +16,9 @@ end
 # ===================================================================
 #                          Coulomb Matrix
 # ===================================================================
+"""
+Assemble the nuclear Coulomb potential operator for charge `Z`.
+"""
 function assemble_coulomb!(discretization::KSEDiscretization, Z::Real)
     @unpack M₋₁ = discretization.femops
     @unpack Coulomb = discretization.ksham
@@ -23,6 +29,9 @@ end
 # ===================================================================
 #                          Hartree Matrix
 # ===================================================================
+"""
+Assemble the Hartree potential operator from the current density `D`.
+"""
 function assemble_hartree!(discretization::KSEDiscretization,
                           D::AbstractArray{<:Real}, N::Real, coeff::Real = true)
     @unpack Rmax, cache, nspin = discretization
@@ -48,6 +57,9 @@ end
 # ===================================================================
 #                   Exchange Correlation Matrix
 # ===================================================================
+"""
+Evaluate the radial density at quadrature points from a local FEM stencil.
+"""
 function optimized_eval_density!(ρ::AbstractVector{<:Real},
                                 discretization::KSEDiscretization,
                                 D::AbstractMatrix{<:Real},
@@ -66,7 +78,9 @@ function optimized_eval_density!(ρ::AbstractVector{<:Real},
     ρ
 end
 
-
+"""
+Assemble the exchange–correlation potential operators from the current density `D`.
+"""
 function assemble_exc!(discretization::KSEDiscretization, model::KSEModel,
                       D::AbstractArray{<:Real})
     @unpack basis, nspin, fem_integration_method, cache = discretization
