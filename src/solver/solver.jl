@@ -38,7 +38,6 @@ Run the SCF loop with `solve!(solver)` and build a result object with
 - `logbook`: Logging state and recorded history.
 - `maxiter::Int`: Maximum number of iterations.
 - `verbose::UInt8`: Stored verbosity level.
-
 """
 mutable struct KSESolver{
     D<:KSEDiscretization,
@@ -46,7 +45,8 @@ mutable struct KSESolver{
     A<:SCFAlgorithm,
     C<:SCFCache,
     L<:LogBook,
-    T<:Real
+    T<:Real,
+    B
 }
     niter::Int
     stopping_criteria::T
@@ -56,36 +56,36 @@ mutable struct KSESolver{
     algcache::C
     energies::Energies{T}
     logbook::L
+    callback::B
     maxiter::Int
     verbose::UInt8
 
-    function KSESolver(model::M, discretization::D, alg::A;
-                        logconfig::LogConfig = LogConfig(),
-                        maxiter::Int = 100, verbose::Int = 0) where {D<:KSEDiscretization,
-                        M<:KSEModel, A<:SCFAlgorithm}
-            # Data type of numbers
-            T = eltype(discretization)
-            # Initial numbers
-            niter = 0
-            stopping_criteria = zero(T)
-            energies = Energies(T)
-            # Init cache of the discretization
-            init_cache!(discretization, model)
-            # Create the cache of the algorithm
-            algcache = create_cache_alg(alg, discretization, model)
-            # Create the logbook
-            logbook = LogBook(logconfig, T, energies, alg)
-            return new{D, M, A, typeof(algcache), typeof(logbook), T}(
-                niter,
-                stopping_criteria,
-                discretization,
-                model,
-                alg,
-                algcache,
-                energies,
-                logbook,
-                Int(maxiter),
-                UInt8(verbose),
-            )
-        end
+    function KSESolver(model::M, discretization::D, alg::A; maxiter::Int = 100,
+                      verbose::Int = 0, callback::B = nothing) where {D<:KSEDiscretization,
+                        M<:KSEModel, A<:SCFAlgorithm, B}
+        # Data type of numbers
+        T = eltype(discretization)
+        # Initial numbers
+        niter = 0
+        stopping_criteria = zero(T)
+        energies = Energies(T)
+        # Init cache of the discretization
+        init_cache!(discretization, model)
+        # Create the cache of the algorithm
+        algcache = create_cache_alg(alg, discretization, model)
+        # Create the logbook
+        logbook = LogBook(T)
+        return new{D, M, A, typeof(algcache), typeof(logbook), T, B}(
+            niter,
+            stopping_criteria,
+            discretization,
+            model,
+            alg,
+            algcache,
+            energies,
+            logbook,
+            callback,
+            Int(maxiter),
+            UInt8(verbose))
+    end
 end
