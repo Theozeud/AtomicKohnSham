@@ -1,29 +1,60 @@
-# ===================================================================
-#                   OPTIMAL DAMPLING ALGORITHM
-# ===================================================================
+"""
+    ODA(; scftol, tinit, frozen_t=false, aufbau=OptimizedAufbau(),
+         maxiter_ls=100, abstol_ls=…, reltol_ls=…)
+
+Optimal Damping Algorithm (ODA) for self-consistent field (SCF) iterations.
+
+`ODA` stabilizes SCF convergence by mixing successive densities using an
+energy-based line search along a linear interpolation path. At each iteration,
+the optimal mixing parameter is determined by minimizing a one-dimensional
+energy model including kinetic, Coulomb, and Hartree contributions, with an
+optional nonlinear correction (e.g. exchange–correlation).
+
+The algorithm supports fractional occupations through a configurable Aufbau
+strategy and can optionally freeze the mixing parameter.
+
+# Keywords
+- `scftol`: Convergence tolerance for the SCF iteration.
+- `tinit`: Initial mixing (relaxation) parameter.
+- `frozen_t`: If `true`, the mixing parameter is kept fixed to `tinit`.
+- `aufbau`: Aufbau method used to fill orbital occupations.
+- `maxiter_ls`: Maximum number of iterations in the line search.
+- `abstol_ls`: Absolute tolerance for the line-search minimization.
+- `reltol_ls`: Relative tolerance for the line-search minimization.
+
+`ODA` is designed to be robust in the presence of degeneracies and large density
+variations, and can be combined with acceleration techniques such as DIIS once
+the SCF iterations are stabilized.
+"""
 struct ODA{T <: Real, AufbauType <: Aufbau} <: SCFAlgorithm
-    scftol::T                   # SCF tolerance
-    tinit::T                    # Initial relaxation parameter
-    frozen_t::Bool              # True if t is not optimized
-    aufbau::AufbauType          # Aufbau Method used
-    maxiter_ls::Int             # Maximum iteration for linesarch
-    abstol_ls::T                # Absolute tolerance for line_search
-    reltol_ls::T                # Relative tolerance for linesearch
+    scftol::T
+    tinit::T
+    frozen_t::Bool
+    aufbau::AufbauType
+    maxiter_ls::Int
+    abstol_ls::T
+    reltol_ls::T
 
     function ODA(;scftol::Real, tinit::Real, frozen_t::Bool = false,
                 aufbau::Aufbau = OptimizedAufbau(), maxiter_ls::Int = 100,
                 abstol_ls = 10^4*eps(typeof(tinit)), reltol_ls = abstol_ls)
 
-        new{typeof(tinit),
-            typeof(aufbau)}(scftol, tinit, frozen_t, aufbau, maxiter_ls,
-                            abstol_ls, reltol_ls)
+        new{typeof(tinit), typeof(aufbau)}(scftol, tinit, frozen_t, aufbau, maxiter_ls,
+                                           abstol_ls, reltol_ls)
     end
 end
 
 
-# ===================================================================
-#                               CACHE
-# ===================================================================
+"""
+    ODACache
+
+Internal workspace for the `ODA` SCF algorithm.
+
+Stores the current/previous densities, orbitals, occupations, and auxiliary buffers
+used during ODA iterations (including line-search state and Aufbau-related data).
+This cache is mutated in-place to avoid allocations inside the SCF loop.
+"""
+
 mutable struct ODACache{T <: Real,
                         DT <: AbstractArray,
                         UT <: AbstractArray,
@@ -50,17 +81,16 @@ mutable struct ODACache{T <: Real,
     F::TF                                       # Nonlinear functional in line_search
 end
 
-
-function create_cache_alg(alg::ODA, discretization::KSEDiscretization, model::KSEModel)
-    elT = eltype(discretization)
-    t = elT(alg.tinit)
+function create_cache_alg(alg::ODA, discretization::KSEDiscretization{T},
+                         model::KSEModel) where T
+    t = T(alg.tinit)
     D = zero_density(discretization)
     Dprev = zero_density(discretization)
     Dbuf = zero_density(discretization)
     U = zero_orbitals_coeffs(discretization)
     ϵ = zero_orbitals_energies(discretization)
     n = zero_occupation_numbers(discretization)
-    energies_prev = Energies(elT)
+    energies_prev = Energies(T)
     aufbaucache = OptimizedAufbauCache(discretization, model, alg.aufbau)
 
     F = if has_exchcorr(model)
@@ -69,62 +99,9 @@ function create_cache_alg(alg::ODA, discretization::KSEDiscretization, model::KS
             compute_exc_energy(discretization, model, Dbuf)
         end
     else
-        zero(elT)
+        zero(T)
     end
 
-    ODACache{ elT, typeof(D), typeof(U), typeof(ϵ), typeof(n), typeof(aufbaucache),
+    ODACache{T, typeof(D), typeof(U), typeof(ϵ), typeof(n), typeof(aufbaucache),
         typeof(F)}(t, D, Dprev, Dbuf, U, ϵ, n, energies_prev, aufbaucache, F)
 end
-
-# ===================================================================
-#                          ODA SOLUTION
-# ===================================================================
-struct ODASolution{ densityType <: AbstractArray,
-                    orbitalsType <: AbstractArray,
-                    orbitalsenergyType <: AbstractArray,
-                    occupationType,
-                    nType <: AbstractArray} <: SCFSolution
-    density_coeffs::densityType                 # Density Matrix at final time
-    orbitals::orbitalsType                      # Coefficient of orbitals at final time
-    orbitals_energy::orbitalsenergyType         # Orbitals energy at final time
-    occupation_number::occupationType           # Occupation number at final time
-    n::nType
-end
-
-function makesolution(cache::ODACache, ::ODA, solver::KSESolver)
-    @unpack ϵ, n = cache
-    index = findall(x->x ≠ 0, n)
-    index_sort = sortperm(ϵ[index])
-    new_index = index[index_sort]
-    occupation = if solver.discretization.nspin == 1
-        [(string(i[2] + i[1] - 1, L_QUANTUM_LABELS[i[1]]), ϵ[i], n[i])
-        for i in new_index]
-    else
-        [(string(i[2] + i[1] - 1, L_QUANTUM_LABELS[i[1]], SPIN_LABELS[i[3]]), ϵ[i], n[i])
-        for i in new_index]
-    end
-    ODASolution{typeof(cache.D), typeof(cache.U), typeof(cache.ϵ),
-    typeof(occupation), typeof(cache.n)}(
-        cache.D, cache.U, cache.ϵ, occupation, cache.n)
-end
-
-
-# ===================================================================
-#                               ODA LOG
-# ===================================================================
-#=
-struct ODALog
-    orbitals::Any
-    orbitals_energy::Any
-    density::Any
-    occupation_number::Any
-end
-
-function create_logbook(::ODA)
-    orbitals = []
-    orbitals_energy = []
-    density = []
-    occupation_number = []
-    ODALog(orbitals, orbitals_energy, density, occupation_number)
-end
-=#

@@ -54,26 +54,6 @@ function monitor(cache::ODACache, ::ODA, ::KSESolver)
     println("Relaxed Parameter : $(cache.t)")
 end
 
-#=
-function register!(cache::ODACache, ::ODA, solver::KSESolver)
-    @unpack D, U, ϵ, n = cache
-    log = solver.logbook.methodlog
-    config = solver.logbook.config.methodlogconfig
-    for k in keys(config)
-        if config[k]
-            if k == :orbitals
-                push!(getfield(log, k), copy(U))
-            elseif k == :orbitals_energy
-                push!(getfield(log, k), copy(ϵ))
-            elseif k == :density
-                push!(getfield(log, k), copy(D))
-            elseif k == :occupation_number
-                push!(getfield(log, k), copy(n))
-            end
-        end
-    end
-end
-=#
 
 """
     find_orbital!(disc, U, ϵ)
