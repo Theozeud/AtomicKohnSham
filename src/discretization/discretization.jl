@@ -354,6 +354,33 @@ function convert_index(discretization::KSEDiscretization, idx::Int)
 end
 
 """
+    convert_index_nl(discretization, idx)
+
+Map the flattened orbital index `idx` to quantum numbers.
+
+Returns `(n, l)` for spin-unpolarized discretizations and `(n, l, σ)` for
+spin-polarized ones, with the convention `n > l` and `n = k + l` (where `k ≥ 1`
+is the radial index).
+"""
+function convert_index_nl(discretization::KSEDiscretization, idx::Int)
+    @unpack lₕ, nₕ, nspin = discretization
+
+    if nspin == 1
+        l = rem(idx - 1, lₕ + 1)
+        k = div(idx - 1, lₕ + 1) + 1
+        n = k + l
+        return (n, l)
+    else
+        σ    = div(idx - 1, (lₕ + 1) * nₕ) + 1
+        idxσ = rem(idx - 1, (lₕ + 1) * nₕ)
+        l    = rem(idxσ, lₕ + 1)
+        k    = div(idxσ, lₕ + 1) + 1
+        n    = k + l
+        return (n, l, σ)
+    end
+end
+
+"""
 Return the (2l+1) or (4l+2) degeneracy associated with a given orbital.
 """
 function degeneracy(discretization::KSEDiscretization, idx::Int)
