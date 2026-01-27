@@ -2,13 +2,13 @@
 #                         MODEL STRUCTURE
 #--------------------------------------------------------------------
 """
-    KSEModel(; z::Real, N::Real, hartree::Real = 0, exc::ExchangeCorrelation = NoExchangeCorrelation())
+    KSEModel(; Z::Real, N::Real, hartree::Real = 0, exc::ExchangeCorrelation = NoExchangeCorrelation())
 
 Structure for storing the parameters of an extended Kohn–Sham model (LDA/LSDA).
 Encodes physical and modeling parameters for atomic or ionic simulations.
 
 # Arguments
-- `z::Real`: Nuclear charge (number of protons).
+- `Z::Real`: Nuclear charge (number of protons).
 - `N::Real`: Number of electrons.
 - `hartree::Real = 0`: Scaling factor for the Hartree term:
     - `0` disables electron-electron repulsion.
@@ -18,7 +18,7 @@ Encodes physical and modeling parameters for atomic or ionic simulations.
 struct KSEModel{T <: Real,
     TEX,
     TCO}
-    z::T                # Charge of the nucleus
+    Z::T                # Charge of the nucleus
     N::T                # Number of electrons
 
     # Coefficient multiply to the Hartree Term :
@@ -32,18 +32,18 @@ struct KSEModel{T <: Real,
     # Spin Polarization
     # 1 -> No Polarization
     # 2 -> Polarisation
-    n_spin::Int
+    nspin::Int
 
-    function KSEModel(; z::Real,
+    function KSEModel(; Z::Real,
                         N::Real,
                         hartree::Real = 1,
                         ex = NoFunctional(1),
                         ec = NoFunctional(1))
-        T = promote_type(typeof(z), typeof(N), typeof(hartree))
-        n_spin = max(ex.n_spin, ec.n_spin)
+        T = promote_type(typeof(Z), typeof(N), typeof(hartree))
+        nspin = max(ex.n_spin, ec.n_spin)
         new{T,
             typeof(ex),
-            typeof(ec)}(T(z), T(N), T(hartree), ex, ec, n_spin)
+            typeof(ec)}(T(Z), T(N), T(hartree), ex, ec, nspin)
     end
 end
 
@@ -96,39 +96,39 @@ end
 #                         SHORT MODEL CONSTRUCTOR
 #--------------------------------------------------------------------
 """
-    RHF(; z::Real, N::Real)
+    RHF(; Z::Real, N::Real)
 
 Convenience constructor for the Hartree–Fock model using the extended Kohn–Sham framework.
 
-Creates a `KSEModel` with the specified nuclear charge `z` and number of electrons `N`, and
+Creates a `KSEModel` with the specified nuclear charge `Z` and number of electrons `N`, and
 disables the exchange–correlation.
 
 # Arguments
-- `z::Real`: Nuclear charge (e.g., 2.0 for helium).
+- `Z::Real`: Nuclear charge (e.g., 2.0 for helium).
 - `N::Real`: Number of electrons.
 
 # Returns
 - `KSEModel` with no exchange–correlation and no Hartree term.
 """
-RHF(; z::Real, N::Real) = KSEModel(z = z, N = N)
+RHF(; Z::Real, N::Real) = KSEModel(Z = Z, N = N)
 
 """
-    Slater(; z::Real, N::Real)
+    Slater(; Z::Real, N::Real)
 
 Convenience constructor for an extended Kohn–Sham model with the Slater exchange functional.
 
-Creates a `KSEModel` with the specified nuclear charge `z` and number of electrons `N`,
+Creates a `KSEModel` with the specified nuclear charge `Z` and number of electrons `N`,
 and uses the Slater exchange-only approximation (no correlation term and no Hartree term).
 
 # Arguments
-- `z::Real`: Nuclear charge (e.g., 10.0 for neon).
+- `Z::Real`: Nuclear charge (e.g., 10.0 for neon).
 - `N::Real`: Number of electrons.
 
 # Returns
 - `KSEModel` using the Slater Xα exchange functional.
 """
-function Slater(; z::Real, N::Real, n_spin::Int = 1)
-    ex = BuiltinFunctional(:lda_x; n_spin = n_spin)
-    ec = NoFunctional(n_spin)
-    return KSEModel(z = z, N = N, ex = ex, ec = ec)
+function Slater(; Z::Real, N::Real, nspin::Int = 1)
+    ex = BuiltinFunctional(:lda_x; nspin = nspin)
+    ec = NoFunctional(nspin)
+    return KSEModel(Z = Z, N = N, ex = ex, ec = ec)
 end

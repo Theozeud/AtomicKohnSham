@@ -6,8 +6,8 @@ implemented to be compared with Libxc.jl and to use higher precision than Float6
 """
 abstract type BuiltinFunctional end
 
-function BuiltinFunctional(identifier::Symbol; n_spin::Int = 1)
-    n_spin in (1, 2) || error("n_spin needs to be 1 or 2")
+function BuiltinFunctional(identifier::Symbol;nspin::Int = 1)
+   nspin in (1, 2) || error("n_spin needs to be 1 or 2")
     if identifier == :lda_x
         return SlaterXα(n_spin)
     else
@@ -21,7 +21,7 @@ is_lda(f::BuiltinFunctional) = f.family == :lda
     NoFunctional
 """
 struct NoFunctional <: BuiltinFunctional
-    n_spin::Int
+   n_spin::Int
 end
 
 function evaluate_functional(
