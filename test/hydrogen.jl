@@ -132,60 +132,20 @@ end
     @test occ[3] == 1.0
 end
 
-#=
-@testset "Hydrogen Slater Spin Polarized" begin
 
+@testset "Hydrogen Perdew Spin Polarized" begin
 
-    Model = ModelParams()
+    # MODEL
+    ex = Functional(:lda_x, n_spin=1)
+    ec = Functional(:lda_c_pw, n_spin=1)
+    # DISCRETIZATION : P1IntLegendreBasis + expmesh
+    Rmax        = 1000
+    Nmesh       = 30
+    ordermax    = 10
+    # ALGORITHM : ODA + Optimized Aufbau
+    maxiter     = 100
+    scftol      = 1e-10
 
-    problem = AtomProblem(;
-        # PRECISION
-        T = Float64,
-        # MODEL
-        z = 1,
-        N = 1,
-        hartree = 1,
-        ex = Functional(:lda_x, n_spin = 2),
-        ec = NoFunctional(2),
-
-        # DISCRETIZATION
-        lh = 0,
-        nh = 1,
-        Nmesh = 10,
-        Rmax = 300,
-        mesh = :exp,
-        optsmesh = (s = 1.5,),
-        basis = :p1intlegendre,
-        optsbasis = (ordermax = 10,),
-        integration_method = GaussLegendre,
-        optsintegration = (npoints = 1000,),
-
-        # ALGORITHME
-        alg = ODA(0.4),
-        scftol = 1e-11,
-        maxiter = 100,
-        degen_tol = 1e-2,
-        verbose = 0)
-
-
-
-    @test_nowarn sol = groundstate(problem)
-    sol = groundstate(problem)
-
-    @test abs(sol.energies[:Ekin] - 0.4065340797823483) < 1e-9
-    @test abs(sol.energies[:Ecou] + 0.9000752049269123) < 1e-9
-    @test abs(sol.energies[:Ehar] - 0.2749225031615249) < 1e-9
-    @test abs(sol.energies[:Eexc] + 0.18791545723754685) < 1e-9
-    @test abs(sol.energies[:Etot] + 0.40653407922058604 ) < 1e-9
-
-    occ = sol.datas.occupation_number[1]
-    @test occ[1] == "1s↑"
-    @test abs(occ[2] + 0.1942500621181194) < 1e-9
-    #@test occ[3] == 0.5
-
-    occ = sol.datas.occupation_number[2]
-    @test occ[1] == "1s↓"
-    @test abs(occ[2] + 0.1942500621181194) < 1e-9
-    #@test occ[3] == 0.5
+    @test_nowarn run_solve(ex, ec, Rmax, Nmesh, ordermax, maxiter, scftol)
+    sol = run_solve(ex, ec, Rmax, Nmesh, ordermax, maxiter, scftol)
 end
-=#
