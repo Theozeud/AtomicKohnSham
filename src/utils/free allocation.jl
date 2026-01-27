@@ -1,22 +1,3 @@
-antiadjoint(z::Complex) = -real(z) + imag(z)
-antiadjoint(z::Real) = -z
-
-function _mul!(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix,
-        D::AbstractMatrix, tmp::AbstractMatrix)
-    # COMPUTE B*C*D -> A USING tmp AS TEMPORY VARIABLES
-    mul!(tmp, C, D)
-    mul!(A, B, tmp)
-end
-
-function _commutator!(
-        A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, tmp::AbstractMatrix)
-    # COMPUTE [B,C] -> A USING tmp AS TEMPORY VARIABLES
-    mul!(A, B, C)
-    mul!(tmp, C, B)
-    @. A -= tmp
-end
-
-
 function flexible_zeros(T::Type, dims::NTuple{N, Int}, lastdim::Int) where {N}
     if lastdim == 1
         return zeros(T, dims...)
@@ -31,4 +12,34 @@ function flexible_zeros(T::Type, firstdim::Int, dims::NTuple{N, Int}) where {N}
     else
         return zeros(T, firstdim, dims...)
     end
+end
+
+function tensor_matrix_dict!(B::AbstractVector{<:Real},
+        D::AbstractMatrix{<:Real},
+        F::Dict{Tuple{Int, Int, Int}, <:Real})
+    fill!(B, zero(eltype(B)))
+    @inbounds for ((i, j, m), F_ijm) in F
+        B[m] += D[i, j] * F_ijm
+    end
+    nothing
+end
+
+function tensor_matrix_dict!(B::AbstractVector{<:Real},
+        DUP::AbstractMatrix{<:Real},
+        DDOWN::AbstractMatrix{<:Real},
+        F::Dict{Tuple{Int, Int, Int}, <:Real})
+    fill!(B, zero(eltype(B)))
+    @inbounds for ((i, j, m), F_ijm) in F
+        B[m] += (DUP[i, j] + DDOWN[i, j]) * F_ijm
+    end
+    nothing
+end
+
+function tensor_vector_dict!(B::AbstractMatrix{<:Real}, D::AbstractVector{<:Real},
+        F::Dict{Tuple{Int, Int, Int}, <:Real})
+    fill!(B, zero(eltype(B)))
+    @inbounds for ((i, j, m), F_ijm) in F
+        B[i, j] += D[m] * F_ijm
+    end
+    nothing
 end

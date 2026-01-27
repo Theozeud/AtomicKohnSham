@@ -1,14 +1,24 @@
-#--------------------------------------------------------------------
+# ===================================================================
 #                             Density
-#--------------------------------------------------------------------
-function density!(discretization::KSEDiscretization,
-        U::AbstractArray{<:Real},
-        n::AbstractArray{<:Real},
-        D::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, Nₕ, n_spin = discretization
-    elT = eltype(discretization)
-    fill!(D, zero(elT))
-    @inbounds for σ in 1:n_spin
+# ===================================================================
+"""
+    density!(discretization, U, n, D)
+
+Assemble the one-particle density matrix `D` from Kohn–Sham orbitals `U`
+and occupation numbers `n`.
+
+The density matrix is constructed as
+    D = ∑ₗₖσ nₗₖσ |Uₗₖσ⟩⟨Uₗₖσ|,
+where the sum runs over angular momentum, radial index, and spin.
+The result is symmetric and stored in-place in `D`.
+"""
+function density!(discretization::KSEDiscretization{T},
+                 U::AbstractArray{<:Real},
+                 n::AbstractArray{<:Real},
+                 D::AbstractArray{<:Real}) where T
+    @unpack lₕ, nₕ, Nₕ, nspin = discretization
+    fill!(D, zero(T))
+    @inbounds for σ in 1:nspin
         @inbounds for k in 1:nₕ
             @inbounds for l in 1:(lₕ + 1)
                 if !iszero(n[l, k, σ])
@@ -30,68 +40,77 @@ function density!(discretization::KSEDiscretization,
     nothing
 end
 
-#--------------------------------------------------------------------
+# ===================================================================
 #                       Evaluation of Density
-#--------------------------------------------------------------------
+# ===================================================================
+"""
+    density!(discretization, U, n, D)
+
+Assemble the one-particle density matrix `D` from Kohn–Sham orbitals `U`
+and occupation numbers `n`.
+
+The density matrix is constructed as
+    D = ∑ₗₖσ nₗₖσ |Uₗₖσ⟩⟨Uₗₖσ|,
+where the sum runs over angular momentum, radial index, and spin.
+The result is symmetric and stored in-place in `D`.
+"""
 function eval_density(discretization::KSEDiscretization,
-        D::AbstractMatrix{<:Real},
-        x::Real)
+                     D::AbstractMatrix{<:Real},
+                     x::Real)
     @unpack basis, cache = discretization
-    @unpack tmp_vect, tmp_C = cache
+    @unpack buf1, buf2 = cache.evalw
     localisation_x = findindex(basis.mesh, x)
     I = basis.cells_to_indices[localisation_x]
-    @views eval_basis = tmp_C[I]
+    @views eval_basis = buf2[I]
     evaluate!(eval_basis, basis, I, x)
-    @views tv = tmp_vect[I]
+    @views tv = buf1[I]
     @views Dview = D[I, I]
     mul!(tv, Dview, eval_basis)
     return 1/(4π*x^2) * dot(eval_basis, tv)
 end
 
+"""
+    eval_density(discretization, D, X)
+
+Evaluate the radial electronic density at all positions in `X`
+from the density matrix `D`.
+
+Returns a vector containing ρ(x) for each x ∈ X.
+"""
 function eval_density(discretization::KSEDiscretization,
-        D::AbstractMatrix{<:Real},
-        X::AbstractVector{<:Real})
+                     D::AbstractMatrix{<:Real},
+                     X::AbstractVector{<:Real})
     newT = promote_type(eltype(D), eltype(X))
     ρ = zeros(newT, length(X))
     eval_density!(ρ, discretization, D, X)
     ρ
 end
 
+"""
+    eval_density!(ρ, discretization, D, X)
+
+Evaluate the radial electronic density at positions `X` from the density
+matrix `D` and store the result in `ρ`.
+
+This in-place version avoids allocations and reuses internal work buffers.
+"""
 function eval_density!(ρ::AbstractVector{<:Real},
-        discretization::KSEDiscretization,
-        D::AbstractMatrix{<:Real},
-        X::AbstractVector{<:Real})
+                      discretization::KSEDiscretization,
+                      D::AbstractMatrix{<:Real},
+                      X::AbstractVector{<:Real})
     @unpack basis, cache = discretization
-    @unpack tmp_vect, tmp_C = cache
+    @unpack buf1, buf2 = cache.evalw
     cache_Pϕx = _cache_Pϕx(basis, first(X))
     @inbounds for k in eachindex(X)
         xk = X[k]
         localisation_xk = findindex(basis.mesh, xk)
         Ik = basis.cells_to_indices[localisation_xk]
-        @views eval_basis = tmp_C[Ik]
+        @views eval_basis = buf2[Ik]
         evaluate!(eval_basis, basis, Ik, xk, cache_Pϕx)
-        @views tv = tmp_vect[Ik]
+        @views tv = buf1[Ik]
         @views Dk = D[Ik, Ik]
         mul!(tv, Dk, eval_basis)
         ρ[k] = 1/(4π*xk^2) * dot(eval_basis, tv)
     end
-    ρ
-end
-
-function optimized_eval_density!(ρ::AbstractVector{<:Real},
-        discretization::KSEDiscretization,
-        D::AbstractMatrix{<:Real},
-        X::AbstractVector{<:Real})
-    @unpack basis, fem_integration_method, mesh = discretization
-    Qgenx = fem_integration_method.Qgenx
-    fill!(ρ, 0)
-    idxmesh = findindex(mesh, first(X))
-    Ib = basis.cells_to_indices[idxmesh]
-    Ig = basis.cells_to_generators[idxmesh]
-    @views DIb = D[Ib, Ib]
-    @views QgenxIg = Qgenx[Ig, Ig, :]
-    @tensor ρ[k] = DIb[i, j] * QgenxIg[i, j, k]
-    @.ρ /= X^2
-    @. ρ *= 1/4π
     ρ
 end

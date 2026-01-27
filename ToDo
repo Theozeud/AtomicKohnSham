@@ -1,2 +1,31 @@
 ## PROBLEM
 - erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
+
+
+# Plan :
+
+- Finir post-process
+
+- Faire les fichiers examples et tests en retravaillant solution et monitor
+
+--> Une fois les fichiers tests marchent. Voir codecov pour voir les fichiers inutiles.
+
+- Optimisation :
+    - prédéclarer la fonction pour l'assemblage de la matrice d'échnage-corrélation
+    - A\tmpC à optimiser
+
+- Quoi Monitorer ?
+---> Penser à un truc qui s'écrit dans un fichier
+
+
+
+# Algorithm à ajouter :
+
+- Ajouter Smeared Aufbau et Frozen Aufbau
+- Algo pour minimiser sur trois orbitales
+- Algo pour tracker le seuil de l'ionisation !
+
+
+Objectif avant les vacances : 
+    --> Code qui tourne normalement sur LDA et LSDA sur Github avec examples et tests !
+
