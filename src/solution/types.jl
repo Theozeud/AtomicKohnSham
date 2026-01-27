@@ -21,7 +21,7 @@ and algorithm-specific data.
 - `log::LogBook`: Object that records iteration history and diagnostics.
 - `name::String`: Name of the solution (can be used for identification, labeling results, etc.).
 """
-struct KSESolution{T <: Real, TD, TU, TE, TN, TO, logbookType <: LogBook, C<:KSEContext}
+struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<:KSEContext}
     success::String                     # Print the final state of the solver
                                         # Can be : SUCCESS or MAXITERS
 
@@ -35,6 +35,8 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, logbookType <: LogBook, C<:KSE
     ϵ::TE                               # Energies of the orbitals
     n::TN                               # Occupations numbers
     occupied::TO                        # Occupied orbitals with energies
+
+    W::TW                               # Coefficients of tha Hartree potential
 
     logbook::logbookType                # LogBook of all recorded quantities
 
@@ -57,6 +59,8 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, logbookType <: LogBook, C<:KSE
         n = getfield_or_nothing(solver.algcache, :n)
         occupied = occupied_orbitals_summary(discretization, n, ϵ)
 
+        W = discretization.cache.hartw.W
+
         # Context
         context = KSEContext(model, alg, lh, nh, basis, fem_integration_method)
 
@@ -66,12 +70,14 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, logbookType <: LogBook, C<:KSE
             typeof(ϵ),
             typeof(n),
             typeof(occupied),
+            typeof(W),
             typeof(logbook),
             typeof(context)}(success,
                              solver.niter,
                              solver.stopping_criteria,
                              solver.energies,
                              D, U, ϵ, n, occupied,
+                             W,
                              solver.logbook,
                              name,
                              context)

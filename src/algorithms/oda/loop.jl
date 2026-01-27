@@ -54,6 +54,10 @@ function monitor(cache::ODACache, ::ODA, ::KSESolver)
     println("Relaxed Parameter : $(cache.t)")
 end
 
+function postcomputations!(::ODACache, solver::KSESolver)
+    @unpack D, discretization, model = solver
+    assemble_hartree_pot!(discretization, D; coeff = model.hartree)
+end
 
 """
     find_orbital!(disc, U, ϵ)

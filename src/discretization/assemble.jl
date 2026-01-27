@@ -30,12 +30,35 @@ end
 #                          Hartree Matrix
 # ===================================================================
 """
+Assemble the Hartree potential function from the current density `D`.
+"""
+function assemble_hartree_pot!(discretization::KSEDiscretization,
+                              D::AbstractArray{<:Real}; coeff::Real = true)
+    @unpack Rmax, cache, nspin = discretization
+    @unpack A, F = discretization.femops
+    @unpack Hartree = discretization.ksham
+    @unpack B, W = cache.hartw
+    if nspin == 1
+        tensor_matrix_dict!(B, D, F)
+        W .= A\B
+    else
+        @views DUP = D[:, :, 1]
+        @views DDOWN = D[:, :, 2]
+        tensor_matrix_dict!(B, DUP, DDOWN, F)
+        W .= A\B
+    end
+    W .*= coeff
+    nothing
+end
+
+
+"""
 Assemble the Hartree potential operator from the current density `D`.
 """
 function assemble_hartree!(discretization::KSEDiscretization,
                           D::AbstractArray{<:Real}, N::Real, coeff::Real = true)
     @unpack Rmax, cache, nspin = discretization
-    @unpack A, M₀, F = discretization.femops
+    @unpack A, F = discretization.femops
     @unpack Hartree = discretization.ksham
     @unpack FW, B, W = cache.hartw
     if nspin == 1
@@ -72,6 +95,9 @@ function optimized_eval_density!(ρ::AbstractVector{<:Real},
     Ig = basis.cells_to_generators[idxmesh]
     @views DIb = D[Ib, Ib]
     @views QgenxIg = Qgenx[Ig, Ig, :]
+    @show size(ρ)
+    @show size(DIb)
+    @show size(QgenxIg)
     @tensor ρ[k] = DIb[i, j] * QgenxIg[i, j, k]
     @.ρ /= X^2
     @. ρ *= 1/4π
@@ -89,7 +115,7 @@ function assemble_exc!(discretization::KSEDiscretization, model::KSEModel,
     if nspin == 1
         function _weight!(Y::AbstractVector, X::AbstractVector)
             optimized_eval_density!(ρ_buf, discretization, D, X)
-            evaluate_vrho!(model; vrho = Y, rho = ρ_buf, cache = tmp_vρ)
+            evaluate_vrho!(model; vrho = Y, rho = ρ_buf, cache = vρ_buf)
         end
         weight = FunWeight(_weight!; is_inplace = true, is_vectorized = true)
         fill!(VxcUP, 0)
@@ -103,9 +129,9 @@ function assemble_exc!(discretization::KSEDiscretization, model::KSEModel,
             @views ρ_buf_down = ρ_buf[2, :]
             optimized_eval_density!(ρ_buf_up, discretization, DUP, X)
             optimized_eval_density!(ρ_buf_down, discretization, DDOWN, X)
-            evaluate_vrho!(model; vrho = tmp_vρ2, rho = ρ_buf, cache = tmp_vρ)
-            @views tmp_vρ2up = tmp_vρ2[1, :]
-            Y .= tmp_vρ2up
+            evaluate_vrho!(model; vrho = vρ_buf2, rho = ρ_buf, cache = vρ_buf)
+            @views vρ_buf2up = vρ_buf2[1, :]
+            Y .= vρ_buf2up
         end
 
         function _weight_down!(Y::AbstractVector, X::AbstractVector)
@@ -113,9 +139,9 @@ function assemble_exc!(discretization::KSEDiscretization, model::KSEModel,
             @views ρ_buf_down = ρ_buf[2, :]
             optimized_eval_density!(ρ_buf_up, discretization, DUP, X)
             optimized_eval_density!(ρ_buf_down, discretization, DDOWN, X)
-            evaluate_vrho!(model; vrho = tmp_vρ2, rho = ρ_buf, cache = tmp_vρ)
-            @views tmp_vρ2down = tmp_vρ2[2, :]
-            Y .= tmp_vρ2down
+            evaluate_vrho!(model; vrho = vρ_buf2, rho = ρ_buf, cache = vρ_buf)
+            @views vρ_buf2down = vρ_buf2[2, :]
+            Y .= vρ_buf2down
         end
 
         weightUP = FunWeight(_weight_up!; is_inplace = true, is_vectorized = true)
