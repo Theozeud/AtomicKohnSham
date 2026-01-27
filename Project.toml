@@ -32,12 +32,8 @@ Printf = "1.11.0"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
-Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [targets]
-examples = ["CairoMakie", "DoubleFloats"]
 test = ["Test", "DoubleFloats", "Aqua"]
