@@ -58,7 +58,7 @@ Assemble the Hartree potential operator from the current density `D`.
 function assemble_hartree!(discretization::KSEDiscretization,
                           D::AbstractArray{<:Real}, N::Real, coeff::Real = true)
     @unpack Rmax, cache, nspin = discretization
-    @unpack A, F = discretization.femops
+    @unpack A, F, M₀ = discretization.femops
     @unpack Hartree = discretization.ksham
     @unpack FW, B, W = cache.hartw
     if nspin == 1

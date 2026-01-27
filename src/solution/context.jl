@@ -8,7 +8,7 @@ method required to interpret and post-process a converged Kohn–Sham solution.
 This structure is independent of the SCF solver state and contains no mutable
 workspaces.
 """
-struct KSEContext{M<: KSEModel, B<:FEMBasis, F<: FEMIntegrationMethod}
+struct KSEContext{M<: KSEModel, B<:FEMBasis, F<: FEMIntegrationMethod, A<:SCFAlgorithm}
     model::M
     alg::A
     lh::Int

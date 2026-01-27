@@ -20,7 +20,7 @@ is_lda(f::BuiltinFunctional) = f.family == :lda
 """
     NoFunctional
 """
-struct NoFunctional <: BuiltinFunctional
+@Base.kwdef struct NoFunctional <: BuiltinFunctional
    n_spin::Int
 end
 

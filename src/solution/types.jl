@@ -47,7 +47,7 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
     function KSESolution(solver::KSESolver, name::String)
 
         @unpack model, alg, logbook, discretization = solver
-        @unpack lh, nh, fem_integration_method
+        @unpack lₕ, nₕ, fem_integration_method, basis = discretization
 
         # Status of the solver
         success = solver.niter == solver.maxiter ? "MAXITERS" : "SUCCESS"
@@ -62,11 +62,11 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
         W = discretization.cache.hartw.W
 
         # Context
-        context = KSEContext(model, alg, lh, nh, basis, fem_integration_method)
+        context = KSEContext(model, alg, lₕ, nₕ, basis, fem_integration_method)
 
         new{eltype(discretization),
             typeof(D),
-            tyepof(U),
+            typeof(U),
             typeof(ϵ),
             typeof(n),
             typeof(occupied),
@@ -104,7 +104,7 @@ Return the coefficients of the one-particle reduced density.
 """
 density_matrix(sol) = sol.D
 
-
+getfield_or_nothing(x, s::Symbol) = getfield_or_nothing(x, Val(s))
 @generated function getfield_or_nothing(x, ::Val{s}) where {s}
     if s ∈ fieldnames(x)
         :(getfield(x, s))
@@ -116,7 +116,7 @@ end
 
 function occupied_orbitals_summary(discretization::KSEDiscretization, n::AbstractArray{T},
                                   ϵ::AbstractArray{T}) where T <: Real
-    index = findall(x->x ≠ 0, n)
+    index = findall(x->x ≠ 0, vec(n))
     index_sort = sortperm(ϵ[index])
     new_index = index[index_sort]
     [(shell_string(convert_index_nl(discretization, i)), ϵ[i], n[i]) for i in new_index]

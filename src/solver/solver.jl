@@ -23,7 +23,6 @@ Run the SCF loop with `solve!(solver)` and build a result object with
 
 # Keyword arguments
 - `maxiter::Int = 100`: Maximum number of SCF iterations.
-- `logconfig::LogConfig = LogConfig()`: Logging configuration.
 - `verbose::Int = 0`: Verbosity level
   (`0`: silent, `1`: iterations, `2`: + basic metrics, `3`: + method-specific details).
 
@@ -62,7 +61,7 @@ mutable struct KSESolver{
 
     function KSESolver(model::M, discretization::D, alg::A; maxiter::Int = 100,
                       verbose::Int = 0, callback::B = nothing) where {D<:KSEDiscretization,
-                        M<:KSEModel, A<:SCFAlgorithm, B}
+                      M<:KSEModel, A<:SCFAlgorithm, B}
         # Data type of numbers
         T = eltype(discretization)
         # Initial numbers

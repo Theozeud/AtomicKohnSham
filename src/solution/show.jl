@@ -1,65 +1,23 @@
-# Nombre de chiffres significatifs "raisonnable" dérivé de eps(T)
-# (Float64 -> ~16, Float32 -> ~7, etc.)
-_sig_digits(::Type{T}) where {T} = T <: AbstractFloat ? max(1, floor(Int, -log10(eps(one(T)))) + 1) : 6
+using Printf
 
-# Largeur "safe" de l'exposant (pour couvrir e-..., e+...)
-_exp_digits(::Type{T}) where {T} = T <: AbstractFloat ? length(string(abs(exponent(floatmax(T))))) : 3
+_sig_digits(::Type{T}) where {T} = max(1, floor(Int, -log10(eps(one(T)))) + 1)
 
-# Format scientifique sans Printf :
-# ex: "-1.2345e-123"
-function _sci_str(x::T; sig::Int=_sig_digits(T)) where {T}
-    # Gestion des cas simples
+function _sci_str(x::T; sig::Int = _sig_digits(T)) where {T}
     if x == 0
         return "0.0e+0"
     end
     if !isfinite(x)
-        return string(x)  # "Inf", "-Inf", "NaN"
+        return string(x)
     end
-
-    sgn = x < 0 ? "-" : ""
-    ax  = abs(x)
-
-    # Exposant décimal
-    e = floor(Int, log10(ax))
-    # Mantisse dans [1,10)
-    m = ax / (T(10)^e)
-
-    # Arrondi à sig chiffres significatifs
-    # (on arrondit sur la mantisse)
-    if sig > 1
-        scale = T(10)^(sig - 1)
-        m = round(m * scale) / scale
-        # Si l'arrondi fait passer à 10.0, on renormalise
-        if m ≥ 10
-            m /= 10
-            e += 1
-        end
-    else
-        m = round(m)
-        if m ≥ 10
-            m /= 10
-            e += 1
-        end
-    end
-
-    # On force un point décimal pour la stabilité d'affichage
-    ms = string(m)
-    if !occursin(".", ms)
-        ms *= ".0"
-    end
-
-    esign = e ≥ 0 ? "+" : "-"
-    return sgn * ms * "e" * esign * string(abs(e))
+    prec = max(sig - 1, 0)
+    s = @sprintf("%.*e", prec, x)
+    return s
 end
 
-# Largeur de colonne "ε = ..." déterminée automatiquement (marge incluse)
 function _eps_col_width(::Type{T}; extra=4) where {T}
     sig = _sig_digits(T)
-    ed  = _exp_digits(T)
-
-    # worst-case approx: "-d." + (sig-1 digits) + "e" + sign + expdigits
-    # => 1(sign) + 1(digit) + 1(dot) + (sig-1) + 1(e) + 1(exp sign) + ed
-    base = 1 + 1 + 1 + max(sig-1, 0) + 1 + 1 + ed
+    smax = _sci_str(floatmax(T); sig=sig)
+    base = max(length(smax), length("-" * smax))
     return length("ε = ") + base + extra
 end
 
@@ -76,18 +34,12 @@ function Base.show(io::IO, sol::KSESolution{T}) where {T}
     printstyled(io, "Stopping criteria = "; bold = true)
     println(io, string(sol.stopping_criteria))
 
-    #=
-    printstyled(io, "All Energies :\n"; bold = true, color = :green)
-    for s in keys(sol.energies)
-        printstyled(io, "            $(s) = $(sol.energies[s]) \n"; bold = true, color = :green)
-    end
-    =#
     printstyled(io, "Occupation number = \n"; bold = true, color = :blue)
 
     sig = _sig_digits(T)
-    eps_col_width = _eps_col_width(T; extra=4)
+    eps_col_width = _eps_col_width(T; extra=2)
 
-    for occ in sol.occupation_number
+    for occ in sol.occupied
         orb = occ[1]
         ϵ   = occ[2]
         n   = occ[3]
