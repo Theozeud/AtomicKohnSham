@@ -21,7 +21,7 @@ and algorithm-specific data.
 - `log::LogBook`: Object that records iteration history and diagnostics.
 - `name::String`: Name of the solution (can be used for identification, labeling results, etc.).
 """
-struct KSESolution{ T <: Real, TD, TU, TE, TN, TO, logbookType <: LogBook, C<:KSEContext}
+struct KSESolution{T <: Real, TD, TU, TE, TN, TO, logbookType <: LogBook, C<:KSEContext}
     success::String                     # Print the final state of the solver
                                         # Can be : SUCCESS or MAXITERS
 
