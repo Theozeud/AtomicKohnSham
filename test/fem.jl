@@ -30,8 +30,8 @@
     @test length(poly_mesh) == n
 
     # EXPONENTIAL MESH
-    @test_nowarn polynomialmesh(a, b, n; T = T, s = s)
-    exp_mesh = polynomialmesh(a, b, n; T = T, s = s)
+    @test_nowarn expmesh(a, b, n; T = T, s = s)
+    exp_mesh = expmesh(a, b, n; T = T, s = s)
     @test eltype(exp_mesh) == T
     @test first(exp_mesh) == a
     @test last(exp_mesh) == b
@@ -49,9 +49,9 @@ end
     n = 3
     T = Float64
     s = 0.9
-    exp_mesh = polynomialmesh(a, b, n; T = T, s = s)
+    mesh = polynomialmesh(a, b, n; T = T, s = s)
 
-    basis = P1IntLegendreBasis(exp_mesh, T; ordermax = 2)
+    basis = P1IntLegendreBasis(mesh, T; ordermax = 2)
 
     # Overlap Matrix
     @test_nowarn mass_matrix(basis)
