@@ -93,11 +93,10 @@ function optimized_eval_density!(ρ::AbstractVector{<:Real},
     idxmesh = findindex(basis.mesh, first(X))
     Ib = basis.cells_to_indices[idxmesh]
     Ig = basis.cells_to_generators[idxmesh]
+    a = Int(sqrt(size(Qgenx, 1)))
+    Qgenxreshape = reshape(Qgenx, a, a, size(Qgenx, 2))
     @views DIb = D[Ib, Ib]
-    @views QgenxIg = Qgenx[Ig, Ig, :]
-    @show size(ρ)
-    @show size(DIb)
-    @show size(QgenxIg)
+    @views QgenxIg = Qgenxreshape[Ig, Ig, :]
     @tensor ρ[k] = DIb[i, j] * QgenxIg[i, j, k]
     @.ρ /= X^2
     @. ρ *= 1/4π
