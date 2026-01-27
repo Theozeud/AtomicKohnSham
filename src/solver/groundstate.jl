@@ -19,7 +19,7 @@ algorithm.
 # Returns
 - `KSESolution`: Ground-state solution including orbitals, energies, density, etc.
 """
-function groundstate(model::KSEModel, discretization::KSEDiscretization, alg::SCFAlgorithm,
+function groundstate(model::KSEModel, discretization::KSEDiscretization, alg::SCFAlgorithm;
                     kwargs...)
     @unpack Z,N = model
     name = if  floor(Z) == Z
@@ -113,11 +113,11 @@ function monitor(solver::KSESolver)
         println("Iteration : $(solver.niter)")
     end
     if solver.verbose > 1
-        println("Selected Method : $(name(solver.alg))")
+        #println("Selected Method : $(name(solver.alg))")
         println("Stopping criteria: $(solver.stopping_criteria)")
         println("Total Energy: $(solver.energies.Etot)")
     end
     if solver.verbose > 2
-        monitor(solver.cache, solver.alg, solver)
+        #monitor(solver.cache, solver.alg, solver)
     end
 end
