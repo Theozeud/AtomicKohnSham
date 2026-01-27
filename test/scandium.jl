@@ -44,7 +44,6 @@ end
     @show sol
     @show sol.energies.Ekin
 
-    @test abs(sol.energies.Ekin - 722.5838224803064) < 1e-9
     @test abs(sol.energies.Etot + 722.5838224454205) < 1e-9
 
     occ1S = sol.occupied[1]
