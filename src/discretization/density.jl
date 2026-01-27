@@ -99,7 +99,7 @@ function eval_density!(ρ::AbstractVector{<:Real},
                       D::AbstractMatrix{<:Real},
                       X::AbstractVector{<:Real})
     @unpack basis, cache = discretization
-    @unpack buf1, buf2 = cache
+    @unpack buf1, buf2 = cache.evalw
     cache_Pϕx = _cache_Pϕx(basis, first(X))
     @inbounds for k in eachindex(X)
         xk = X[k]
