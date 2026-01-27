@@ -1,5 +1,4 @@
 using CairoMakie
-using Random
 
 CairoMakie.activate!()
 
