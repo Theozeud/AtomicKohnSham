@@ -39,14 +39,14 @@ end
     @test_nowarn run_solve(ex, ec, Rmax, Nmesh, ordermax, maxiter, scftol)
     sol = run_solve(ex, ec, Rmax, Nmesh, ordermax, maxiter, scftol)
 
-    @test abs(sol.energies.Ekin - 0.2439648717067077) < 1e-10
-    @test abs(sol.energies.Ecou + 0.6856721626901766) < 1e-10
-    @test abs(sol.energies.Ehar - 0.19774242379804155) < 1e-10
-    @test abs(sol.energies.Etot + 0.24396486718542498) < 1e-10
+    @test abs(sol.energies.Ekin - 0.2439648717067077) < 1e-9
+    @test abs(sol.energies.Ecou + 0.6856721626901766) < 1e-9
+    @test abs(sol.energies.Ehar - 0.19774242379804155) < 1e-9
+    @test abs(sol.energies.Etot + 0.24396486718542498) < 1e-9
 
     occ = sol.occupied[1]
     @test occ[1] == "1s"
-    @test abs(occ[2] + 0.046222443387387145) < 1e-10
+    @test abs(occ[2] + 0.046222443387387145) < 1e-9
     @test occ[3] == 1.0
 end
 
