@@ -136,8 +136,8 @@ end
 @testset "Hydrogen Perdew Spin Polarized" begin
 
     # MODEL
-    ex = Functional(:lda_x, n_spin=1)
-    ec = Functional(:lda_c_pw, n_spin=1)
+    ex = Functional(:lda_x, n_spin=2)
+    ec = Functional(:lda_c_pw, n_spin=2)
     # DISCRETIZATION : P1IntLegendreBasis + expmesh
     Rmax        = 1000
     Nmesh       = 30
