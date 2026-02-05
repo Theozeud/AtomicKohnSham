@@ -81,6 +81,10 @@ mutable struct OptimizedAufbauCache{T<:Real, D <: AbstractArray{<:Real}, TF} <: 
     end
 end
 
+function create_cache_aufbau(discretization::KSEDiscretization, model::KSEModel,
+        aufbau::OptimizedAufbau)
+    OptimizedAufbauCache(discretization, model, aufbau)
+end
 
 """
     aufbau!(n, ϵ, U, model, discretization, aufbau, niter; verbose=0)

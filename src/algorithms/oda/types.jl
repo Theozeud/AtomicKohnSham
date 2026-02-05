@@ -91,7 +91,7 @@ function create_cache_alg(alg::ODA, discretization::KSEDiscretization{T},
     ϵ = zero_orbitals_energies(discretization)
     n = zero_occupation_numbers(discretization)
     energies_prev = Energies(T)
-    aufbaucache = OptimizedAufbauCache(discretization, model, alg.aufbau)
+    aufbaucache = create_cache_aufbau(discretization, model, alg.aufbau)
 
     F = if has_exchcorr(model)
         t -> begin
