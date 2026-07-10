@@ -138,6 +138,14 @@ function exprange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R
 end
 
+"""
+    expmesh(a::Real, b::Real, n::Int; T = Float64, s::Real)
+
+Build an exponentially graded `Mesh` of `n` points on `[a, b]`, denser near
+`a` for `s > 1`. Recommended for atomic radial problems, with `s` between 1
+and 2, to resolve the orbitals' fast variation near the nucleus while still
+covering a large `Rmax`.
+"""
 function expmesh(a::Real, b::Real, n::Int; T = Float64, s::Real)
     Mesh(exprange(a, b, n; T = T, s = s), "Exponential Mesh", (s = s,))
 end

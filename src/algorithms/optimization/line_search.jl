@@ -54,31 +54,16 @@ function line_search_energy(energy_kin0::T, energy_kin1::T, energy_cou0::T, ener
     a = H0 + H1 - 2*H01
     b = (A0 - A1) + 2*(H01 - H1)
     c = A1 + H1
-    @show nl
     if nl
         # Perform the optimization through the Brent method
         function f(t::DT) where DT
             a*t^2 + b*t + c + F(t)
         end
-        X = LinRange(0,1,50)
-        fX = f.(X)
-        println(fX)
 
         res = optimize(f, zero(T), one(T), Brent();
                 abs_tol=abstol, rel_tol=reltol, iterations=maxiter)
         fmin = res.minimum
         tmin = res.minimizer
-        #@show (tmin, fmin)
-        #=
-        f0 = f(zero(T))
-        f1 = f(one(T))
-        return tmin, fmin
-        if f0 <= fmin && f0 <= f1
-            return zero(T), f0
-        elseif f1 <= fmin && f1 <= f0
-            return one(T), f1
-        end
-        =#
         return tmin, fmin
     else
         # No nonlinear term : optimization of a quadratic functional on [0,1]

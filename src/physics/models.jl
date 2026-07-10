@@ -2,7 +2,7 @@
 #                         MODEL STRUCTURE
 #--------------------------------------------------------------------
 """
-    KSEModel(; Z::Real, N::Real, hartree::Real = 0, exc::ExchangeCorrelation = NoExchangeCorrelation())
+    KSEModel(; Z::Real, N::Real, hartree::Real = 1, ex = NoFunctional(1), ec = NoFunctional(1))
 
 Structure for storing the parameters of an extended Kohn–Sham model (LDA/LSDA).
 Encodes physical and modeling parameters for atomic or ionic simulations.
@@ -10,10 +10,11 @@ Encodes physical and modeling parameters for atomic or ionic simulations.
 # Arguments
 - `Z::Real`: Nuclear charge (number of protons).
 - `N::Real`: Number of electrons.
-- `hartree::Real = 0`: Scaling factor for the Hartree term:
+- `hartree::Real = 1`: Scaling factor for the Hartree term:
     - `0` disables electron-electron repulsion.
     - `1` uses the full Hartree interaction.
-- `exc::ExchangeCorrelation = NoExchangeCorrelation()`: Exchange–correlation model used in the simulation.
+- `ex`: Exchange functional (e.g. a Libxc `Functional`, or `NoFunctional(nspin)` to disable it).
+- `ec`: Correlation functional (same convention as `ex`).
 """
 struct KSEModel{T <: Real,
     TEX,

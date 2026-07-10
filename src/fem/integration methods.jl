@@ -6,6 +6,17 @@ struct ExactIntegration <: FEMIntegrationMethod end
 
 abstract type QuadratureIntegration <: FEMIntegrationMethod end
 
+"""
+    GaussLegendre(basis::FEMBasis, npoints::Int = 1000)
+
+Gauss–Legendre quadrature method for FEM matrix assembly and energy
+integrals, with `npoints` points per mesh cell.
+
+Precomputes and caches the quadrature nodes/weights (rescaled to each
+reference cell and to the full radial domain `[0, Rmax]`), together with the
+FEM generator polynomials evaluated at the nodes, so that repeated
+assemblies during the SCF loop avoid recomputing them.
+"""
 struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
     npoints::Int
     # FOR FEM MATRIX COMPUTATIONS
