@@ -138,11 +138,26 @@ module AtomicKohnSham
     export KSEContext
     include("solution/context.jl")
 
-    export KSESolution, eigenvector, eval_density
+    export KSESolution
+    export eval_orbital, eval_density, eval_hartree, eval_nuclear,
+        eval_kinetic_potential, eval_vxc, eval_effective_potential
     include("solution/types.jl")
     include("solution/show.jl")
     include("solution/postprocess.jl")
 
+    export write_report
+    include("solution/report.jl")
+
     export groundstate
     include("solver/groundstate.jl")
+
+    export LogFileCallback, write_log_header
+    include("solver/logging.jl")
+
+    # =====================================
+    #             PLOTTING (extension)
+    # =====================================
+    export plot_density, plot_orbitals, plot_potentials, plot_convergence,
+        plot_energy_breakdown
+    include("solution/plotting_stubs.jl")
 end

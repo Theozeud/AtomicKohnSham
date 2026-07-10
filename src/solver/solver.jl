@@ -3,18 +3,19 @@
               discretization::KSEDiscretization,
               alg::SCFAlgorithm;
               maxiter::Int = 100,
-              logconfig::LogConfig = LogConfig(),
-              verbose::Int = 0) -> KSESolver
+              callback = nothing) -> KSESolver
 
 Create a solver for the radial Kohn–Sham extended (KSE) equations, using a given
 `model`, `discretization`, and SCF algorithm `alg`.
 
 A `KSESolver` holds all state required to run an iterative SCF procedure:
 the discretization and model, the chosen SCF algorithm and its workspace (cache),
-the current energy components, and logging/monitoring data.
+the current energy components, and logging data.
 
 Run the SCF loop with `solve!(solver)` and build a result object with
-`KSESolution(solver)`.
+`KSESolution(solver)`. For per-iteration diagnostics, pass a callback (e.g.
+[`LogFileCallback`](@ref), wrapped in a [`CallbackSet`](@ref)) rather than a
+verbosity level — it can write to `stdout` just as well as to a file.
 
 # Arguments
 - `model::KSEModel`: Physical model.
@@ -23,8 +24,8 @@ Run the SCF loop with `solve!(solver)` and build a result object with
 
 # Keyword arguments
 - `maxiter::Int = 100`: Maximum number of SCF iterations.
-- `verbose::Int = 0`: Verbosity level
-  (`0`: silent, `1`: iterations, `2`: + basic metrics, `3`: + method-specific details).
+- `callback = nothing`: Callback (or [`CallbackSet`](@ref)) invoked once per
+  SCF iteration.
 
 # Fields
 - `niter::Int`: Number of completed SCF iterations.
@@ -36,7 +37,6 @@ Run the SCF loop with `solve!(solver)` and build a result object with
 - `energies::Energies{T}`: Current energy decomposition.
 - `logbook`: Logging state and recorded history.
 - `maxiter::Int`: Maximum number of iterations.
-- `verbose::UInt8`: Stored verbosity level.
 """
 mutable struct KSESolver{
     D<:KSEDiscretization,
@@ -57,10 +57,9 @@ mutable struct KSESolver{
     logbook::L
     callback::B
     maxiter::Int
-    verbose::UInt8
 
     function KSESolver(model::M, discretization::D, alg::A; maxiter::Int = 100,
-                      verbose::Int = 0, callback::B = nothing) where {D<:KSEDiscretization,
+                      callback::B = nothing) where {D<:KSEDiscretization,
                       M<:KSEModel, A<:SCFAlgorithm, B}
         # Data type of numbers
         T = eltype(discretization)
@@ -84,7 +83,6 @@ mutable struct KSESolver{
             energies,
             logbook,
             callback,
-            Int(maxiter),
-            UInt8(verbose))
+            Int(maxiter))
     end
 end

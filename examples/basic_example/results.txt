@@ -1,0 +1,54 @@
+Name    = Sodium
+Success = SUCCESS
+niter   = 23
+Final stopping criterion = 4.1880747572131607e-10
+Data type = Float64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 11
+    N (electrons)          = 11
+    Hartree coefficient    = 1
+    Exchange functional    = Slater exchange
+    Correlation functional = None
+    Spin channels          = 1
+
+  Discretization
+    Angular momentum cutoff (lh) = 2
+    Orbitals per channel (nh)    = 10
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 189
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 500.0
+    Number of mesh points        = 20
+    Integration method           = GaussLegendre (npoints = 2000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-9
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 2.220446049250313e-12
+    reltol_ls  = 2.220446049250313e-12
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.1
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 160.62822758976333
+  Ecou (nuclear attraction)   = -388.0065460102036
+  Ehar (Hartree)              = 79.43155311220941
+  Eexc (exchange-correlation) = -12.681462288333748
+  Etot (total)                = -160.6282275965646
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s : ε = -3.764758179800140e+01        n = 2.0
+            2s : ε = -2.007737456697868e+00        n = 2.0
+            2p : ε = -1.006028995427625e+00        n = 6.0
+            3s : ε = -7.701608721789199e-02        n = 0.999999999991612
+            3p : ε = -1.111637731682302e-02        n = 8.387956995647983e-12

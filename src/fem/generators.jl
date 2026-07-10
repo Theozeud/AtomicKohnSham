@@ -68,6 +68,14 @@ function getderivpolynomial(p1ilg::P1IntLegendreGenerator, I::AbstractVector{Int
     p1ilg.derivpolynomials[I]
 end
 
+"""
+    P1IntLegendreBasis(mesh::Mesh, T::Type = Float64; ordermax::Int)
+
+Build the hierarchical FEM basis on `mesh`: a `P1` "hat" function at each
+mesh node plus, within each cell, integrated Legendre polynomial "bubble"
+functions up to degree `ordermax`, all continuous but with (in general)
+discontinuous derivatives across cell boundaries.
+"""
 function P1IntLegendreBasis(mesh::Mesh, T::Type = Float64; kwargs...)
     # CREATE GENERATORS
     generators = P1IntLegendreGenerator(T; kwargs...)

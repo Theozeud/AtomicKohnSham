@@ -19,9 +19,16 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
+[weakdeps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+
+[extensions]
+AtomicKohnShamCairoMakieExt = "CairoMakie"
+
 [compat]
 Aqua = "0.8"
 Arpack = "0.5.4"
+CairoMakie = "0.12, 0.13, 0.14, 0.15"
 FastGaussQuadrature = "1.0.2"
 GenericLinearAlgebra = "0.3.15"
 JuliaFormatter = "2.1.2"
@@ -29,11 +36,13 @@ KrylovKit = "0.9.5"
 Libxc = "0.3.19"
 Optim = "1.11.0"
 Printf = "1.11.0"
+julia = "1.9"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "DoubleFloats", "Aqua"]
+test = ["Test", "DoubleFloats", "Aqua", "CairoMakie"]

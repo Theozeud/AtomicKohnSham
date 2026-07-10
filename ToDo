@@ -4,10 +4,9 @@
 
 # Plan :
 
-- Finir post-process
+- Finir post-process pour les potentiels
 
-- Faire les fichiers examples et tests en retravaillant solution et monitor
-
+- Faire les fichiers examples et tests en retravaillant monitor
 --> Une fois les fichiers tests marchent. Voir codecov pour voir les fichiers inutiles.
 
 - Optimisation :

@@ -48,12 +48,6 @@ end
 
 scf_converged(alg::ODA, solver::KSESolver) = solver.stopping_criteria < alg.scftol
 
-
-
-function monitor(cache::ODACache, ::ODA, ::KSESolver)
-    println("Relaxed Parameter : $(cache.t)")
-end
-
 function postcomputations!(algcache::ODACache, solver::KSESolver)
     @unpack discretization, model = solver
     assemble_hartree_pot!(discretization, algcache.D; coeff = model.hartree)

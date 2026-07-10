@@ -12,9 +12,8 @@ algorithm.
 
 # Keyword arguments
 - `maxiter::Int = 100`: Maximum number of SCF iterations.
-- `logconfig::LogConfig = LogConfig()`: Logging configuration.
-- `verbose::Int = 0`: Verbosity level
-  (`0`: silent, `1`: iterations, `2`: + basic metrics, `3`: + method-specific details).
+- `callback = nothing`: Callback (or [`CallbackSet`](@ref)) invoked once per
+  SCF iteration, e.g. a [`LogFileCallback`](@ref) for per-iteration diagnostics.
 
 # Returns
 - `KSESolution`: Ground-state solution including orbitals, energies, density, etc.
@@ -45,8 +44,9 @@ end
 Run the SCF loop in-place.
 
 At each iteration, this routine performs one SCF step (`scf_step!`), records
-convergence data (`register!`), optionally prints diagnostics (`monitor`), and
-executes the user callback. The loop stops when the algorithm-specific
+convergence data (`register!`), and executes the user callback (see
+`callback` in [`KSESolver`](@ref), e.g. a [`LogFileCallback`](@ref) for
+per-iteration diagnostics). The loop stops when the algorithm-specific
 convergence test is satisfied or when `maxiter` is reached. Finally,
 `postcomputations!` is called to compute any additional quantities.
 """
@@ -54,7 +54,6 @@ function solve!(solver::KSESolver)
     while solver.niter < solver.maxiter
         solver.stopping_criteria = scf_step!(solver)
         register!(solver)
-        monitor(solver)
         callback!(solver.callback, solver)
         solver.niter += 1
         scf_converged(solver.alg, solver) && break
@@ -95,29 +94,4 @@ function register!(solver::KSESolver)
     @unpack logbook = solver
     push!(logbook.stopping_criteria, solver.stopping_criteria)
     push!(logbook.Etot, solver.energies.Etot)
-end
-
-
-"""
-    monitor(solver::KSESolver)
-
-Print iteration diagnostics depending on `solver.verbose`.
-
-The default output includes the iteration index, selected algorithm, stopping
-criterion, and total energy. Algorithm-specific details may be printed at
-higher verbosity levels.
-"""
-function monitor(solver::KSESolver)
-    if solver.verbose > 0
-        println("--------------------------")
-        println("Iteration : $(solver.niter)")
-    end
-    if solver.verbose > 1
-        #println("Selected Method : $(name(solver.alg))")
-        println("Stopping criteria: $(solver.stopping_criteria)")
-        println("Total Energy: $(solver.energies.Etot)")
-    end
-    if solver.verbose > 2
-        #monitor(solver.cache, solver.alg, solver)
-    end
 end

@@ -3,15 +3,17 @@ push!(LOAD_PATH, "../src/")
 using Documenter, AtomicKohnSham
 
 makedocs(sitename = "AtomicKohnSham.jl",
-  authors = "Théo Duez",
+    authors = "Théo Duez",
     pages = [
-        "index.md",
-        "Tutorials" => [
-            "Models" => "tutorials/model.md",
-            "AtomProblem" => "tutorials/problem.md",
-            "Groundstate" => "tutorials/groundstate.md",
-            "Analysing results" => "tutorials/solution.md"
-        ]
+        "Home" => "index.md",
+        "Manual" => [
+            "The physical model" => "tutorials/model.md",
+            "Discretization" => "tutorials/discretization.md",
+            "Solving for the ground state" => "tutorials/groundstate.md",
+            "Analyzing a solution" => "tutorials/solution.md",
+            "Reports, logs & plots" => "tutorials/results.md",
+        ],
+        "API Reference" => "reference.md",
     ])
 
 deploydocs(
