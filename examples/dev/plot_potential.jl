@@ -1,4 +1,4 @@
-cd("./examples")
+#cd("./examples")
 using Pkg
 Pkg.activate(".")
 using AtomicKohnSham
@@ -6,16 +6,16 @@ import AtomicKohnSham: L_QUANTUM_LABELS
 using Libxc
 
 # ===================== STEP 0 : LOG =====================#
-VERBOSE = 3
-WRITE_LOG = true
+VERBOSE = 1
+WRITE_LOG = false
 LOGFILE = joinpath(@__DIR__, "scf.log")
 
 # ===================== STEP 1 : PARAMETERS =====================#
 # MODEL
 Z = 11
 N = 11
-ex = Functional(:lda_x; n_spin=2)
-ec = Functional(:lda_c_pw, n_spin=2)
+ex = NoFunctional(; n_spin=1) #Functional(:lda_x; n_spin=1)
+ec = NoFunctional(; n_spin=1) # Functional(:lda_c_pw, n_spin=1)
 
 # DISCRETIZATION : P1IntLegendreBasis + expmesh
 Rmax        = 500
@@ -25,7 +25,7 @@ lh          = 2
 
 # ALGORITHM : ODA + Optimized Aufbau
 maxiter     = 100
-degen_tol   = 1e-1
+degen_tol   = 1e-2
 scftol      = 1e-9
 
 # PLOT
@@ -33,8 +33,8 @@ Rmax_plot   = 100
 N_plot      = 10000
 lplot       = lh
 
-
 # ===================== STEP 2 : SOLVE =====================#
+
 function run_solve(Z::Real, N::Real, ex::TEX, ec::TEC,
                    Rmax::Real, Nmesh::Int, ordermax::Int, lh::Int,
                    maxiter::Int, degen_tol::Real, scftol::Real) where {TEX, TEC}
@@ -71,8 +71,12 @@ sol = run_solve(Z, N,ex, ec, Rmax, Nmesh, ordermax, lh, maxiter, degen_tol, scft
 
 # ===================== STEP 3 : EVALUATION =====================#
 
+# X-axis for plotting
+X = LinRange(0.001, Rmax_plot, N_plot)
+
+
 # Evaluation of occupied orbitals
-X = LinRange(0.001,Rmax_plot, N_plot)
+
 
 
 
@@ -80,17 +84,21 @@ X = LinRange(0.001,Rmax_plot, N_plot)
 function compute_potentials(solver, lmax::Int, Rmax_plot::Real, N_plot::Int)
     @unpack N,Z = solver.model
     X = LinRange(0.001,Rmax_plot, N_plot)
+
     # Hartree
     @unpack cache, basis, Rmax = solver.discretization
     Vhart = evaluate(basis, cache.tmp_C, X)./ X .+ N/Rmax
+
     # Kinetic Potential
     Vl = zeros(length(X),lmax+1)
     for l ∈ 0:lmax
         @views Vl_l = Vl[:,l+1]
         @. Vl_l = l*(l+1)/(2*X^2)
     end
+
     # Nucleous-Electrons Potential
     Vnuc = @. - z/X
+
     # Total Potential
     V = zeros(length(X),lmax+1)
     for l ∈ 0:lmax
@@ -98,6 +106,7 @@ function compute_potentials(solver, lmax::Int, Rmax_plot::Real, N_plot::Int)
         @views Vl_l = Vl[:,l+1]
         @. V_l = Vhart + Vl_l + Vnuc
     end
+
     Vhart, Vnuc, Vl, V
 end
 

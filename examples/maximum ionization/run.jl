@@ -2,7 +2,6 @@ cd("./examples")
 using Pkg
 Pkg.activate(".")
 using AtomicKohnSham
-import AtomicKohnSham: L_QUANTUM_LABELS
 using Libxc
 
 # ===================== STEP 0 : LOG =====================#
@@ -32,7 +31,6 @@ scftol      = 1e-9
 Rmax_plot   = 100
 N_plot      = 10000
 lplot       = lh
-
 
 # ===================== STEP 2 : SOLVE =====================#
 function run_solve(Z::Real, N::Real, ex::TEX, ec::TEC,

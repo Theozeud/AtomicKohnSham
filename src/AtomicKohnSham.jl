@@ -138,7 +138,8 @@ module AtomicKohnSham
     export KSEContext
     include("solution/context.jl")
 
-    export KSESolution, eigenvector, eval_density
+    export KSESolution
+    export eval_orbital, eval_density, eval_hartree, eval_nuclear, evam_kinetic_potential
     include("solution/types.jl")
     include("solution/show.jl")
     include("solution/postprocess.jl")

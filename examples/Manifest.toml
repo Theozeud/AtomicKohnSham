@@ -2,7 +2,7 @@
 
 julia_version = "1.11.2"
 manifest_format = "2.0"
-project_hash = "f78ad72049a518c8225017fc751dc9a0393d45f1"
+project_hash = "404a3e22167e993a21a58ba0ad64b74d7224836a"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -145,7 +145,7 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 version = "1.11.0"
 
 [[deps.AtomicKohnSham]]
-deps = ["Arpack", "FastGaussQuadrature", "GenericLinearAlgebra", "HypergeometricFunctions", "Integrals", "JuliaFormatter", "KrylovKit", "Libxc", "LinearAlgebra", "Optim", "SparseArrays", "TensorOperations", "UnPack"]
+deps = ["Arpack", "FastGaussQuadrature", "GenericLinearAlgebra", "HypergeometricFunctions", "Integrals", "JuliaFormatter", "KrylovKit", "Libxc", "LinearAlgebra", "Optim", "Printf", "SparseArrays", "TensorOperations", "UnPack"]
 path = ".."
 uuid = "2d6a71d3-f4fe-4c59-9782-ebc44d5ef3e9"
 version = "1.0.0-DEV"

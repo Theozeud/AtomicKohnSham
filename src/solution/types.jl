@@ -1,25 +1,38 @@
 """
     KSESolution(solver::KSESolver, name::String) -> KSESolution
 
-Constructs a solution object from a fully converged (or stopped) Kohn–Sham solver.
-This structure stores the result of a self-consistent field (SCF) computation,
-including metadata such as convergence status, final energies, iteration logs,
-and algorithm-specific data.
+Construct a solution object from a Kohn–Sham solver after a call to `solve!`.
+
+This structure stores the final state of a self-consistent field (SCF)
+computation, including convergence information, final energies, density and
+orbital coefficients, orbital energies, occupation numbers, Hartree potential
+coefficients, iteration logs, and the minimal context needed to post-process the
+solution.
 
 # Arguments
-- `solver::KSESolver`: The SCF solver after a call to `solve!`.
-- `name::String`: Name or label for the solution (can be empty if unused).
+- `solver::KSESolver`: Solver containing the final state of the SCF computation.
+- `name::String`: Name or label associated with the solution.
 
 # Fields
-- `success::String`: Convergence status — either `"SUCCESS"` if convergence occurred before reaching `maxiter`,
-                                            or   `"MAXITERS"` if the iteration limit was reached.
-- `solveropts::SolverOptions`: Options that were used in the solver (e.g., tolerance, integration method).
+- `success::String`: Final solver status. It is `"SUCCESS"` if the solver stopped
+  before reaching `maxiter`, and `"MAXITERS"` if the maximum number of iterations
+  was reached.
 - `niter::Int`: Number of SCF iterations performed.
-- `stopping_criteria::T`: Final convergence metric value (e.g., norm of residual density).
-- `energies::Dict{Symbol, T}`: Energies computed (total, kinetic, Hartree, etc.).
-- `datas::SCFSolution`: Struct with detailed solution data, whose fields depend on the SCF algorithm used.
-- `log::LogBook`: Object that records iteration history and diagnostics.
-- `name::String`: Name of the solution (can be used for identification, labeling results, etc.).
+- `stopping_criteria::T`: Final value of the stopping criterion.
+- `energies::Energies{T}`: Final energy contributions stored in an `Energies`
+  object.
+- `D`: Coefficients of the one-body reduced density matrix.
+- `U`: Coefficients of the Kohn–Sham orbitals in the FEM basis.
+- `ϵ`: Kohn–Sham orbital energies.
+- `n`: Orbital occupation numbers.
+- `occupied`: Summary of occupied orbitals, sorted by orbital energy. Each entry
+  contains the shell label, orbital energy, and occupation number.
+- `W`: Coefficients of the Hartree potential.
+- `logbook::LogBook`: Logbook containing recorded quantities during the SCF
+  iterations.
+- `name::String`: Name of the solution, used for identification or labeling.
+- `context::KSEContext`: Minimal context of the solved problem, containing the
+  model, algorithm, discretization sizes, FEM basis, and integration method.
 """
 struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<:KSEContext}
     success::String                     # Print the final state of the solver

@@ -33,10 +33,10 @@ A vector containing the orbital values evaluated at points `X`.
 """
 function eval_orbital(sol::KSESolution, n::Int, l::Int, X::AbstractVector{<:Real};
                      h10::Bool = false)
-    @unpack model, basis = context
+    @unpack model, basis = sol.context
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
     @assert model.nspin == 1 "The discretization is spin-polarized. Please give a spin σ."
-    φh10X = evaluate(basis, sol.orbitals[:, n - l, l + 1], X)
+    φh10X = evaluate(basis, sol.U[:, n - l, l + 1], X)
     if h10
         return φh10X
     else
@@ -47,7 +47,7 @@ end
 function eval_orbital(sol::KSESolution, n::Int, l::Int, σ::Int, X::AbstractVector{<:Real};
                      h10::Bool = false)
     @assert 0 ≤ l ≤ n-1 "Wrong number quantum. You should have 0 ≤ l ≤ n-1."
-    φh10X = evaluate(sol.context.basis, sol.orbitals[:, n - l, l + 1, σ], X)
+    φh10X = evaluate(sol.context.basis, sol.U[:, n - l, l + 1, σ], X)
     if h10
         return φh10X
     else
@@ -161,10 +161,117 @@ end
 # ===================================================================
 #                    EVALUATION OF THE POTENTIALS
 # ===================================================================
-function eval_hartree_pot(sol::KSESolution{T},
-                         X::AbstractVector{TX}) where {T<:Real, TX <: Real}
+"""
+    eval_hartree(sol::KSESolution, X::AbstractVector{<:Real})
 
+Evaluate the radial Hartree potential associated with a Kohn–Sham solution at
+the radial points `X`.
+
+The Hartree potential is reconstructed from the finite-element coefficients
+stored in `sol.W`. With the current choice of boundary lifting, it is evaluated as
+
+    Vᴴ(r) = W(r) / r + N / Rmax,
+
+where `W` is the FEM representation of the regular part of the Hartree
+potential, `N` is the number of electrons, and `Rmax` is the last point of the
+radial mesh.
+
+# Arguments
+- `sol::KSESolution`: Converged or stopped Kohn–Sham solution.
+- `X::AbstractVector{<:Real}`: Radial evaluation points.
+
+# Returns
+A vector containing the Hartree potential values evaluated at `X`.
+"""
+function eval_hartree(sol::KSESolution,
+                      X::AbstractVector{TX}) where {TX<:Real}
     @unpack model, basis = sol.context
-    Vhart = evaluate(basis, W, X)./ X .+ model.N/last(basis.mesh)
-    return Vhart
+    WX = evaluate(basis, sol.W, X)
+    return WX .+ model.N/last(basis.mesh)
+end
+
+
+"""
+    eval_nuclear(sol::KSESolution, X::AbstractVector{<:Real})
+
+Evaluate the electron-nucleus attraction potential at the radial points `X`.
+
+The nuclear potential is
+
+    Vₙᵤc(r) = -Z / r,
+
+where `Z` is the nuclear charge stored in `sol.context.model`.
+
+# Arguments
+- `sol::KSESolution`: Kohn–Sham solution containing the model parameters.
+- `X::AbstractVector{<:Real}`: Radial evaluation points.
+
+# Returns
+A vector containing the nuclear potential values evaluated at `X`.
+"""
+function eval_nuclear(sol::KSESolution{T},
+                      X::AbstractVector{TX}) where {T<:Real, TX<:Real}
+    Z = sol.context.model.Z
+
+    Tout = float(promote_type(typeof(Z), TX))
+    Vnuc = similar(X, Tout)
+
+    @inbounds for i in eachindex(X)
+        x = X[i]
+        Vnuc[i] = iszero(x) ? -oftype(one(Tout), Inf) : -Z / x
+    end
+
+    return Vnuc
+end
+
+
+"""
+    eval_kinetic_potential(l::Int, X::AbstractVector{<:Real})
+    eval_kinetic_potential(sol::KSESolution, l::Int, X::AbstractVector{<:Real})
+
+Evaluate the local centrifugal part of the radial kinetic operator at the radial
+points `X`.
+
+For an angular momentum quantum number `l`, the centrifugal potential is
+
+    Vₖᵢₙ,l(r) = l(l + 1) / (2r²).
+
+This is only the pointwise centrifugal contribution.
+
+At `r = 0`, the value is:
+- `0` if `l == 0`,
+- `+Inf` if `l > 0`.
+
+# Arguments
+- `l::Int`: Orbital angular momentum quantum number.
+- `X::AbstractVector{<:Real}`: Radial evaluation points.
+- `sol::KSESolution`: Optional solution argument, included for API consistency.
+
+# Returns
+A vector containing the centrifugal kinetic potential values evaluated at `X`.
+"""
+function eval_kinetic_potential(l::Int,
+                                X::AbstractVector{TX}) where {TX<:Real}
+    @assert l ≥ 0 "The angular momentum quantum number l must be non-negative."
+
+    c = l * (l + 1) / 2
+
+    Tout = float(promote_type(typeof(c), TX))
+    Vkin = similar(X, Tout)
+
+    @inbounds for i in eachindex(X)
+        x = X[i]
+        if iszero(x)
+            Vkin[i] = iszero(c) ? zero(Tout) : oftype(one(Tout), Inf)
+        else
+            Vkin[i] = c / x^2
+        end
+    end
+    return Vkin
+end
+
+function eval_kinetic_potential(::KSESolution,
+                                l::Int,
+                                X::AbstractVector{<:Real})
+    return eval_kinetic_potential(l, X)
 end
