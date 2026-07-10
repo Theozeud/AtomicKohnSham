@@ -1,4 +1,38 @@
 """
+Return `getfield(x, s)`, or `nothing` if `x` has no field `s`.
+
+Used to pull algorithm-specific quantities (e.g. `:D`, `:U`, `:ϵ`, `:n`, `:t`)
+out of an `SCFCache` without each algorithm having to implement a common
+accessor interface.
+"""
+getfield_or_nothing(x, s::Symbol) = getfield_or_nothing(x, Val(s))
+@generated function getfield_or_nothing(x, ::Val{s}) where {s}
+    if s ∈ fieldnames(x)
+        :(getfield(x, s))
+    else
+        :(nothing)
+    end
+end
+
+"""
+Summarize the occupied orbitals of a discretization as
+`(shell_label, orbital_energy, occupation_number)` tuples, sorted by orbital
+energy. Returns `nothing` if occupations/energies are unavailable (e.g. the
+algorithm cache has no `:n`/`:ϵ` fields).
+"""
+function _occupied_orbitals_summary(discretization::KSEDiscretization, n::AbstractArray{T},
+                                  ϵ::AbstractArray{T}) where T <: Real
+    index = findall(x->x ≠ 0, vec(n))
+    index_sort = sortperm(ϵ[index])
+    new_index = index[index_sort]
+    [(shell_string(convert_index_nl(discretization, i)), ϵ[i], n[i]) for i in new_index]
+end
+
+function _occupied_orbitals_summary(::KSEDiscretization, ::Nothing, ::Nothing)
+    nothing
+end
+
+"""
     KSESolution(solver::KSESolver, name::String) -> KSESolution
 
 Construct a solution object from a Kohn–Sham solver after a call to `solve!`.
@@ -49,7 +83,7 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
     n::TN                               # Occupations numbers
     occupied::TO                        # Occupied orbitals with energies
 
-    W::TW                               # Coefficients of tha Hartree potential
+    W::TW                               # Coefficients of the Hartree potential
 
     logbook::logbookType                # LogBook of all recorded quantities
 
@@ -70,7 +104,7 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
         U = getfield_or_nothing(solver.algcache, :U)
         ϵ = getfield_or_nothing(solver.algcache, :ϵ)
         n = getfield_or_nothing(solver.algcache, :n)
-        occupied = occupied_orbitals_summary(discretization, n, ϵ)
+        occupied = _occupied_orbitals_summary(discretization, n, ϵ)
 
         W = discretization.cache.hartw.W
 
@@ -95,46 +129,4 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
                              name,
                              context)
     end
-end
-
-"""
-Return the Kohn–Sham orbital coefficients stored in the solution.
-"""
-orbitals(sol) = sol.U
-
-"""
-Return the Kohn–Sham orbital energies.
-"""
-orbital_energies(sol) = sol.ϵ
-
-"""
-Return the orbital occupation numbers.
-"""
-occupations(sol) = sol.n
-
-"""
-Return the coefficients of the one-particle reduced density.
-"""
-density_matrix(sol) = sol.D
-
-getfield_or_nothing(x, s::Symbol) = getfield_or_nothing(x, Val(s))
-@generated function getfield_or_nothing(x, ::Val{s}) where {s}
-    if s ∈ fieldnames(x)
-        :(getfield(x, s))
-    else
-        :(nothing)
-    end
-end
-
-
-function occupied_orbitals_summary(discretization::KSEDiscretization, n::AbstractArray{T},
-                                  ϵ::AbstractArray{T}) where T <: Real
-    index = findall(x->x ≠ 0, vec(n))
-    index_sort = sortperm(ϵ[index])
-    new_index = index[index_sort]
-    [(shell_string(convert_index_nl(discretization, i)), ϵ[i], n[i]) for i in new_index]
-end
-
-function occupied_orbitals_summary(::KSEDiscretization, ::Nothing, ::Nothing)
-    nothing
 end
