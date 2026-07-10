@@ -18,7 +18,7 @@ function run_solve(ex::TEX, ec::TEC,
     alg = ODA(tinit = 0.6, aufbau = aufbau, scftol = scftol)
 
     # Resolution of the problem
-    sol = groundstate(model, dis, alg; maxiter = maxiter, verbose = 0)
+    sol = groundstate(model, dis, alg; maxiter = maxiter)
     return sol
 end
 
