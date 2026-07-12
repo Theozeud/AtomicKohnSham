@@ -95,9 +95,25 @@ function optimized_eval_density!(ρ::AbstractVector{<:Real},
     Ig = basis.cells_to_generators[idxmesh]
     a = Int(sqrt(size(Qgenx, 1)))
     Qgenxreshape = reshape(Qgenx, a, a, size(Qgenx, 2))
-    @views DIb = D[Ib, Ib]
-    @views QgenxIg = Qgenxreshape[Ig, Ig, :]
-    @tensor ρ[k] = DIb[i, j] * QgenxIg[i, j, k]
+    # Ib/Ig are Vector{Int} permutations of a contiguous block (not ranges,
+    # see cells_to_indices/cells_to_generators), so D[Ib, Ib] and
+    # Qgenxreshape[Ig, Ig, :] are non-strided views: @tensor can't contract
+    # them via BLAS and would silently materialize dense copies every call
+    # (~neval*a^2 elements) instead. A scalar loop indexes them directly, with
+    # no temporary allocation.
+    n = length(Ib)
+    neval = length(ρ)
+    @inbounds for j in 1:n
+        Ibj = Ib[j]
+        Igj = Ig[j]
+        for i in 1:n
+            Dij = D[Ib[i], Ibj]
+            Igi = Ig[i]
+            for k in 1:neval
+                ρ[k] += Dij * Qgenxreshape[Igi, Igj, k]
+            end
+        end
+    end
     @.ρ /= X^2
     @. ρ *= 1/4π
     ρ
