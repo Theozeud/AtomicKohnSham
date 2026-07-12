@@ -27,11 +27,11 @@ The code supports both **double (Float64)** and **quadruple (Double64)** floatin
 ## Key Features
 Currently supported functionalities:
 
-- **SCF Algorithms:** CDA | ODA | Quadratic  
+- **SCF Algorithm:** ODA (Optimal Damping Algorithm)
 - **Symmetry:** Spherical → radial  
 - **FEM Basis:** Integrated Legendre polynomials (order ≤ 20)  
-- **Exchange–Correlation:** LDA, LSDA  
-- **Mesh Types:** Linear, Geometric, Exponential  
+- **Exchange–Correlation:** LDA, LSDA (via [Libxc.jl](https://github.com/unkcpz/Libxc.jl), plus a built-in Slater exchange)
+- **Mesh Types:** Linear, Geometric, Polynomial, Exponential, Exp-Lin
 - **Precision:** Float64 (double), Double64 (quadruple)
 
 ## Recommendations
@@ -45,69 +45,59 @@ This combination offers a good balance between numerical accuracy and computatio
 - Currently, only one FEM basis has been implemented. However, adding a new one is straightforward, as all FEM matrix assemblies are handled automatically
 
 
-- Higer precision should works but this has not been thoroughly tested.
+- Higher precision should work but this has not been thoroughly tested.
 
 ## Example
 
-Here is one example on the hydrogen atom with the Slater exchange. You can directly create the whole problem with
-all parameters.
-```julia
-problem = AtomProblem(;
-                       # MODEL PARAMETERS
-                       
-                       z = 1,                               # Nuclear Charge
-                       N = 1,                               # Number of electrons
-                       ex = Functional(:lda_x, n_spin = 1), # Exchange Functional
-                       ec = NoFunctional(1),                # Correlation Functional
-
-                       # DISCRETIZATION PARAMETERS
-                       lh = 0,                              # Angular momentum cutoff       
-                       Nmesh = 10,                          # Number of points of the mesh
-                       Rmax = 300,                          # Radial domain cutoff
-
-                       typemesh = expmesh,                  # How the mesh is generated
-                       optsmesh = (s = 1.5,),               # Options to this generation
-
-                       typebasis = P1IntLegendreBasis,      # Choice of FEM Basis
-                       optsbasis = (ordermax = 10,),        # Polynomials up to order 10.
-
-                       integration_method = GaussLegendre,  # Method for integrals quadrature
-                       optsintegration = (npoints = 1000,)  # Options for this method
-
-                       # ALGORITHMS
-                       alg = ODA(0.4),                      # SCF alg : Optimal Dampling
-
-                       # SOLVER OPTIONS
-                       T = Float64,                         # Data type for computations
-                       scftol = 1e-11,                      # SCF Tolerance
-                       maxiter = 100,                       # Max number of SCF iterations
-                       degen_tol = 1e-2,                    # Tolerance between orbital
-                                                            # energies to detect degeneracy
-                       verbose = 0)                         # Verbosity level: 
-                                                            # 0 = silent, 3 = maximum verbosity
-``` 
-Additional options are available but have been omitted here for simplicity.
-
-Then, you can find the groundstate :
+Here is the hydrogen atom with the Slater exchange functional (no
+correlation). Every calculation is built from four pieces: a physical
+**model**, a **discretization** (radial mesh + FEM basis), an SCF
+**algorithm**, and finally `groundstate` to solve it:
 
 ```julia
-sol = groundstate(problem)
+using AtomicKohnSham
+using Libxc
 
+# Model: nuclear charge, electron count, exchange/correlation functionals
+model = KSEModel(Z = 1, N = 1, ex = Functional(:lda_x; n_spin = 1), ec = NoFunctional(1))
+
+# Discretization: radial mesh + FEM basis
+mesh = expmesh(0, 300, 20; s = 1.5)
+basis = P1IntLegendreBasis(mesh; ordermax = 10)
+discretization = KSEDiscretization(basis, model; lh = 0, nh = 3)
+
+# Algorithm: Optimal Damping Algorithm (ODA)
+alg = ODA(tinit = 0.6, scftol = 1e-11)
+
+# Solve
+sol = groundstate(model, discretization, alg; maxiter = 100)
+```
+
+```julia
 julia> sol
 Name : Hydrogen
-Sucess = SUCCESS
-niter = 20
-Stopping criteria = 7.588619340831631e-12
-All Energies :
-            Ekin = 0.40653407924275053 
-            Ecou = -0.9000752043172076 
-            Ehar = 0.27492250294985154 
-            Eexc = -0.1879154570959805 
-            Etot = -0.40653407922058604 
+Success = SUCCESS
+niter = 19
+Stopping criteria = 9.029719505180509e-12
 Occupation number = 
-            1s : (-0.19425006196620562,1.0) 
-``` 
-The associated density can be plotted with a logarithmic y-axis: 
+            1s : ε = -1.942500619576336e-01        n = 1.0
+```
+The associated density can be plotted (log scale on the y-axis) with the
+`CairoMakie` [plotting extension](https://theozeud.github.io/AtomicKohnSham/dev/tutorials/results/):
+
+```julia
+using CairoMakie
+
+X = AtomicKohnSham.exprange(1e-3, 100, 2000; s = 1.5)
+save("density.png", plot_density(sol, X))
+```
 
 ![](assets/readme_density.png)
+
+## Documentation
+
+See the [documentation](https://theozeud.github.io/AtomicKohnSham/dev/) for
+a full tutorial: building models and discretizations, running the SCF loop,
+analyzing a solution (orbitals, density, potentials), and exporting reports,
+logs, and plots.
 
