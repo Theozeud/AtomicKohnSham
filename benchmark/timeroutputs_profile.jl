@@ -191,7 +191,8 @@ function profile_case(Nmesh::Int; Z = 11, N = 11, Rmax = 500, ordermax = 10, lh 
     mesh = expmesh(0, Rmax, Nmesh; s = 1.2)
     basis = P1IntLegendreBasis(mesh; ordermax = ordermax)
     discretization = KSEDiscretization(basis, model; lh = lh, nh = 10,
-        fem_integration_method = GaussLegendre(basis, 2000))
+        fem_integration_method = GaussLegendre(basis, 2000),
+        eigensolver = PartialEigenSolver())
     aufbau = OptimizedAufbau(max_degen = 2, tol = 1e-2)
     alg = ODA(tinit = 0.6, aufbau = aufbau, scftol = 1e-9)
 

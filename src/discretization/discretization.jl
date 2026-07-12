@@ -230,11 +230,14 @@ where `(Qₙ)` are radial FEM basis functions and `Yₗᵐ` are spherical harmon
 - `ksham`: Kohn–Sham Hamiltonian components.
 - `cache`: Preallocated workspaces.
 - `fem_integration_method`: Quadrature method for FEM integrals.
+- `eigensolver`: Strategy used to solve the Kohn–Sham eigenproblem in each
+  `(l, σ)` channel — [`PartialEigenSolver`](@ref) (default) or
+  [`FullEigenSolver`](@ref).
 
 Use `init_cache!` to assemble all discretization-dependent operators.
 """
 struct KSEDiscretization{T <: Real, B <: FEMBasis, O <: FEMOperators, H <: KSHamiltonian,
-                        FIM <: FEMIntegrationMethod,}
+                        FIM <: FEMIntegrationMethod, ES <: EigenSolver,}
 
     lₕ::Int
     nₕ::Int
@@ -247,8 +250,10 @@ struct KSEDiscretization{T <: Real, B <: FEMBasis, O <: FEMOperators, H <: KSHam
     ksham::H
     cache::DiscretizationCache{T}
     fem_integration_method::FIM
+    eigensolver::ES
     function KSEDiscretization(basis::FEMBasis, model::KSEModel; lh::Int, nh::Int = 10,
-                    fem_integration_method::FEMIntegrationMethod = GaussLegendre(basis))
+                    fem_integration_method::FEMIntegrationMethod = GaussLegendre(basis),
+                    eigensolver::EigenSolver = PartialEigenSolver())
         @unpack nspin, hartree, N = model
         T = eltype(basis)
         Nₕ = length(basis)
@@ -265,8 +270,9 @@ struct KSEDiscretization{T <: Real, B <: FEMBasis, O <: FEMOperators, H <: KSHam
             typeof(basis),
             typeof(femops),
             typeof(ksham),
-            typeof(fem_integration_method)}(lh, nh, Nₕ, nspin, N, Rmax, basis, femops,
-            ksham, cache,fem_integration_method)
+            typeof(fem_integration_method),
+            typeof(eigensolver)}(lh, nh, Nₕ, nspin, N, Rmax, basis, femops,
+            ksham, cache, fem_integration_method, eigensolver)
     end
 end
 
