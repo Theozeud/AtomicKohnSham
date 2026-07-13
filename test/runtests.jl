@@ -11,5 +11,9 @@ Aqua.test_all(AtomicKohnSham)
 =#
 
 include("fem.jl")
+include("utils.jl")
+include("discretization.jl")
+include("physics.jl")
+include("algorithms.jl")
 include("hydrogen.jl")
 include("scandium.jl")
