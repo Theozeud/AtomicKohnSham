@@ -30,7 +30,7 @@ function groundstate(model::KSEModel, discretization::KSEDiscretization, alg::SC
             ATOMIC_NUMBER_TO_NAME[Int(Z)]*string(abs(charge_diff))*symbol_ion
         end
     else
-        "Z=Z, N=N"
+        "Z=$Z, N=$N"
     end
     solver = KSESolver(model, discretization, alg; kwargs...)
     solve!(solver)
