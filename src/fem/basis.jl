@@ -59,7 +59,7 @@ end
     struct FEMBasis{T<:Real,
                            generatorsType <: AbstractGenerator,
                            meshType <: Mesh,
-                           dictType <: Dict,
+                           indicesType <: AbstractVector,
                            cacheType <: BasisCache} <: Basis
 
 Represents a basis of polynomial functions defined over a 1D mesh.
@@ -76,17 +76,17 @@ The basis is constructed from a set of polynomial generators and adapted locally
 - `size::Int`
   Total number of basis functions.
 
-- `indices_cells::dictType`
-  Dictionary mapping each basis index to the cell(s) on which its support is nonzero.
+- `indices_cells::indicesType`
+  Vector (indexed by basis index) mapping each basis index to the cell(s) on which its support is nonzero.
 
-- `indices_generators::dictType`
-  Dictionary mapping each basis index to the generator indices used to construct it.
+- `indices_generators::indicesType`
+  Vector (indexed by basis index) mapping each basis index to the generator indices used to construct it.
 
-- `cells_to_indices::Dict{Int,Vector{Int}}`
-  Inverse map: associates each cell with the indices of basis functions that are supported on it.
+- `cells_to_indices::Vector{Vector{Int}}`
+  Inverse map (indexed by cell index): associates each cell with the indices of basis functions that are supported on it.
 
-- `cells_to_generator::Dict{Int,Vector{Int}}`
-  Maps each cell to the generator indices used locally for constructing basis functions on that cell.
+- `cells_to_generator::Vector{Vector{Int}}`
+  Maps each cell (indexed by cell index) to the generator indices used locally for constructing basis functions on that cell.
 
 - `shifts::Vector{Tuple{T,T}}`
   Translations applied to center each cell in a reference domain (e.g., mapping to a reference element).
@@ -101,15 +101,15 @@ The basis is constructed from a set of polynomial generators and adapted locally
 struct FEMBasis{T <: Real,
     generatorsType <: AbstractGenerator,
     meshType <: Mesh,
-    dictType <: Dict,
+    indicesType <: AbstractVector,
     cacheType <: BasisCache}
     generators::generatorsType
     mesh::meshType
     size::Int
-    indices_cells::dictType
-    indices_generators::dictType
-    cells_to_indices::Dict{Int, Vector{Int}}
-    cells_to_generators::Dict{Int, Vector{Int}}
+    indices_cells::indicesType
+    indices_generators::indicesType
+    cells_to_indices::Vector{Vector{Int}}
+    cells_to_generators::Vector{Vector{Int}}
     shifts::Vector{Tuple{T, T}}
     invshifts::Vector{Tuple{T, T}}
     cache::cacheType
@@ -118,10 +118,10 @@ struct FEMBasis{T <: Real,
     function FEMBasis(generators::AbstractGenerator,
             mesh::Mesh,
             size::Int,
-            indices_cells::Dict,
-            indices_generators::Dict,
-            cells_to_indices::Dict{Int, Vector{Int}},
-            cells_to_generators::Dict{Int, Vector{Int}})
+            indices_cells::AbstractVector,
+            indices_generators::AbstractVector,
+            cells_to_indices::Vector{Vector{Int}},
+            cells_to_generators::Vector{Vector{Int}})
         T = eltype(generators)
         shifts = Vector{Tuple{T, T}}(undef, length(mesh)-1)
         invshifts = Vector{Tuple{T, T}}(undef, length(mesh)-1)
@@ -132,7 +132,7 @@ struct FEMBasis{T <: Real,
 
         cache = BasisCache(generators)
 
-        max_nb_poly_cells = max(length.(values(cells_to_indices))...)
+        max_nb_poly_cells = max(length.(cells_to_indices)...)
 
         new{eltype(generators),
             typeof(generators),
@@ -200,8 +200,11 @@ function (pb::FEMBasis)(i::Int, x::T) where {T}
     P = getgenerator(pb, i, j)
     ϕ = getshift(pb, i, j)
     ϕx = ϕ[1]*x + ϕ[2]
+    # P wraps a single polynomial (one row of the generator's PolySet), so
+    # evaluate always returns a length-1 vector; unwrap it to keep this method
+    # consistently scalar-valued (matching the zero(newT) branch above).
     y = evaluate(P, ϕx)
-    return y
+    return y[1]
 end
 
 ```
@@ -218,7 +221,7 @@ end
 
 function (pb::FEMBasis)(x::T) where {T}
     NewT = promote_type(eltype(pb), T)
-    evaluations = zeros(NewT, length(I))
+    evaluations = zeros(NewT, length(pb))
     evaluate!(evaluations, pb, 1:length(pb), x)
     evaluations
 end
@@ -273,6 +276,7 @@ function evaluate!(evaluations::AbstractVector,
     @inbounds for k in eachindex(X)
         xk = X[k]
         localisation_xk = findindex(pb.mesh, xk)
+        (1 ≤ localisation_xk ≤ length(pb.cells_to_indices)) || continue
         Ik = pb.cells_to_indices[localisation_xk]
         lk = length(Ik)
         @views coeffsk = coeffs[Ik]

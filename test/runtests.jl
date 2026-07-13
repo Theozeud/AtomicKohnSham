@@ -3,6 +3,7 @@ using Libxc
 using Test
 using LinearAlgebra
 using SparseArrays
+using Serialization
 
 #=
 using Aqua
