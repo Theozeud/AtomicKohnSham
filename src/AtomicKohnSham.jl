@@ -143,6 +143,8 @@ module AtomicKohnSham
     export KSESolution
     export eval_orbital, eval_density, eval_hartree, eval_nuclear,
         eval_kinetic_potential, eval_vxc, eval_effective_potential
+    export SanityChecks
+    include("solution/sanity.jl")
     include("solution/types.jl")
     include("solution/show.jl")
     include("solution/postprocess.jl")

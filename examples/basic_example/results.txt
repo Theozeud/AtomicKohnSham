@@ -52,3 +52,12 @@ Occupation number =
             2p : ε = -1.006028995427625e+00        n = 6.0
             3s : ε = -7.701608721789199e-02        n = 0.999999999991612
             3p : ε = -1.111637731682302e-02        n = 8.387956995647983e-12
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = 0.0e+0
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = 3.962675521052006e-09
+            orthonormality error (‖UᵀM₀U - I‖∞) = 1.285377138060539e-09
+            virial ratio (Ekin / -Etot)         = 9.999999999576582e-01

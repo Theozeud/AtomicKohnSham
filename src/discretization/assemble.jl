@@ -38,6 +38,11 @@ function assemble_hartree_pot!(discretization::KSEDiscretization,
     @unpack A, F = discretization.femops
     @unpack Hartree = discretization.ksham
     @unpack B, W = cache.hartw
+    # HartreeWorkspace allocates B/W with length 0 when model.hartree == 0
+    # (see discretization.jl); A\B below would otherwise throw a
+    # DimensionMismatch. W is already empty in that case, so there's nothing
+    # left to do.
+    isempty(B) && return nothing
     if nspin == 1
         tensor_matrix_dict!(B, D, F)
         W .= A\B
