@@ -3,7 +3,7 @@ using Libxc
 using Test
 using LinearAlgebra
 using SparseArrays
-using Serialization
+using JLD2
 
 #=
 using Aqua

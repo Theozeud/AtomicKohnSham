@@ -152,7 +152,7 @@ end
     mesh = polynomialmesh(a, b, n; T = T, s = s)
     basis = P1IntLegendreBasis(mesh, T; ordermax = 2)
 
-    ref = deserialize(joinpath(@__DIR__, "reference_data", "fem_matrices.jls"))
+    ref = JLD2.load(joinpath(@__DIR__, "reference_data", "fem_matrices.jld2"))
     tol = 1e-12
 
     # --- Overlap (mass) matrix, plain and weighted by 1/x, 1/x^2 ---

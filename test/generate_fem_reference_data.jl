@@ -1,4 +1,4 @@
-# Regenerates test/reference_data/fem_matrices.jls, the reference values the
+# Regenerates test/reference_data/fem_matrices.jld2, the reference values the
 # "FEM Matrices" testset in fem.jl compares fresh computations against.
 #
 # Not run as part of the test suite. Run manually after a deliberate change to
@@ -7,9 +7,9 @@
 #     julia --project=. test/generate_fem_reference_data.jl
 
 using AtomicKohnSham
-using Serialization
+using JLD2
 
-const REFERENCE_FILE = joinpath(@__DIR__, "reference_data", "fem_matrices.jls")
+const REFERENCE_FILE = joinpath(@__DIR__, "reference_data", "fem_matrices.jld2")
 
 # Must match the basis construction in the "FEM Matrices" testset in fem.jl exactly.
 function reference_basis()
@@ -32,5 +32,5 @@ function compute_reference_data()
 end
 
 mkpath(dirname(REFERENCE_FILE))
-serialize(REFERENCE_FILE, compute_reference_data())
+JLD2.save(REFERENCE_FILE, compute_reference_data())
 println("Wrote reference data to $REFERENCE_FILE")
