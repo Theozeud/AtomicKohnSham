@@ -85,6 +85,8 @@ module AtomicKohnSham
     # =====================================
     #               DISCRETIZATION
     # =====================================
+    export EigenSolver, FullEigenSolver, PartialEigenSolver
+    include("discretization/eigensolver.jl")
     export KSEDiscretization
     include("discretization/discretization.jl")
     include("discretization/assemble.jl")

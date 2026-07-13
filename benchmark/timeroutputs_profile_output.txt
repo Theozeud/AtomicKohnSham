@@ -1,5 +1,5 @@
 ==========================================================================================
-CASE: Nmesh = 20  (Nₕ = 189, niter = 21, lh = 2, nspin = 1)
+CASE: Nmesh = 20  (Nₕ = 189, niter = 20, lh = 2, nspin = 1)
 System: Sodium, Slater exchange (spin-unpolarized)
 ==========================================================================================
 
@@ -7,76 +7,76 @@ System: Sodium, Slater exchange (spin-unpolarized)
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                          Time                    Allocations      
                                                                 ───────────────────────   ────────────────────────
-                       Tot / % measured:                             2.66s /  98.7%            893MiB / 100.0%    
+                       Tot / % measured:                             1.41s /  97.6%            156MiB / 100.0%    
 
 Section                                                 ncalls     time    %tot     avg     alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-SCF loop (total, all iterations)                             1    2.61s   99.3%   2.61s    888MiB   99.4%   888MiB
-  Algorithm                                                104    1.35s   51.3%  13.0ms   20.5MiB    2.3%   202KiB
-    Line search (ODA relaxation)                            20    1.15s   43.7%  57.4ms   5.63MiB    0.6%   288KiB
-    Aufbau (occupation numbers)                             21    197ms    7.5%  9.40ms   9.12MiB    1.0%   445KiB
-    Convergence check                                       21   1.69ms    0.1%  80.7μs   5.73MiB    0.6%   279KiB
-    Bookkeeping (save previous density/energies)            21    206μs    0.0%  9.81μs     0.00B    0.0%    0.00B
-    Logbook + callback                                      21   28.2μs    0.0%  1.34μs      896B    0.0%    42.7B
-  Matrix assembly                                           21    621ms   23.7%  29.6ms    738MiB   82.7%  35.2MiB
-    Exchange-correlation matrix                             21    548ms   20.9%  26.1ms    732MiB   81.9%  34.8MiB
-    Hartree matrix (solves A\B)                             21   39.6ms    1.5%  1.89ms   6.86MiB    0.8%   335KiB
-    Hamiltonian sum (Hfix + Vxc + Hartree)                  21   33.5ms    1.3%  1.59ms     0.00B    0.0%    0.00B
-  Eigenvalue problem                                        21    533ms   20.3%  25.4ms   73.9MiB    8.3%  3.52MiB
-    channel (l=1, σ=1)                                      21    198ms    7.5%  9.41ms   24.6MiB    2.8%  1.17MiB
-    channel (l=0, σ=1)                                      21    181ms    6.9%  8.64ms   24.6MiB    2.8%  1.17MiB
-    channel (l=2, σ=1)                                      21    154ms    5.9%  7.31ms   24.6MiB    2.8%  1.17MiB
-  Energy                                                    21    105ms    4.0%  4.99ms   55.1MiB    6.2%  2.62MiB
-    Total energy                                            19   46.9ms    1.8%  2.47ms   14.6MiB    1.6%   787KiB
-    Exchange-correlation energy                             19   24.0ms    0.9%  1.26ms   26.4KiB    0.0%  1.39KiB
-    Density matrix assembly                                 19   18.4ms    0.7%   971μs   36.1MiB    4.0%  1.90MiB
-    Hartree energy (solves A\B)                             19   14.7ms    0.6%   772μs   4.20MiB    0.5%   226KiB
-    Coulomb (nuclear attraction) energy                     19    284μs    0.0%  15.0μs    124KiB    0.0%  6.50KiB
-    Kinetic energy                                          19    250μs    0.0%  13.2μs    124KiB    0.0%  6.50KiB
-    Copy trial density/energies (resolved degeneracy)        2   89.6μs    0.0%  44.8μs     0.00B    0.0%    0.00B
-Setup (init_cache! + algorithm cache)                        1   16.8ms    0.6%  16.8ms   4.74MiB    0.5%  4.74MiB
-Postcomputations (final Hartree potential)                   1    846μs    0.0%   846μs    226KiB    0.0%   226KiB
-Build KSESolution                                            1    108μs    0.0%   108μs   3.53KiB    0.0%  3.53KiB
+SCF loop (total, all iterations)                             1    1.36s   98.9%   1.36s    151MiB   96.8%   151MiB
+  Algorithm                                                 99    697ms   50.8%  7.04ms   19.8MiB   12.8%   205KiB
+    Line search (ODA relaxation)                            19    607ms   44.3%  32.0ms   5.27MiB    3.4%   284KiB
+    Aufbau (occupation numbers)                             20   87.9ms    6.4%  4.40ms   9.12MiB    5.9%   467KiB
+    Convergence check                                       20   1.41ms    0.1%  70.4μs   5.45MiB    3.5%   279KiB
+    Bookkeeping (save previous density/energies)            20    191μs    0.0%  9.54μs     0.00B    0.0%    0.00B
+    Logbook + callback                                      20   18.8μs    0.0%   940ns      896B    0.0%    44.8B
+  Eigenvalue problem                                        20    332ms   24.2%  16.6ms   70.4MiB   45.2%  3.52MiB
+    channel (l=0, σ=1)                                      20    134ms    9.8%  6.71ms   23.4MiB   15.1%  1.17MiB
+    channel (l=1, σ=1)                                      20    100ms    7.3%  5.01ms   23.4MiB   15.1%  1.17MiB
+    channel (l=2, σ=1)                                      20   97.1ms    7.1%  4.86ms   23.4MiB   15.1%  1.17MiB
+  Matrix assembly                                           20    258ms   18.8%  12.9ms   8.13MiB    5.2%   416KiB
+    Exchange-correlation matrix                             20    192ms   14.0%  9.61ms   1.60MiB    1.0%  81.8KiB
+    Hamiltonian sum (Hfix + Vxc + Hartree)                  20   32.9ms    2.4%  1.64ms     0.00B    0.0%    0.00B
+    Hartree matrix (solves A\B)                             20   32.7ms    2.4%  1.63ms   6.53MiB    4.2%   334KiB
+  Energy                                                    20   69.8ms    5.1%  3.49ms   52.2MiB   33.6%  2.61MiB
+    Total energy                                            18   30.8ms    2.2%  1.71ms   13.8MiB    8.9%   787KiB
+    Density matrix assembly                                 18   14.3ms    1.0%   792μs   34.2MiB   22.0%  1.90MiB
+    Exchange-correlation energy                             18   13.5ms    1.0%   748μs   25.0KiB    0.0%  1.39KiB
+    Hartree energy (solves A\B)                             18   10.7ms    0.8%   594μs   3.97MiB    2.6%   226KiB
+    Kinetic energy                                          18    226μs    0.0%  12.6μs    117KiB    0.1%  6.50KiB
+    Coulomb (nuclear attraction) energy                     18    225μs    0.0%  12.5μs    117KiB    0.1%  6.50KiB
+    Copy trial density/energies (resolved degeneracy)        2   85.8μs    0.0%  42.9μs     0.00B    0.0%    0.00B
+Setup (init_cache! + algorithm cache)                        1   14.6ms    1.1%  14.6ms   4.74MiB    3.0%  4.74MiB
+Postcomputations (final Hartree potential)                   1    630μs    0.0%   630μs    226KiB    0.1%   226KiB
+Build KSESolution                                            1    101μs    0.0%   101μs   3.53KiB    0.0%  3.53KiB
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 --- Same data, sorted by total time within each level (bottleneck finder) ---
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                          Time                    Allocations      
                                                                 ───────────────────────   ────────────────────────
-                       Tot / % measured:                             2.66s /  98.7%            893MiB / 100.0%    
+                       Tot / % measured:                             1.41s /  97.6%            156MiB /  99.9%    
 
 Section                                                 ncalls     time    %tot     avg     alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-SCF loop (total, all iterations)                             1    2.61s   99.3%   2.61s    888MiB   99.4%   888MiB
-  Algorithm                                                104    1.35s   51.3%  13.0ms   20.5MiB    2.3%   202KiB
-    Line search (ODA relaxation)                            20    1.15s   43.7%  57.4ms   5.63MiB    0.6%   288KiB
-    Aufbau (occupation numbers)                             21    197ms    7.5%  9.40ms   9.12MiB    1.0%   445KiB
-    Convergence check                                       21   1.69ms    0.1%  80.7μs   5.73MiB    0.6%   279KiB
-    Bookkeeping (save previous density/energies)            21    206μs    0.0%  9.81μs     0.00B    0.0%    0.00B
-    Logbook + callback                                      21   28.2μs    0.0%  1.34μs      896B    0.0%    42.7B
-  Matrix assembly                                           21    621ms   23.7%  29.6ms    738MiB   82.7%  35.2MiB
-    Exchange-correlation matrix                             21    548ms   20.9%  26.1ms    732MiB   81.9%  34.8MiB
-    Hartree matrix (solves A\B)                             21   39.6ms    1.5%  1.89ms   6.86MiB    0.8%   335KiB
-    Hamiltonian sum (Hfix + Vxc + Hartree)                  21   33.5ms    1.3%  1.59ms     0.00B    0.0%    0.00B
-  Eigenvalue problem                                        21    533ms   20.3%  25.4ms   73.9MiB    8.3%  3.52MiB
-    channel (l=1, σ=1)                                      21    198ms    7.5%  9.41ms   24.6MiB    2.8%  1.17MiB
-    channel (l=0, σ=1)                                      21    181ms    6.9%  8.64ms   24.6MiB    2.8%  1.17MiB
-    channel (l=2, σ=1)                                      21    154ms    5.9%  7.31ms   24.6MiB    2.8%  1.17MiB
-  Energy                                                    21    105ms    4.0%  4.99ms   55.1MiB    6.2%  2.62MiB
-    Total energy                                            19   46.9ms    1.8%  2.47ms   14.6MiB    1.6%   787KiB
-    Exchange-correlation energy                             19   24.0ms    0.9%  1.26ms   26.4KiB    0.0%  1.39KiB
-    Density matrix assembly                                 19   18.4ms    0.7%   971μs   36.1MiB    4.0%  1.90MiB
-    Hartree energy (solves A\B)                             19   14.7ms    0.6%   772μs   4.20MiB    0.5%   226KiB
-    Coulomb (nuclear attraction) energy                     19    284μs    0.0%  15.0μs    124KiB    0.0%  6.50KiB
-    Kinetic energy                                          19    250μs    0.0%  13.2μs    124KiB    0.0%  6.50KiB
-    Copy trial density/energies (resolved degeneracy)        2   89.6μs    0.0%  44.8μs     0.00B    0.0%    0.00B
-Setup (init_cache! + algorithm cache)                        1   16.8ms    0.6%  16.8ms   4.74MiB    0.5%  4.74MiB
-Postcomputations (final Hartree potential)                   1    846μs    0.0%   846μs    226KiB    0.0%   226KiB
-Build KSESolution                                            1    108μs    0.0%   108μs   3.53KiB    0.0%  3.53KiB
+SCF loop (total, all iterations)                             1    1.36s   98.9%   1.36s    151MiB   96.8%   151MiB
+  Algorithm                                                 99    697ms   50.8%  7.04ms   19.8MiB   12.8%   205KiB
+    Line search (ODA relaxation)                            19    607ms   44.3%  32.0ms   5.27MiB    3.4%   284KiB
+    Aufbau (occupation numbers)                             20   87.9ms    6.4%  4.40ms   9.12MiB    5.9%   467KiB
+    Convergence check                                       20   1.41ms    0.1%  70.4μs   5.45MiB    3.5%   279KiB
+    Bookkeeping (save previous density/energies)            20    191μs    0.0%  9.54μs     0.00B    0.0%    0.00B
+    Logbook + callback                                      20   18.8μs    0.0%   940ns      896B    0.0%    44.8B
+  Eigenvalue problem                                        20    332ms   24.2%  16.6ms   70.4MiB   45.2%  3.52MiB
+    channel (l=0, σ=1)                                      20    134ms    9.8%  6.71ms   23.4MiB   15.1%  1.17MiB
+    channel (l=1, σ=1)                                      20    100ms    7.3%  5.01ms   23.4MiB   15.1%  1.17MiB
+    channel (l=2, σ=1)                                      20   97.1ms    7.1%  4.86ms   23.4MiB   15.1%  1.17MiB
+  Matrix assembly                                           20    258ms   18.8%  12.9ms   8.13MiB    5.2%   416KiB
+    Exchange-correlation matrix                             20    192ms   14.0%  9.61ms   1.60MiB    1.0%  81.8KiB
+    Hamiltonian sum (Hfix + Vxc + Hartree)                  20   32.9ms    2.4%  1.64ms     0.00B    0.0%    0.00B
+    Hartree matrix (solves A\B)                             20   32.7ms    2.4%  1.63ms   6.53MiB    4.2%   334KiB
+  Energy                                                    20   69.8ms    5.1%  3.49ms   52.2MiB   33.6%  2.61MiB
+    Total energy                                            18   30.8ms    2.2%  1.71ms   13.8MiB    8.9%   787KiB
+    Density matrix assembly                                 18   14.3ms    1.0%   792μs   34.2MiB   22.0%  1.90MiB
+    Exchange-correlation energy                             18   13.5ms    1.0%   748μs   25.0KiB    0.0%  1.39KiB
+    Hartree energy (solves A\B)                             18   10.7ms    0.8%   594μs   3.97MiB    2.6%   226KiB
+    Kinetic energy                                          18    226μs    0.0%  12.6μs    117KiB    0.1%  6.50KiB
+    Coulomb (nuclear attraction) energy                     18    225μs    0.0%  12.5μs    117KiB    0.1%  6.50KiB
+    Copy trial density/energies (resolved degeneracy)        2   85.8μs    0.0%  42.9μs     0.00B    0.0%    0.00B
+Setup (init_cache! + algorithm cache)                        1   14.6ms    1.1%  14.6ms   4.74MiB    3.0%  4.74MiB
+Postcomputations (final Hartree potential)                   1    630μs    0.0%   630μs    226KiB    0.1%   226KiB
+Build KSESolution                                            1    101μs    0.0%   101μs   3.53KiB    0.0%  3.53KiB
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ==========================================================================================
-CASE: Nmesh = 60  (Nₕ = 589, niter = 21, lh = 2, nspin = 1)
+CASE: Nmesh = 60  (Nₕ = 589, niter = 22, lh = 2, nspin = 1)
 System: Sodium, Slater exchange (spin-unpolarized)
 ==========================================================================================
 
@@ -84,71 +84,71 @@ System: Sodium, Slater exchange (spin-unpolarized)
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                          Time                    Allocations      
                                                                 ───────────────────────   ────────────────────────
-                       Tot / % measured:                             11.7s / 100.0%           3.58GiB / 100.0%    
+                       Tot / % measured:                             7.58s / 100.0%           1.40GiB / 100.0%    
 
 Section                                                 ncalls     time    %tot     avg     alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-SCF loop (total, all iterations)                             1    11.5s   98.5%   11.5s   3.54GiB   98.9%  3.54GiB
-  Eigenvalue problem                                        21    5.49s   46.9%   261ms    683MiB   18.6%  32.5MiB
-    channel (l=0, σ=1)                                      21    1.96s   16.7%  93.3ms    228MiB    6.2%  10.8MiB
-    channel (l=1, σ=1)                                      21    1.85s   15.9%  88.3ms    228MiB    6.2%  10.8MiB
-    channel (l=2, σ=1)                                      21    1.67s   14.3%  79.6ms    228MiB    6.2%  10.8MiB
-  Matrix assembly                                           21    3.12s   26.7%   149ms   2.27GiB   63.2%   110MiB
-    Exchange-correlation matrix                             21    2.54s   21.7%   121ms   2.25GiB   62.7%   110MiB
-    Hamiltonian sum (Hfix + Vxc + Hartree)                  21    347ms    3.0%  16.5ms     0.00B    0.0%    0.00B
-    Hartree matrix (solves A\B)                             21    240ms    2.1%  11.4ms   20.6MiB    0.6%  0.98MiB
-  Algorithm                                                104    2.38s   20.4%  22.9ms    148MiB    4.0%  1.42MiB
-    Line search (ODA relaxation)                            20    2.07s   17.7%   103ms   14.3MiB    0.4%   733KiB
-    Aufbau (occupation numbers)                             21    281ms    2.4%  13.4ms   78.2MiB    2.1%  3.72MiB
-    Convergence check                                       21   23.6ms    0.2%  1.12ms   55.6MiB    1.5%  2.65MiB
-    Bookkeeping (save previous density/energies)            21   6.76ms    0.1%   322μs     0.00B    0.0%    0.00B
-    Logbook + callback                                      21   42.6μs    0.0%  2.03μs      896B    0.0%    42.7B
-  Energy                                                    21    525ms    4.5%  25.0ms    477MiB   13.0%  22.7MiB
-    Density matrix assembly                                 19    217ms    1.9%  11.4ms    351MiB    9.6%  18.5MiB
-    Total energy                                            19    213ms    1.8%  11.2ms    113MiB    3.1%  5.95MiB
-    Hartree energy (solves A\B)                             19   54.6ms    0.5%  2.87ms   12.4MiB    0.3%   666KiB
-    Exchange-correlation energy                             19   36.2ms    0.3%  1.91ms   26.4KiB    0.0%  1.39KiB
-    Kinetic energy                                          19   1.78ms    0.0%  93.6μs    357KiB    0.0%  18.8KiB
-    Copy trial density/energies (resolved degeneracy)        2   1.16ms    0.0%   578μs     0.00B    0.0%    0.00B
-    Coulomb (nuclear attraction) energy                     19    972μs    0.0%  51.1μs    357KiB    0.0%  18.8KiB
-Setup (init_cache! + algorithm cache)                        1    176ms    1.5%   176ms   40.9MiB    1.1%  40.9MiB
-Postcomputations (final Hartree potential)                   1   3.02ms    0.0%  3.02ms    666KiB    0.0%   666KiB
-Build KSESolution                                            1    102μs    0.0%   102μs   3.53KiB    0.0%  3.53KiB
+SCF loop (total, all iterations)                             1    7.36s   97.1%   7.36s   1.36GiB   97.1%  1.36GiB
+  Eigenvalue problem                                        22    4.32s   57.1%   197ms    715MiB   49.8%  32.5MiB
+    channel (l=2, σ=1)                                      22    1.70s   22.4%  77.1ms    238MiB   16.6%  10.8MiB
+    channel (l=0, σ=1)                                      22    1.35s   17.9%  61.5ms    238MiB   16.6%  10.8MiB
+    channel (l=1, σ=1)                                      22    1.27s   16.8%  57.9ms    238MiB   16.6%  10.8MiB
+  Algorithm                                                109    1.39s   18.4%  12.8ms    151MiB   10.5%  1.39MiB
+    Line search (ODA relaxation)                            21    1.17s   15.5%  55.9ms   15.0MiB    1.0%   732KiB
+    Aufbau (occupation numbers)                             22    185ms    2.4%  8.42ms   78.2MiB    5.4%  3.55MiB
+    Convergence check                                       22   28.4ms    0.4%  1.29ms   58.2MiB    4.1%  2.65MiB
+    Bookkeeping (save previous density/energies)            22   4.25ms    0.1%   193μs     0.00B    0.0%    0.00B
+    Logbook + callback                                      22   32.4μs    0.0%  1.47μs      896B    0.0%    40.7B
+  Matrix assembly                                           22    1.23s   16.3%  56.1ms   26.7MiB    1.9%  1.21MiB
+    Exchange-correlation matrix                             22    669ms    8.8%  30.4ms   5.09MiB    0.4%   237KiB
+    Hamiltonian sum (Hfix + Vxc + Hartree)                  22    335ms    4.4%  15.2ms     0.00B    0.0%    0.00B
+    Hartree matrix (solves A\B)                             22    229ms    3.0%  10.4ms   21.6MiB    1.5%  0.98MiB
+  Energy                                                    22    405ms    5.4%  18.4ms    503MiB   35.0%  22.8MiB
+    Density matrix assembly                                 20    168ms    2.2%  8.42ms    370MiB   25.7%  18.5MiB
+    Total energy                                            20    160ms    2.1%  7.98ms    119MiB    8.3%  5.95MiB
+    Hartree energy (solves A\B)                             20   54.8ms    0.7%  2.74ms   13.0MiB    0.9%   666KiB
+    Exchange-correlation energy                             20   19.2ms    0.3%   959μs   27.8KiB    0.0%  1.39KiB
+    Kinetic energy                                          20   1.20ms    0.0%  59.8μs    376KiB    0.0%  18.8KiB
+    Copy trial density/energies (resolved degeneracy)        2    902μs    0.0%   451μs     0.00B    0.0%    0.00B
+    Coulomb (nuclear attraction) energy                     20    861μs    0.0%  43.1μs    376KiB    0.0%  18.8KiB
+Setup (init_cache! + algorithm cache)                        1    217ms    2.9%   217ms   40.9MiB    2.8%  40.9MiB
+Postcomputations (final Hartree potential)                   1   2.53ms    0.0%  2.53ms    666KiB    0.0%   666KiB
+Build KSESolution                                            1   90.9μs    0.0%  90.9μs   3.53KiB    0.0%  3.53KiB
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 --- Same data, sorted by total time within each level (bottleneck finder) ---
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                          Time                    Allocations      
                                                                 ───────────────────────   ────────────────────────
-                       Tot / % measured:                             11.7s / 100.0%           3.58GiB / 100.0%    
+                       Tot / % measured:                             7.58s / 100.0%           1.40GiB / 100.0%    
 
 Section                                                 ncalls     time    %tot     avg     alloc    %tot      avg
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-SCF loop (total, all iterations)                             1    11.5s   98.5%   11.5s   3.54GiB   98.9%  3.54GiB
-  Eigenvalue problem                                        21    5.49s   46.9%   261ms    683MiB   18.6%  32.5MiB
-    channel (l=0, σ=1)                                      21    1.96s   16.7%  93.3ms    228MiB    6.2%  10.8MiB
-    channel (l=1, σ=1)                                      21    1.85s   15.9%  88.3ms    228MiB    6.2%  10.8MiB
-    channel (l=2, σ=1)                                      21    1.67s   14.3%  79.6ms    228MiB    6.2%  10.8MiB
-  Matrix assembly                                           21    3.12s   26.7%   149ms   2.27GiB   63.2%   110MiB
-    Exchange-correlation matrix                             21    2.54s   21.7%   121ms   2.25GiB   62.7%   110MiB
-    Hamiltonian sum (Hfix + Vxc + Hartree)                  21    347ms    3.0%  16.5ms     0.00B    0.0%    0.00B
-    Hartree matrix (solves A\B)                             21    240ms    2.1%  11.4ms   20.6MiB    0.6%  0.98MiB
-  Algorithm                                                104    2.38s   20.4%  22.9ms    148MiB    4.0%  1.42MiB
-    Line search (ODA relaxation)                            20    2.07s   17.7%   103ms   14.3MiB    0.4%   733KiB
-    Aufbau (occupation numbers)                             21    281ms    2.4%  13.4ms   78.2MiB    2.1%  3.72MiB
-    Convergence check                                       21   23.6ms    0.2%  1.12ms   55.6MiB    1.5%  2.65MiB
-    Bookkeeping (save previous density/energies)            21   6.76ms    0.1%   322μs     0.00B    0.0%    0.00B
-    Logbook + callback                                      21   42.6μs    0.0%  2.03μs      896B    0.0%    42.7B
-  Energy                                                    21    525ms    4.5%  25.0ms    477MiB   13.0%  22.7MiB
-    Density matrix assembly                                 19    217ms    1.9%  11.4ms    351MiB    9.6%  18.5MiB
-    Total energy                                            19    213ms    1.8%  11.2ms    113MiB    3.1%  5.95MiB
-    Hartree energy (solves A\B)                             19   54.6ms    0.5%  2.87ms   12.4MiB    0.3%   666KiB
-    Exchange-correlation energy                             19   36.2ms    0.3%  1.91ms   26.4KiB    0.0%  1.39KiB
-    Kinetic energy                                          19   1.78ms    0.0%  93.6μs    357KiB    0.0%  18.8KiB
-    Copy trial density/energies (resolved degeneracy)        2   1.16ms    0.0%   578μs     0.00B    0.0%    0.00B
-    Coulomb (nuclear attraction) energy                     19    972μs    0.0%  51.1μs    357KiB    0.0%  18.8KiB
-Setup (init_cache! + algorithm cache)                        1    176ms    1.5%   176ms   40.9MiB    1.1%  40.9MiB
-Postcomputations (final Hartree potential)                   1   3.02ms    0.0%  3.02ms    666KiB    0.0%   666KiB
-Build KSESolution                                            1    102μs    0.0%   102μs   3.53KiB    0.0%  3.53KiB
+SCF loop (total, all iterations)                             1    7.36s   97.1%   7.36s   1.36GiB   97.1%  1.36GiB
+  Eigenvalue problem                                        22    4.32s   57.1%   197ms    715MiB   49.8%  32.5MiB
+    channel (l=2, σ=1)                                      22    1.70s   22.4%  77.1ms    238MiB   16.6%  10.8MiB
+    channel (l=0, σ=1)                                      22    1.35s   17.9%  61.5ms    238MiB   16.6%  10.8MiB
+    channel (l=1, σ=1)                                      22    1.27s   16.8%  57.9ms    238MiB   16.6%  10.8MiB
+  Algorithm                                                109    1.39s   18.4%  12.8ms    151MiB   10.5%  1.39MiB
+    Line search (ODA relaxation)                            21    1.17s   15.5%  55.9ms   15.0MiB    1.0%   732KiB
+    Aufbau (occupation numbers)                             22    185ms    2.4%  8.42ms   78.2MiB    5.4%  3.55MiB
+    Convergence check                                       22   28.4ms    0.4%  1.29ms   58.2MiB    4.1%  2.65MiB
+    Bookkeeping (save previous density/energies)            22   4.25ms    0.1%   193μs     0.00B    0.0%    0.00B
+    Logbook + callback                                      22   32.4μs    0.0%  1.47μs      896B    0.0%    40.7B
+  Matrix assembly                                           22    1.23s   16.3%  56.1ms   26.7MiB    1.9%  1.21MiB
+    Exchange-correlation matrix                             22    669ms    8.8%  30.4ms   5.09MiB    0.4%   237KiB
+    Hamiltonian sum (Hfix + Vxc + Hartree)                  22    335ms    4.4%  15.2ms     0.00B    0.0%    0.00B
+    Hartree matrix (solves A\B)                             22    229ms    3.0%  10.4ms   21.6MiB    1.5%  0.98MiB
+  Energy                                                    22    405ms    5.4%  18.4ms    503MiB   35.0%  22.8MiB
+    Density matrix assembly                                 20    168ms    2.2%  8.42ms    370MiB   25.7%  18.5MiB
+    Total energy                                            20    160ms    2.1%  7.98ms    119MiB    8.3%  5.95MiB
+    Hartree energy (solves A\B)                             20   54.8ms    0.7%  2.74ms   13.0MiB    0.9%   666KiB
+    Exchange-correlation energy                             20   19.2ms    0.3%   959μs   27.8KiB    0.0%  1.39KiB
+    Kinetic energy                                          20   1.20ms    0.0%  59.8μs    376KiB    0.0%  18.8KiB
+    Copy trial density/energies (resolved degeneracy)        2    902μs    0.0%   451μs     0.00B    0.0%    0.00B
+    Coulomb (nuclear attraction) energy                     20    861μs    0.0%  43.1μs    376KiB    0.0%  18.8KiB
+Setup (init_cache! + algorithm cache)                        1    217ms    2.9%   217ms   40.9MiB    2.8%  40.9MiB
+Postcomputations (final Hartree potential)                   1   2.53ms    0.0%  2.53ms    666KiB    0.0%   666KiB
+Build KSESolution                                            1   90.9μs    0.0%  90.9μs   3.53KiB    0.0%  3.53KiB
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 

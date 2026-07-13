@@ -64,12 +64,12 @@ and the corresponding orbitals in `U`.
 """
 function find_orbital!(discretization::KSEDiscretization,
                       U::AbstractArray{<:Real}, ϵ::AbstractArray{<:Real})
-    @unpack lₕ, nₕ, nspin, ksham, femops = discretization
+    @unpack lₕ, nₕ, nspin, ksham, femops, eigensolver = discretization
     # Solve the generalized eigenvalue problem for each section (l,σ)
     for σ in 1:nspin
         for l in 0:lₕ
             @views vH = ksham.H[:, :, l + 1, σ]
-            λ, V = eigen(Symmetric(femops.S*vH*femops.S))
+            λ, V = solve_eigenproblem(eigensolver, Symmetric(femops.S*vH*femops.S), nₕ)
             @views ϵ[l + 1, :, σ] = λ[1:nₕ]
             @views U[:, :, l + 1, σ] = femops.S*V[:, 1:nₕ]
         end

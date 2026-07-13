@@ -76,12 +76,16 @@ end
     @test abs(occ4S[2] + 0.08646) < 1e-5
     @test occ4S[3] == 2.0
 
-    occ4p = sol.occupied[7]
-    @test occ4p[1] == "4p"
+    # 4p and 3d are near-degenerate here (ε agree to ~1e-7): which one LAPACK
+    # returns first is not numerically guaranteed, so look them up by label
+    # instead of assuming sol.occupied[7]/[8] order.
+    occ_near_degenerate = Dict(sol.occupied[7][1] => sol.occupied[7],
+                              sol.occupied[8][1] => sol.occupied[8])
+
+    occ4p = occ_near_degenerate["4p"]
     @test abs(occ4p[2] + 0.00262) < 1e-5
 
-    occ3d = sol.occupied[8]
-    @test occ3d[1] == "3d"
+    occ3d = occ_near_degenerate["3d"]
     @test abs(occ3d[2] + 0.00262) < 1e-5
     @test abs(occ3d[3]/5 - 0.0056) < 1e-4
 end
