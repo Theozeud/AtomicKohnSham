@@ -44,11 +44,11 @@ struct FrozenAufbauCache{N} <: AufbauCache
         layers_st = keys(ndict)
         layers_qn = parse_shell.(layers_st)
         if max(length.(layers_qn)...) < 3 && discretization.nspin > 1
-            @error "You have a spinned-model. Please provide occupation numbers with the
-            spin index. For example \"1sUP\"."
+            error("You have a spinned-model. Please provide occupation numbers with the
+            spin index. For example \"1sUP\".")
         elseif max(length.(layers_qn)...) == 3 && discretization.nspin == 1
-            @error "You have a no spinned-model. Please provide occupation numbers without
-            the spin index. For example \"1s\"."
+            error("You have a no spinned-model. Please provide occupation numbers without
+            the spin index. For example \"1s\".")
         end
         for k ∈ layers_st
             lqn = parse_shell(k)

@@ -88,7 +88,7 @@ end
 
 function geometricrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     R = zeros(T, n)
-    R[1] = a
+    R[1] = T(a)
     hn = (one(T)-T(s))/(one(T) - T(s)^(n-1))*(b-a)
     H = zeros(T, n-1)
     H[end] = hn
@@ -98,6 +98,10 @@ function geometricrange(a::Real, b::Real, n::Int; T::Type = Float64, s::Real)
     for i in 2:n
         R[i] = R[i - 1] + H[i - 1]
     end
+    # Pin the endpoint exactly: the cumulative sum above reaches b only up to
+    # floating-point roundoff (unlike exprange/polynomialrange, which fix both
+    # endpoints directly), which otherwise leaves last(mesh) a few ULPs off b.
+    R[end] = T(b)
     R
 end
 

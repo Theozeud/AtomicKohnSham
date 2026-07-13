@@ -9,7 +9,7 @@ abstract type BuiltinFunctional end
 function BuiltinFunctional(identifier::Symbol;nspin::Int = 1)
    nspin in (1, 2) || error("n_spin needs to be 1 or 2")
     if identifier == :lda_x
-        return SlaterXα(n_spin)
+        return SlaterXα(nspin)
     else
         error("$identifier is not known for BuildinFunctional.")
     end

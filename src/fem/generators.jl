@@ -81,11 +81,11 @@ function P1IntLegendreBasis(mesh::Mesh, T::Type = Float64; kwargs...)
     generators = P1IntLegendreGenerator(T; kwargs...)
     # SIZE OF THE BASIS
     size = (generators.ordermax - 1) * (lastindex(mesh) - 1) + (lastindex(mesh) - 2)
-    # DICTIONNARY TO HAVE ENOUGHT INFORMATIONS ON THE BASIS TO FILL FEM MATRICES EFFICIENTLY
-    indices_cells = Dict{Int, Union{Int, Tuple{Int, Int}}}() #zeros(Int, size, 2)
-    indices_generators = Dict{Int, Union{Int, Tuple{Int, Int}}}() #zeros(Int, size, 2)
-    cells_to_indices = Dict{Int, Vector{Int}}()               #zeros(Int, length(mesh)-1, generators.size)
-    cells_to_generators = Dict{Int, Vector{Int}}()
+    # DENSE INTEGER-KEYED LOOKUPS: VECTORS TO FILL FEM MATRICES EFFICIENTLY
+    indices_cells = Vector{Union{Int, Tuple{Int, Int}}}(undef, size)
+    indices_generators = Vector{Union{Int, Tuple{Int, Int}}}(undef, size)
+    cells_to_indices = Vector{Vector{Int}}(undef, length(mesh) - 1)
+    cells_to_generators = Vector{Vector{Int}}(undef, length(mesh) - 1)
     numbas = 1
     # First mesh
     i = firstindex(mesh)
