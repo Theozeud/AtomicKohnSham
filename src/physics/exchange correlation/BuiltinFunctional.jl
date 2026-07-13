@@ -6,6 +6,12 @@ implemented to be compared with Libxc.jl and to use higher precision than Float6
 """
 abstract type BuiltinFunctional end
 
+# Unlike Libxc.OptArray (Union{Ptr{Nothing}, Array{Float64}} -- Libxc calls
+# into a Float64-only C library), BuiltinFunctional is pure Julia and must
+# accept any real element type to honor the "higher precision than Float64"
+# claim above.
+const OptRealArray = Union{Ptr{Nothing}, AbstractArray{<:Real}}
+
 function BuiltinFunctional(identifier::Symbol;nspin::Int = 1)
    nspin in (1, 2) || error("n_spin needs to be 1 or 2")
     if identifier == :lda_x
@@ -60,8 +66,8 @@ end
 function evaluate_functional!(
         func::BuiltinFunctional;
         rho::AbstractArray{<:Real},
-        zk::OptArray = C_NULL,
-        vrho::OptArray = C_NULL)
+        zk::OptRealArray = C_NULL,
+        vrho::OptRealArray = C_NULL)
     if func isa NoFunctional
         if !(zk == C_NULL)
             fill!(zk, 0)
