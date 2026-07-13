@@ -44,6 +44,51 @@
     @test AtomicKohnSham.eval_zk(func2, 0.3, 0.7) == AtomicKohnSham.eval_zk(func2, 0.7, 0.3)
 end
 
+@testset "Perdew-Wang Correlation" begin
+    func1 = AtomicKohnSham.PerdewWang(1)  # spin-unpolarized
+    func2 = AtomicKohnSham.PerdewWang(2)  # spin-polarized
+
+    # --- unpolarized zk/vrho match Libxc's lda_c_pw (n_spin=1) ---
+    libfunc1 = Libxc.Functional(:lda_c_pw, n_spin = 1)
+    for ρ in (0.001, 0.05, 0.5, 1.0, 3.0, 10.0)
+        zk = zeros(1)
+        vrho = zeros(1)
+        Libxc.evaluate!(libfunc1; rho = [ρ], zk = zk, vrho = vrho)
+        @test isapprox(AtomicKohnSham.eval_zk(func1, ρ), zk[1]; rtol = 1e-10)
+        @test isapprox(AtomicKohnSham.eval_vrho(func1, ρ), vrho[1]; rtol = 1e-10)
+    end
+
+    # --- spin-polarized zk/vrho_up/vrho_down match Libxc's lda_c_pw (n_spin=2),
+    #     across zeta from 0 (unpolarized) to 1 (fully polarized) ---
+    libfunc2 = Libxc.Functional(:lda_c_pw, n_spin = 2)
+    for (ρup, ρdown) in [(0.5, 0.5), (0.7, 0.3), (0.9, 0.1), (1.0, 0.0),
+        (2.0, 1.0), (0.05, 0.05), (0.5, 0.001), (0.001, 0.5)]
+        zk = zeros(1)
+        vrho = zeros(2, 1)
+        Libxc.evaluate!(libfunc2; rho = reshape([ρup, ρdown], 2, 1), zk = zk, vrho = vrho)
+        @test isapprox(AtomicKohnSham.eval_zk(func2, ρup, ρdown), zk[1]; rtol = 1e-7)
+        @test isapprox(AtomicKohnSham.eval_vrho_up(func2, ρup, ρdown), vrho[1, 1]; rtol = 1e-5)
+        @test isapprox(AtomicKohnSham.eval_vrho_down(func2, ρup, ρdown), vrho[2, 1]; rtol = 1e-5)
+    end
+
+    # --- spin-polarized formulas reduce to the unpolarized ones at ρup=ρdown=ρ/2 ---
+    for ρtest in [0.1, 0.42, 3.7]
+        @test isapprox(AtomicKohnSham.eval_zk(func2, ρtest/2, ρtest/2),
+                        AtomicKohnSham.eval_zk(func1, ρtest); atol = 1e-12)
+        @test isapprox(AtomicKohnSham.eval_vrho_up(func2, ρtest/2, ρtest/2),
+                        AtomicKohnSham.eval_vrho(func1, ρtest); atol = 1e-12)
+        @test isapprox(AtomicKohnSham.eval_vrho_down(func2, ρtest/2, ρtest/2),
+                        AtomicKohnSham.eval_vrho(func1, ρtest); atol = 1e-12)
+    end
+
+    # --- vacuum edge case: no NaN/Inf from the ρup+ρdown=0 division ---
+    @test AtomicKohnSham.eval_zk(func2, 0.0, 0.0) == 0.0
+    @test isfinite(AtomicKohnSham.eval_vrho_up(func2, 0.0, 0.0))
+
+    # --- known symmetry: eval_zk is symmetric under swapping ρup <-> ρdown ---
+    @test AtomicKohnSham.eval_zk(func2, 0.3, 0.7) == AtomicKohnSham.eval_zk(func2, 0.7, 0.3)
+end
+
 @testset "BuiltinFunctional Dispatch" begin
     # --- constructor validates nspin and no longer throws UndefVarError ---
     @test_nowarn BuiltinFunctional(:lda_x; nspin = 1)
@@ -55,6 +100,11 @@ end
     @test f1 isa AtomicKohnSham.SlaterXα
     @test f1.n_spin == 1
     @test AtomicKohnSham.is_lda(f1)
+
+    fpw = BuiltinFunctional(:lda_c_pw; nspin = 1)
+    @test fpw isa AtomicKohnSham.PerdewWang
+    @test fpw.n_spin == 1
+    @test AtomicKohnSham.is_lda(fpw)
 
     # --- NoFunctional always evaluates to zero, regardless of density ---
     nf = NoFunctional(n_spin = 1)

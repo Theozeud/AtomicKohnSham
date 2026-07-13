@@ -81,6 +81,7 @@ module AtomicKohnSham
 
     include("physics/exchange correlation/BuiltinFunctional.jl")
     include("physics/exchange correlation/SlaterXa.jl")
+    include("physics/exchange correlation/PerdewWang.jl")
     include("physics/models.jl")
 
     # =====================================

@@ -16,6 +16,8 @@ function BuiltinFunctional(identifier::Symbol;nspin::Int = 1)
    nspin in (1, 2) || error("n_spin needs to be 1 or 2")
     if identifier == :lda_x
         return SlaterXα(nspin)
+    elseif identifier == :lda_c_pw
+        return PerdewWang(nspin)
     else
         error("$identifier is not known for BuildinFunctional.")
     end
