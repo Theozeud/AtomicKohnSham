@@ -1,0 +1,62 @@
+Name    = Sodium
+Success = SUCCESS
+niter   = 59
+Final stopping criterion = 1.5777218104420236e-30
+Data type = Double64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 11
+    N (electrons)          = 11
+    Hartree coefficient    = 1
+    Exchange functional    = None
+    Correlation functional = None
+    Spin channels          = 1
+
+  Discretization
+    Angular momentum cutoff (lh) = 2
+    Orbitals per channel (nh)    = 10
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 189
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 500.0
+    Number of mesh points        = 20
+    Integration method           = GaussLegendre (npoints = 2000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-20
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 4.930380657631324e-28
+    reltol_ls  = 4.930380657631324e-28
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.01
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 1.48382791665487782343113389767688238e+02
+  Ecou (nuclear attraction)   = -3.69011485211791390776806077966746845e+02
+  Ehar (Hartree)              = 7.22459018800804806397223933549698962e+01
+  Eexc (exchange-correlation) = 3.944304526105059e-31
+  Etot (total)                = -1.48382791666223127793970294844088316e+02
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s : ε = -3.5065314228894230552668886957690e+01        n = 2.0
+            2s : ε = -1.4538723274711615740528714013635e+00        n = 2.0
+            2p : ε = -5.1434042852946770807420762139373e-01        n = 6.0
+            3s : ε = -1.2474102235049921300058528572663e-02        n = 1.0
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = 0.0e+0
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = 2.7396858115480426931753754615784e-09
+            orthonormality error (‖UᵀM₀U - I‖∞) = 3.3049130024649970515361869763929e-25
+            virial ratio (Ekin / -Etot)         = 9.9999999999504429748498068875051e-01

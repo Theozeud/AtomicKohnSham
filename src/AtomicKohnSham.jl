@@ -4,6 +4,7 @@ module AtomicKohnSham
     using SparseArrays
     using TensorOperations
     using FastGaussQuadrature
+    using QuadGK: gauss as quadgk_gauss
     using KrylovKit
     using Arpack
     using Optim
