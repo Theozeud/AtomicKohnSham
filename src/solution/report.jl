@@ -172,6 +172,11 @@ function write_report(sol::KSESolution{T}, path::AbstractString) where T
         println(io, "OCCUPIED ORBITALS")
         println(io, "-----------------")
         _print_occupied(io, sol; styled = false)
+        println(io)
+
+        println(io, "SANITY CHECKS")
+        println(io, "-------------")
+        _print_sanity(io, sol; styled = false)
     end
     nothing
 end

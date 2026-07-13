@@ -97,6 +97,9 @@ function compute_hartree_energy(discretization::KSEDiscretization, D::AbstractAr
     @unpack Rmax, cache, nspin, N = discretization
     @unpack A, F = discretization.femops
     @unpack B, W = cache.hartw
+    # HartreeWorkspace allocates B/W with length 0 when model.hartree == 0 (see
+    # discretization.jl); A\B below would otherwise throw a DimensionMismatch.
+    isempty(B) && return zero(eltype(D))
     if nspin == 1
         tensor_matrix_dict!(B, D, F)
         W .= A\B
@@ -118,6 +121,8 @@ function compute_hartree_mix_energy(discretization::KSEDiscretization,
     @unpack Rmax, cache, nspin, N = discretization
     @unpack A, F = discretization.femops
     @unpack B, W = cache.hartw
+    # See compute_hartree_energy: B/W are empty when model.hartree == 0.
+    isempty(B) && return zero(eltype(D0))
     if nspin == 1
         tensor_matrix_dict!(B, D0, F)
         W .= A\B

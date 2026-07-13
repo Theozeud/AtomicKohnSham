@@ -51,6 +51,28 @@ function _print_occupied(io::IO, sol::KSESolution{T}; styled::Bool = true) where
     end
 end
 
+"""
+Print the "Sanity checks" block (energy balance, electron count, density
+normalization, orbital orthonormality, virial ratio) shared by
+`Base.show(io, sol)` and `write_report`. See [`SanityChecks`](@ref) for what
+each value means and why a nonzero error indicates a real problem.
+"""
+function _print_sanity(io::IO, sol::KSESolution{T}; styled::Bool = true) where {T}
+    if styled
+        printstyled(io, "Sanity checks = \n"; bold = true, color = :blue)
+    else
+        println(io, "Sanity checks = ")
+    end
+    sc = sol.sanity
+    _write_kv_block(io, 12, [
+        ("energy balance (Etot - ΣE)", _sci_str(sc.energy_balance)),
+        ("electron count error (Σn - N)", _sci_str(sc.electron_count_error)),
+        ("density norm error (∫4πr²ρdr - N)", _sci_str(sc.density_norm_error)),
+        ("orthonormality error (‖UᵀM₀U - I‖∞)", _sci_str(sc.orthonormality_error)),
+        ("virial ratio (Ekin / -Etot)", _sci_str(sc.virial_ratio)),
+    ])
+end
+
 function Base.show(io::IO, sol::KSESolution{T}) where {T}
     printstyled(io, "Name : $(sol.name)\n"; bold = true)
     printstyled(io, "Success = "; bold = true)
@@ -62,4 +84,6 @@ function Base.show(io::IO, sol::KSESolution{T}) where {T}
     println(io, sol.stopping_criteria)
 
     _print_occupied(io, sol)
+    println(io)
+    _print_sanity(io, sol)
 end

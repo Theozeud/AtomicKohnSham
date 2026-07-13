@@ -62,6 +62,9 @@ solution.
 - `occupied`: Summary of occupied orbitals, sorted by orbital energy. Each entry
   contains the shell label, orbital energy, and occupation number.
 - `W`: Coefficients of the Hartree potential.
+- `sanity::SanityChecks`: Physical consistency diagnostics (energy bookkeeping,
+  electron count, density normalization, orbital orthonormality, virial
+  ratio) computed independently of any comparison to a previous run's output.
 - `logbook::LogBook`: Logbook containing recorded quantities during the SCF
   iterations.
 - `name::String`: Name of the solution, used for identification or labeling.
@@ -84,6 +87,8 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
     occupied::TO                        # Occupied orbitals with energies
 
     W::TW                               # Coefficients of the Hartree potential
+
+    sanity::SanityChecks{T}             # Physical consistency diagnostics
 
     logbook::logbookType                # LogBook of all recorded quantities
 
@@ -108,6 +113,8 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
 
         W = discretization.cache.hartw.W
 
+        sanity = _sanity_checks(discretization, model, D, U, n, solver.energies)
+
         # Context
         context = KSEContext(model, alg, lₕ, nₕ, basis, fem_integration_method)
 
@@ -125,6 +132,7 @@ struct KSESolution{T <: Real, TD, TU, TE, TN, TO, TW, logbookType <: LogBook, C<
                              solver.energies,
                              D, U, ϵ, n, occupied,
                              W,
+                             sanity,
                              solver.logbook,
                              name,
                              context)

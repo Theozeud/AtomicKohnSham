@@ -22,6 +22,18 @@ function run_solve(ex::TEX, ec::TEC,
     return sol
 end
 
+# See hydrogen.jl for the documented version of this helper.
+function check_sanity(sol; tol::Real = 1e-6, virial_tol::Union{Real, Nothing} = nothing)
+    sc = sol.sanity
+    @test abs(sc.energy_balance) < tol
+    @test abs(sc.electron_count_error) < tol
+    @test abs(sc.density_norm_error) < tol
+    @test abs(sc.orthonormality_error) < tol
+    if !isnothing(virial_tol)
+        @test abs(sc.virial_ratio - 1) < virial_tol
+    end
+end
+
 
 @testset "Scandium RHF Spin Nopoloarized" begin
 
@@ -84,4 +96,8 @@ end
     @test occ3d[1] == "3d"
     @test abs(occ3d[2] + 0.00262) < 1e-5
     @test abs(occ3d[3]/5 - 0.0056) < 1e-4
+
+    # No exchange-correlation here (only nuclear Coulomb + Hartree, both ~1/r):
+    # the virial theorem Ekin = -Etot applies, up to the Rmax-truncation defect.
+    check_sanity(sol; tol = 1e-5, virial_tol = 1e-5)
 end
