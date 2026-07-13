@@ -207,8 +207,17 @@ A vector containing the Hartree potential values evaluated at `X`.
 function eval_hartree(sol::KSESolution,
                       X::AbstractVector{TX}) where {TX<:Real}
     @unpack model, basis = sol.context
+    boundary = model.N/last(basis.mesh)
+    # sol.W has length 0 when model.hartree == 0 (see HartreeWorkspace in
+    # discretization.jl): evaluate(basis, sol.W, X) would index it with
+    # global basis indices, an out-of-bounds access. W ≡ 0 in that case, so
+    # only the boundary term remains.
+    if isempty(sol.W)
+        T = promote_type(typeof(boundary), TX)
+        return fill(T(boundary), length(X))
+    end
     WX = evaluate(basis, sol.W, X)
-    return WX ./ X .+ model.N/last(basis.mesh)
+    return WX ./ X .+ boundary
 end
 
 
