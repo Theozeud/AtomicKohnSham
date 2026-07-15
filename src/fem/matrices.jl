@@ -150,6 +150,41 @@ function fill_mass_matrix!(basis::FEMBasis,
 end
 
 #--------------------------------------------------------------------
+#                     MIXED (Pi'Pj) MASS MATRIX
+#--------------------------------------------------------------------
+# ∫ w(r) φᵢ'(r)φⱼ(r) dr -- not symmetric by itself (unlike mass_matrix), the
+# weak-form GGA XC potential needs it plus its own transpose. Only used with
+# density-dependent FunWeight (GGA vσ·∇ρ weights), so the NoWeight
+# reuse-across-cells optimization in fill_mass_matrix! doesn't apply here.
+function mixed_mass_matrix(basis::FEMBasis;
+        weight::AbstractWeight,
+        method::FEMIntegrationMethod = default_method(basis, weight))
+    T = eltype(basis)
+    A = zeros(T, basis.size, basis.size)
+    fill_mixed_mass_matrix!(basis, A; weight = weight, method = method)
+    A
+end
+
+function fill_mixed_mass_matrix!(basis::FEMBasis,
+        A::AbstractMatrix{<:Real};
+        weight::AbstractWeight,
+        method::FEMIntegrationMethod = default_method(basis, weight))
+    @unpack mesh, cache, cells_to_indices, cells_to_generators = basis
+    @unpack K = cache
+    fill!(A, 0)
+    @inbounds for k in cellrange(mesh)
+        eldata = getelement(basis, k, :Mmix)
+        _fill_local_matrix!(K, method, weight, eldata, cache.prodMixedG, basis)
+        Ib = cells_to_indices[k]
+        Ig = cells_to_generators[k]
+        @views vA = A[Ib, Ib]
+        @views vK = K[Ig, Ig]
+        @. vA += vK
+    end
+    nothing
+end
+
+#--------------------------------------------------------------------
 #                          STIFFNESS MATRIX
 #--------------------------------------------------------------------
 function stiffness_matrix(

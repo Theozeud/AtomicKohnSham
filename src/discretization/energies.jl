@@ -149,10 +149,70 @@ Compute the exchange–correlation energy for the density matrix `D`.
 
 function compute_exc_energy(discretization::KSEDiscretization{T}, model::KSEModel,
                            D::AbstractArray{<:Real}) where T
-    @unpack Rmax, nspin, fem_integration_method = discretization
+    @unpack Rmax, nspin, fem_integration_method, cache, basis = discretization
     @unpack fx, fx2, fy, wy, y, shiftx = fem_integration_method
     if !has_exchcorr(model)
         return zero(T)
+    end
+    if has_gga(model)
+        # Unlike LDA (whose ρ-only integrand is C⁰ and integrates fine on the
+        # single global Gauss-Legendre grid `y`), GGA's σ=ρ'² integrand is
+        # genuinely discontinuous at every mesh node (this basis is only C⁰,
+        # so φᵢ' jumps across cell boundaries) -- a single high-order rule
+        # spanning all cells converges very poorly across those jumps. So,
+        # like the matrix assembly (fill_mass_matrix!/fill_mixed_mass_matrix!),
+        # integrate cell-by-cell using fem_integration_method's per-cell
+        # reference quadrature (x,w), which never asks one quadrature panel to
+        # span a discontinuity. (Confirmed empirically: at fixed global
+        # npoints, an analytic-vs-FD check of assemble_exc!'s VxcUP against
+        # this per-cell compute_exc_energy converges properly, whereas the
+        # single-global-grid version required a ~60x finer grid to agree.)
+        @unpack dρ_buf, σ_buf = cache.excw
+        @unpack x, w = fem_integration_method
+        energy = zero(T)
+        if nspin == 1
+            for k in cellrange(basis.mesh)
+                eldata = getelement(basis, k, :M)
+                @. shiftx = eldata.invϕ[1] * x + eldata.invϕ[2]
+                optimized_eval_density!(fx, discretization, D, shiftx)
+                optimized_eval_density_gradient!(dρ_buf, discretization, D, fx, shiftx)
+                @. σ_buf = dρ_buf^2
+                evaluate_zk!(model; rho = fx, sigma = σ_buf, zk = fy, cache = dρ_buf)
+                @. fx = fx * fy * shiftx^2
+                energy += eldata.invϕ[1] * dot(w, fx)
+            end
+            return 4π * energy
+        else
+            @views ρup = fx2[1, :]
+            @views ρdown = fx2[2, :]
+            @views dρup = dρ_buf[1, :]
+            @views dρdown = dρ_buf[2, :]
+            @views DUP = D[:, :, 1]
+            @views DDOWN = D[:, :, 2]
+            @views σuu = σ_buf[1, :]
+            @views σud = σ_buf[2, :]
+            @views σdd = σ_buf[3, :]
+            for k in cellrange(basis.mesh)
+                eldata = getelement(basis, k, :M)
+                @. shiftx = eldata.invϕ[1] * x + eldata.invϕ[2]
+                optimized_eval_density!(ρup, discretization, DUP, shiftx)
+                optimized_eval_density!(ρdown, discretization, DDOWN, shiftx)
+                optimized_eval_density_gradient!(dρup, discretization, DUP, ρup, shiftx)
+                optimized_eval_density_gradient!(dρdown, discretization, DDOWN, ρdown, shiftx)
+                @. σuu = dρup^2
+                @. σud = dρup * dρdown
+                @. σdd = dρdown^2
+                # cache must be a genuine Array, not a view (dρup/dρdown are
+                # SubArrays of dρ_buf's rows): Libxc's low-level evaluate!
+                # methods require zk/vrho/... ::Union{Array{Float64},Ptr}
+                # exactly. `fx` is unused until the line below, so reuse it.
+                evaluate_zk!(model; rho = fx2, sigma = σ_buf, zk = fy, cache = fx)
+                @. fx = ρup + ρdown
+                @. fx = fx * fy * shiftx^2
+                energy += eldata.invϕ[1] * dot(w, fx)
+            end
+            return 4π * energy
+        end
     end
     if nspin == 1
         eval_density!(fx, discretization, D, y)

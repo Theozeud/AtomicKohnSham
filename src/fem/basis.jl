@@ -6,6 +6,7 @@ struct BasisCache{prodMType <: PolySet,
     T <: Real}
     prodMG::prodMType
     prodMdG::prodMType
+    prodMixedG::prodMType            # ALL PRODUCT Pi'Pj (GGA weak-form matrix)
     prodTG::prodTType
     K::Matrix{T}                    # Local FEM Matrix
     T::Array{T, 3}                   # Local FEM Tensor
@@ -19,6 +20,8 @@ struct BasisCache{prodMType <: PolySet,
         prodMG = pairwiseproduct(polynomials)
         # ALL PRODUCT Pi'Pj'
         prodMdG = pairwiseproduct(derivpolynomials)
+        # ALL PRODUCT Pi'Pj (asymmetric: derivative on the first factor only)
+        prodMixedG = mul(derivpolynomials, polynomials)
         # ALL PRODUCT PiPjPk
         prodTG = mul(prodMG, polynomials)
 
@@ -34,6 +37,7 @@ struct BasisCache{prodMType <: PolySet,
             typeof(prodTG),
             TG}(prodMG,
             prodMdG,
+            prodMixedG,
             prodTG,
             K,
             T,
@@ -47,6 +51,8 @@ function getcache(cache::BasisCache, s::Symbol)
         return cache.cacheM
     elseif s == :Md
         return @views cache.cacheM[1:(end - 1)]
+    elseif s == :Mmix
+        return cache.cacheM
     elseif s == :T
         return cache.cacheT
     end
@@ -244,6 +250,32 @@ function evaluate!(evaluations::AbstractVector,
         if !isnothing(j)
             k = pb.indices_generators[I[i]][j]
             evaluations[i] = cache_Pϕx[k]
+        end
+    end
+end
+
+# Evaluation of the physical-space derivative φᵢ'(x) of the i-th element of
+# the basis pb, for i ∈ I (used for GGA density gradients). derivpolynomials
+# are derivatives w.r.t. the reference-cell coordinate, so the physical
+# derivative picks up a chain-rule factor ϕ[1] (the physical→reference slope
+# of the current cell's affine map).
+function evaluate_deriv!(evaluations::AbstractVector,
+        pb::FEMBasis,
+        I::AbstractVector{<:Int},
+        x::T,
+        cache_dPϕx::AbstractVector = _cache_Pϕx(pb, x)) where {T}
+    fill!(evaluations, 0)
+    fill!(cache_dPϕx, 0)
+    localisation_x = findindex(pb.mesh, x)
+    ϕ = pb.shifts[localisation_x]
+    ϕx = ϕ[1]*x + ϕ[2]
+    P = pb.generators.derivpolynomials
+    AtomicKohnSham.evaluate!(cache_dPϕx, P, ϕx)
+    @inbounds for i in eachindex(I)
+        j = findfirst(==(localisation_x), pb.indices_cells[I[i]])
+        if !isnothing(j)
+            k = pb.indices_generators[I[i]][j]
+            evaluations[i] = ϕ[1] * cache_dPϕx[k]
         end
     end
 end

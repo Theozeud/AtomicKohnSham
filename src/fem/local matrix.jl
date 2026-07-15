@@ -132,17 +132,24 @@ function fill_local_matrix!(K::AbstractArray,
         eldata::ElementData,
         ::PolySet,
         basis::FEMBasis)
-    @unpack x, w, shiftx, fx, Pgenx, Qgenx = quadra
+    @unpack x, w, shiftx, fx, Pgenx, Qgenx, Qmixedgenx = quadra
     @unpack invϕ = eldata
     shiftx .= invϕ[1] .* x .+ invϕ[2]
     weight(fx, shiftx)
     @. fx *= w
     Kreshape = reshape(K, length(K), 1)
-    if length(K) == size(Qgenx,1)
+    if eldata.s == :Mmix
+        mul!(Kreshape, Qmixedgenx, fx)
+        # No extra invϕ[1] Jacobian factor here (unlike the :M/:Md branches
+        # below): the physical-space chain rule for the single derivative
+        # scales by eldata.ϕ[1], and dx = eldata.invϕ[1] d(ref) -- these are
+        # reciprocal slopes of inverse affine maps, so ϕ[1]*invϕ[1] == 1 and
+        # the two factors cancel exactly.
+    elseif length(K) == size(Qgenx,1)
         mul!(Kreshape,Qgenx,fx)
+        Kreshape .*= eldata.invϕ[1]
     elseif length(K) == size(Pgenx,1)
         mul!(Kreshape,Pgenx,fx)
+        Kreshape .*= eldata.invϕ[1]
     end
-    #@tensor Kreshape[i,j] = Qgenx[i, j, k] * fx[k]
-    Kreshape .*= eldata.invϕ[1]
 end

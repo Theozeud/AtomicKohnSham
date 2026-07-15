@@ -14,7 +14,7 @@ module AtomicKohnSham
     using Base.Threads
 
     using Libxc: Functional, OptArray
-    import Libxc: is_lda
+    import Libxc: is_lda, is_gga
     import Libxc: evaluate as evaluate_functional
     import Libxc: evaluate! as evaluate_functional!
 
@@ -51,7 +51,8 @@ module AtomicKohnSham
 
     export mass_matrix, sparse_mass_matrix,
         stiffness_matrix, sparse_stiffness_matrix,
-        mass_tensor, mass_vector
+        mass_tensor, mass_vector,
+        mixed_mass_matrix
 
     export FEMIntegrationMethod, ExactIntegration, QuadratureIntegration, GaussLegendre
 
@@ -77,7 +78,7 @@ module AtomicKohnSham
     # =====================================
     export NoFunctional, BuiltinFunctional
     export evaluate_functional, evaluate_functional!
-    export KSEModel, RHF, Slater
+    export KSEModel, RHF, Slater, PBE
 
     include("physics/exchange correlation/BuiltinFunctional.jl")
     include("physics/exchange correlation/SlaterXa.jl")

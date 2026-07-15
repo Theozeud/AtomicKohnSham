@@ -25,6 +25,12 @@ end
 
 is_lda(f::BuiltinFunctional) = f.family == :lda
 
+# Every BuiltinFunctional implemented in AtomicKohnSham.jl today (SlaterXα,
+# PerdewWang, NoFunctional) is LDA-only -- GGA builtins are a separate,
+# deferred task (see dev/gga/PLAN.md). NoFunctional has no `family` field, so
+# this can't reuse `is_lda`'s `f.family == :lda` pattern.
+is_gga(f::BuiltinFunctional) = false
+
 """
     NoFunctional
 """
@@ -69,7 +75,13 @@ function evaluate_functional!(
         func::BuiltinFunctional;
         rho::AbstractArray{<:Real},
         zk::OptRealArray = C_NULL,
-        vrho::OptRealArray = C_NULL)
+        vrho::OptRealArray = C_NULL,
+        sigma = nothing,
+        vsigma::OptRealArray = C_NULL)
+    # sigma/vsigma: accepted (and ignored beyond zeroing vsigma) so that a
+    # BuiltinFunctional -- always LDA-only here -- can stand in for the
+    # non-GGA half of a GGA model (e.g. NoFunctional correlation alongside a
+    # GGA exchange); see has_gga/KSEModel's rung check in physics/models.jl.
     if func isa NoFunctional
         if !(zk == C_NULL)
             fill!(zk, 0)
@@ -78,22 +90,37 @@ function evaluate_functional!(
         if !(vrho == C_NULL)
             fill!(vrho, 0)
         end
+
+        if !(vsigma == C_NULL)
+            fill!(vsigma, 0)
+        end
         return
     end
 
     rho = ndims(rho) == 1 ? reshape(rho, :, 1) : rho
 
+    # Density should be non-negative by construction, but a FEM/quadrature
+    # approximation of ρ can dip slightly (or, for a badly-conditioned
+    # discretization -- too few, too-high-order elements over too large a
+    # domain -- wildly) negative. eval_zk/eval_vrho below raise ρ to
+    # non-integer powers (e.g. ρ^(1/3)), which throws a DomainError for any
+    # negative real input rather than degrading gracefully. Clamping at the
+    # physical floor of zero (a functional's only sane value in vacuum
+    # anyway, see the iszero(ρ) guards elsewhere in this file/PerdewWang.jl)
+    # turns that hard crash into the same "no contribution here" behavior a
+    # tiny negative artifact should have had in the first place.
+    _nonneg(x) = max(x, zero(x))
+
     if !(zk == C_NULL)
         fill!(zk, 0)
         if func.n_spin == 1
             for i in eachindex(rho)
-                @views ρi = rho[i]
-                zk[i] = eval_zk(func, ρi)
+                zk[i] = eval_zk(func, _nonneg(rho[i]))
             end
         else
             for i in axes(rho, 2)
                 @views ρi = rho[:, i]
-                zk[i] = eval_zk(func, ρi...)
+                zk[i] = eval_zk(func, _nonneg(ρi[1]), _nonneg(ρi[2]))
             end
         end
     end
@@ -102,14 +129,13 @@ function evaluate_functional!(
         fill!(vrho, 0)
         if func.n_spin == 1
             for i in eachindex(rho)
-                @views ρi = rho[i]
-                vrho[i] = eval_vrho(func, ρi)
+                vrho[i] = eval_vrho(func, _nonneg(rho[i]))
             end
         else
             for i in axes(rho, 2)
                 @views ρi = rho[:, i]
-                vrho[1, i] = eval_vrho_up(func, ρi...)
-                vrho[2, i] = eval_vrho_down(func, ρi...)
+                vrho[1, i] = eval_vrho_up(func, _nonneg(ρi[1]), _nonneg(ρi[2]))
+                vrho[2, i] = eval_vrho_down(func, _nonneg(ρi[1]), _nonneg(ρi[2]))
             end
         end
     end
