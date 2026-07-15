@@ -32,9 +32,10 @@ const PW92_Pα = (0.016887, 0.11125, 10.357, 3.6231, 0.88026, 0.49671)
 
 rs_of_ρ(ρ::Real) = (3 / (4π * ρ))^(1//3)
 
-eval_zk(::PerdewWang, ρ::Real) = G(rs_of_ρ(ρ), PW92_P0...)
+eval_zk(::PerdewWang, ρ::Real) = iszero(ρ) ? zero(ρ) : G(rs_of_ρ(ρ), PW92_P0...)
 
 function eval_vrho(::PerdewWang, ρ::Real)
+    iszero(ρ) && return zero(ρ)
     rs = rs_of_ρ(ρ)
     ec = G(rs, PW92_P0...)
     decdrs = dG_drs(rs, PW92_P0...)
