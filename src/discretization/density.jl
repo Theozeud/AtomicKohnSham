@@ -124,3 +124,73 @@ function eval_density!(ρ::AbstractVector{<:Real},
     end
     ρ
 end
+
+# ===================================================================
+#                  Evaluation of the Density Gradient (GGA)
+# ===================================================================
+"""
+    eval_density_gradient(discretization, D, X)
+
+Evaluate the radial density `ρ(x)` and its derivative `ρ'(x)` at all
+positions in `X` from the density matrix `D`. Returns `(ρ, dρ)`.
+
+With `q(r) = Σᵢⱼ D_ij φᵢ(r)φⱼ(r)` (the same quantity computed by
+[`eval_density`](@ref)) and `ρ(r) = q(r)/(4πr²)`:
+`q'(r) = 2 Σᵢⱼ D_ij φᵢ'(r)φⱼ(r)` (using `D` symmetric, no need to also track
+`φᵢφⱼ'`), so `ρ'(r) = q'(r)/(4πr²) - 2ρ(r)/r`.
+"""
+function eval_density_gradient(discretization::KSEDiscretization,
+                     D::AbstractMatrix{<:Real},
+                     X::AbstractVector{<:Real})
+    newT = promote_type(eltype(D), eltype(X))
+    ρ = zeros(newT, length(X))
+    dρ = zeros(newT, length(X))
+    eval_density_gradient!(ρ, dρ, discretization, D, X)
+    ρ, dρ
+end
+
+"""
+    eval_density_gradient!(ρ, dρ, discretization, D, X)
+
+In-place version of [`eval_density_gradient`](@ref), reusing internal work
+buffers (no allocations).
+"""
+function eval_density_gradient!(ρ::AbstractVector{<:Real},
+                      dρ::AbstractVector{<:Real},
+                      discretization::KSEDiscretization,
+                      D::AbstractMatrix{<:Real},
+                      X::AbstractVector{<:Real})
+    @unpack basis, cache = discretization
+    @unpack buf2, buf3 = cache.evalw
+    cache_Pϕx = _cache_Pϕx(basis, first(X))
+    cache_dPϕx = _cache_Pϕx(basis, first(X))
+    @inbounds for k in eachindex(X)
+        xk = X[k]
+        localisation_xk = findindex(basis.mesh, xk)
+        Ik = basis.cells_to_indices[localisation_xk]
+        @views eval_basis = buf2[Ik]
+        @views eval_deriv = buf3[Ik]
+        evaluate!(eval_basis, basis, Ik, xk, cache_Pϕx)
+        evaluate_deriv!(eval_deriv, basis, Ik, xk, cache_dPϕx)
+        # See eval_density! for why this quadratic form is computed by a
+        # direct scalar loop rather than mul!/dot.
+        n = length(Ik)
+        s = zero(eltype(ρ))
+        sd = zero(eltype(dρ))
+        for a in 1:n
+            ea = eval_basis[a]
+            eda = eval_deriv[a]
+            Ia = Ik[a]
+            for b in 1:n
+                Dab = D[Ia, Ik[b]]
+                eb = eval_basis[b]
+                s += ea * Dab * eb
+                sd += eda * Dab * eb
+            end
+        end
+        ρk = s / (4π*xk^2)
+        ρ[k] = ρk
+        dρ[k] = 2sd/(4π*xk^2) - 2ρk/xk
+    end
+    ρ, dρ
+end

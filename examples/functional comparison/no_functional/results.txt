@@ -1,0 +1,61 @@
+Name    = Oxygen
+Success = SUCCESS
+niter   = 45
+Final stopping criterion = 1.4210854715202004e-14
+Data type = Float64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 8
+    N (electrons)          = 8
+    Hartree coefficient    = 1
+    Exchange functional    = None
+    Correlation functional = None
+    Spin channels          = 1
+
+  Discretization
+    Angular momentum cutoff (lh) = 2
+    Orbitals per channel (nh)    = 5
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 289
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 1000.0
+    Number of mesh points        = 30
+    Integration method           = GaussLegendre (npoints = 1000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-10
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 2.220446049250313e-12
+    reltol_ls  = 2.220446049250313e-12
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.001
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 67.03856504036209
+  Ecou (nuclear attraction)   = -166.05572911318032
+  Ehar (Hartree)              = 31.978599128975922
+  Eexc (exchange-correlation) = -2.1316282072803006e-14
+  Etot (total)                = -67.03856494384232
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s : ε = -1.691253827890571e+01        n = 2.0
+            2s : ε = -5.228829861857673e-01        n = 2.0
+            2p : ε = -4.728082117869554e-02        n = 4.0
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = 2.842170943040401e-14
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = -3.904432333001751e-11
+            orthonormality error (‖UᵀM₀U - I‖∞) = 2.304004986797281e-09
+            virial ratio (Ekin / -Etot)         = 1.000000001439765e+00

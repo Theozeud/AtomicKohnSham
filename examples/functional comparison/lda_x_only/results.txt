@@ -1,0 +1,61 @@
+Name    = Oxygen
+Success = SUCCESS
+niter   = 24
+Final stopping criterion = 3.356585696597144e-11
+Data type = Float64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 8
+    N (electrons)          = 8
+    Hartree coefficient    = 1
+    Exchange functional    = Slater Exchange
+    Correlation functional = None
+    Spin channels          = 1
+
+  Discretization
+    Angular momentum cutoff (lh) = 2
+    Orbitals per channel (nh)    = 5
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 289
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 1000.0
+    Number of mesh points        = 30
+    Integration method           = GaussLegendre (npoints = 1000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-10
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 2.220446049250313e-12
+    reltol_ls  = 2.220446049250313e-12
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.001
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 73.92542458142837
+  Ecou (nuclear attraction)   = -176.7989967238904
+  Ehar (Hartree)              = 36.14274316012457
+  Eexc (exchange-correlation) = -7.19459559884389
+  Etot (total)                = -73.92542458118136
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s : ε = -1.869081532268532e+01        n = 2.0
+            2s : ε = -8.205996010005714e-01        n = 2.0
+            2p : ε = -2.895125267139106e-01        n = 4.0
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = 0.0e+0
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = -2.607070115345778e-11
+            orthonormality error (‖UᵀM₀U - I‖∞) = 2.371645102527964e-09
+            virial ratio (Ekin / -Etot)         = 1.000000000003341e+00

@@ -5,10 +5,6 @@ using LinearAlgebra
 using SparseArrays
 using JLD2
 
-#=
-using Aqua
-Aqua.test_all(AtomicKohnSham)
-=#
 
 include("fem.jl")
 include("utils.jl")
@@ -18,4 +14,5 @@ include("algorithms.jl")
 include("solver.jl")
 include("solution.jl")
 include("hydrogen.jl")
+include("gga.jl")
 include("scandium.jl")

@@ -1,0 +1,61 @@
+Name    = Oxygen
+Success = SUCCESS
+niter   = 21
+Final stopping criterion = 2.7714104108316178e-11
+Data type = Float64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 8
+    N (electrons)          = 8
+    Hartree coefficient    = 1
+    Exchange functional    = Slater exchange
+    Correlation functional = Perdew & Wang
+    Spin channels          = 1
+
+  Discretization
+    Angular momentum cutoff (lh) = 2
+    Orbitals per channel (nh)    = 5
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 289
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 1000.0
+    Number of mesh points        = 30
+    Integration method           = GaussLegendre (npoints = 1000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-10
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 2.220446049250313e-12
+    reltol_ls  = 2.220446049250313e-12
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.001
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 74.11517093201047
+  Ecou (nuclear attraction)   = -177.1490578236457
+  Ehar (Hartree)              = 36.32900139028493
+  Eexc (exchange-correlation) = -7.7658067033431735
+  Etot (total)                = -74.47069220469349
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s : ε = -1.875815064016787e+01        n = 2.0
+            2s : ε = -8.712217235007345e-01        n = 2.0
+            2p : ε = -3.382603077622207e-01        n = 4.0
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = -1.421085471520200e-14
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = -2.224975759190784e-11
+            orthonormality error (‖UᵀM₀U - I‖∞) = 2.303978785533900e-09
+            virial ratio (Ekin / -Etot)         = 9.952260243304061e-01

@@ -34,6 +34,7 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
     w::Vector{T}
     Pgenx::Matrix{T}
     Qgenx::Matrix{T}
+    Qmixedgenx::Matrix{T}            # Pi'Pj products, for GGA weak-form matrices
     # FOR ENERGY COMPUTATIONS
     y::Vector{T}
     wy::Vector{T}
@@ -62,8 +63,9 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
         # EVALUATE POLYNOMIALS
         Pgenx = evaluate(basis.generators.polynomials,x)
         Qgenx = evaluate(basis.cache.prodMG, x)
+        Qmixedgenx = evaluate(basis.cache.prodMixedG, x)
         #a = Int(sqrt(size(Qgenx, 1)))
         #Qgenxreshape = reshape(Qgenx, a, a, size(Qgenx, 2))
-        new{T}(npoints, x, w, Pgenx, Qgenx, y, wy, shiftx, fx, fy, fx2)
+        new{T}(npoints, x, w, Pgenx, Qgenx, Qmixedgenx, y, wy, shiftx, fx, fy, fx2)
     end
 end

@@ -79,6 +79,10 @@ struct KSHamiltonian{T<:Real, HamType}
     Hartree::SparseMatrixCSC{T,Int}
     VxcUP::SparseMatrixCSC{T,Int}
     VxcDOWN::SparseMatrixCSC{T,Int}
+    # GGA-only scratch: holds Mmix[w] (see dev/gga/PLAN.md) before it's added
+    # with its own transpose into VxcUP/VxcDOWN. Shared between the up/down
+    # assembly passes (used one spin at a time, never simultaneously).
+    VxcMix::SparseMatrixCSC{T,Int}
 
     function KSHamiltonian(Nₕ::Int, lₕ::Int, nspin::Int, ::Type{T}) where T
         H       = flexible_zeros(T, (Nₕ, Nₕ, lₕ+1), nspin)
@@ -88,7 +92,8 @@ struct KSHamiltonian{T<:Real, HamType}
         Hartree = spzeros(T, Nₕ, Nₕ)
         VxcUP   = spzeros(T, Nₕ, Nₕ)
         VxcDOWN = spzeros(T, Nₕ, Nₕ)
-        new{T,typeof(H)}(H,Kin,Coulomb,Hfix, Hartree, VxcUP, VxcDOWN)
+        VxcMix  = spzeros(T, Nₕ, Nₕ)
+        new{T,typeof(H)}(H,Kin,Coulomb,Hfix, Hartree, VxcUP, VxcDOWN, VxcMix)
     end
 end
 
@@ -121,7 +126,7 @@ end
 """
 Workspace for exchange–correlation evaluations.
 """
-struct ExcWorkspace{Tρ}
+struct ExcWorkspace{Tρ, Tσ}
     # Matrix of one or two rows (depending on the spin
     # polarization to store density evaluations during
     # quadrature method.
@@ -132,18 +137,42 @@ struct ExcWorkspace{Tρ}
     # potential.
     vρ_buf::Tρ
     vρ_buf2::Tρ
+    # GGA-only buffers (empty unless has_gga(model)):
+    #   dρ_buf  -> ρ' (same shape as ρ_buf: one row per spin channel)
+    #   σ_buf   -> σ = (∇ρ)² (1 row if nspin==1, 3 rows -- σ↑↑,σ↑↓,σ↓↓ -- if nspin==2)
+    #   vσ_buf/vσ_buf2 -> ∂εxc/∂σ accumulation, same shape as σ_buf
+    dρ_buf::Tρ
+    σ_buf::Tσ
+    vσ_buf::Tσ
+    vσ_buf2::Tσ
 
-    function ExcWorkspace(neval::Int, nspin::Int, ::Type{T}, exc::Bool) where T
+    function ExcWorkspace(neval::Int, nspin::Int, ::Type{T}, exc::Bool, gga::Bool) where T
         if exc
             ρ_buf = flexible_zeros(T, nspin, (neval,))
             vρ_buf = flexible_zeros(T, nspin, (neval,))
             vρ_buf2 = flexible_zeros(T, nspin, (neval,))
-            return new{typeof(ρ_buf)}(ρ_buf, vρ_buf, vρ_buf2)
+            # dρ_buf must share ρ_buf's exact type (Tρ), and σ_buf/vσ_buf/vσ_buf2
+            # must share a consistent Tσ across the gga/!gga branches -- so the
+            # "off" case reuses the same firstdim (nspin/nsigma), just with 0
+            # columns, rather than an unrelated flexible_zeros(T,0,(0,)) shape.
+            nsigma = nspin == 1 ? 1 : 3
+            nσeval = gga ? neval : 0
+            dρ_buf = flexible_zeros(T, nspin, (nσeval,))
+            σ_buf = flexible_zeros(T, nsigma, (nσeval,))
+            vσ_buf = flexible_zeros(T, nsigma, (nσeval,))
+            vσ_buf2 = flexible_zeros(T, nsigma, (nσeval,))
+            return new{typeof(ρ_buf), typeof(σ_buf)}(
+                ρ_buf, vρ_buf, vρ_buf2, dρ_buf, σ_buf, vσ_buf, vσ_buf2)
         else
             ρ_buf = flexible_zeros(T, 0, (0,))
             vρ_buf = flexible_zeros(T, 0, (0,))
             vρ_buf2 = flexible_zeros(T, 0, (0,))
-            return new{typeof(ρ_buf)}(ρ_buf, vρ_buf, vρ_buf2)
+            dρ_buf = flexible_zeros(T, 0, (0,))
+            σ_buf = flexible_zeros(T, 0, (0,))
+            vσ_buf = flexible_zeros(T, 0, (0,))
+            vσ_buf2 = flexible_zeros(T, 0, (0,))
+            return new{typeof(ρ_buf), typeof(σ_buf)}(
+                ρ_buf, vρ_buf, vρ_buf2, dρ_buf, σ_buf, vσ_buf, vσ_buf2)
         end
     end
 end
@@ -154,11 +183,13 @@ Temporary buffers for numerical evaluations.
 struct EvalWorkSpace{T}
     buf1::Vector{T}
     buf2::Vector{T}
+    buf3::Vector{T}   # local basis-derivative evaluations (GGA density gradient)
 
     function EvalWorkSpace(Nₕ::Int, ::Type{T}) where T
         buf1  = zeros(T, Nₕ)
         buf2  = zeros(T, Nₕ)
-        new{T}(buf1, buf2)
+        buf3  = zeros(T, Nₕ)
+        new{T}(buf1, buf2, buf3)
     end
 end
 
@@ -176,20 +207,20 @@ allocations inside performance-critical loops.
 
 This structure is internal and should not be modified by users.
 """
-struct DiscretizationCache{T <: Real, Tρ}
+struct DiscretizationCache{T <: Real, Tρ, Tσ}
     hartw::HartreeWorkspace{T}
-    excw::ExcWorkspace{Tρ}
+    excw::ExcWorkspace{Tρ, Tσ}
     evalw::EvalWorkSpace{T}
 
     function DiscretizationCache(Nₕ::Int, T::Type, nspin::Int, neval::Int, hartree::Real,
-                                exc::Bool)
+                                exc::Bool, gga::Bool = false)
         # Worspace for Hartree computations
         hartw   = HartreeWorkspace(Nₕ, T, hartree)
         # Workspace for exchange-correlation computations
-        excw    = ExcWorkspace(neval, nspin,T, exc)
+        excw    = ExcWorkspace(neval, nspin,T, exc, gga)
         # Workspace for evaluationS
         evalw   = EvalWorkSpace(Nₕ, T)
-        new{T, typeof(excw.ρ_buf)}(hartw, excw, evalw)
+        new{T, typeof(excw.ρ_buf), typeof(excw.σ_buf)}(hartw, excw, evalw)
     end
 end
 
@@ -264,7 +295,8 @@ struct KSEDiscretization{T <: Real, B <: FEMBasis, O <: FEMOperators, H <: KSHam
 
         neval = fem_integration_method.npoints
         exc = has_exchcorr(model)
-        cache = DiscretizationCache(Nₕ, T, nspin, neval, hartree, exc)
+        gga = has_gga(model)
+        cache = DiscretizationCache(Nₕ, T, nspin, neval, hartree, exc, gga)
 
         new{T,
             typeof(basis),
