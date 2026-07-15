@@ -1,0 +1,26 @@
+Oxygen (Z=8, N=8), spin-unpolarized -- functional comparison
+==============================================================================
+
+SCF OUTCOME
+------------------------------------------------------------------------------
+Hartree only (no XC)                  SUCCESS in 45 iterations (stopping criterion = 1.4210854715202004e-14)
+LDA exchange only (Slater)            SUCCESS in 24 iterations (stopping criterion = 3.356585696597144e-11)
+LDA (Slater + Perdew-Wang)            SUCCESS in 20 iterations (stopping criterion = 9.354963463957044e-11)
+LDA via Libxc (Slater + Perdew-Wang)  SUCCESS in 21 iterations (stopping criterion = 2.7714104108316178e-11)
+PBE (GGA)                             SUCCESS in 24 iterations (stopping criterion = 3.643710172592762e-11)
+
+ENERGIES (Ha)
+------------------------------------------------------------------------------
+            Hartree only (no XC)                  LDA exchange only (Slater)            LDA (Slater + Perdew-Wang)            LDA via Libxc (Slater + Perdew-Wang)  PBE (GGA)                             
+Ekin        67.038565                             73.925425                             74.115171                             74.115171                             74.734377                             
+Ecou        -166.055729                           -176.798997                           -177.149058                           -177.149058                           -177.822663                           
+Ehar        31.978599                             36.142743                             36.329001                             36.329001                             36.410612                             
+Eexc        0.0                                   -7.194596                             -7.765807                             -7.765807                             -8.267519                             
+Etot        -67.038565                            -73.925425                            -74.470692                            -74.470692                            -74.945193                            
+
+OCCUPIED ORBITALS (orbital energy in Ha / occupation)
+------------------------------------------------------------------------------
+shell   Hartree only (no XC)                  LDA exchange only (Slater)            LDA (Slater + Perdew-Wang)            LDA via Libxc (Slater + Perdew-Wang)  PBE (GGA)                             
+1s      -16.9125 / 2.0                        -18.6908 / 2.0                        -18.7582 / 2.0                        -18.7582 / 2.0                        -18.8986 / 2.0                        
+2s      -0.5229 / 2.0                         -0.8206 / 2.0                         -0.8712 / 2.0                         -0.8712 / 2.0                         -0.8788 / 2.0                         
+2p      -0.0473 / 4.0                         -0.2895 / 4.0                         -0.3383 / 4.0                         -0.3383 / 4.0                         -0.3321 / 4.0                         

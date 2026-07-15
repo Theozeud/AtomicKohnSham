@@ -1,0 +1,61 @@
+Name    = Oxygen
+Success = SUCCESS
+niter   = 24
+Final stopping criterion = 3.643710172592762e-11
+Data type = Float64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 8
+    N (electrons)          = 8
+    Hartree coefficient    = 1
+    Exchange functional    = Perdew, Burke & Ernzerhof
+    Correlation functional = Perdew, Burke & Ernzerhof
+    Spin channels          = 1
+
+  Discretization
+    Angular momentum cutoff (lh) = 2
+    Orbitals per channel (nh)    = 5
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 289
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 1000.0
+    Number of mesh points        = 30
+    Integration method           = GaussLegendre (npoints = 1000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-10
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 2.220446049250313e-12
+    reltol_ls  = 2.220446049250313e-12
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.001
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 74.73437703380328
+  Ecou (nuclear attraction)   = -177.82266298474292
+  Ehar (Hartree)              = 36.410611779047684
+  Eexc (exchange-correlation) = -8.267518567681577
+  Etot (total)                = -74.94519273957353
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s : ε = -1.889864410058955e+01        n = 2.0
+            2s : ε = -8.788478195332321e-01        n = 2.0
+            2p : ε = -3.321276277611367e-01        n = 4.0
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = 0.0e+0
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = -9.788100374663600e-08
+            orthonormality error (‖UᵀM₀U - I‖∞) = 2.303975010775616e-09
+            virial ratio (Ekin / -Etot)         = 9.971870683353526e-01
