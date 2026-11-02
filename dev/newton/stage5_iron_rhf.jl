@@ -23,8 +23,8 @@ end
 function run(alg; maxiter = 400)
     model = RHF(Z = 26, N = 26)
     basis = P1IntLegendreBasis(expmesh(0, 240, 30; s = 1.2); ordermax = 8)
-    dis = KSEDiscretization(basis, model; lh = 2, nh = 8,
-                            fem_integration_method = GaussLegendre(basis, 300))
+    dis = KSEDiscretization(basis, model; lh = 2, nh = 8)
+    groundstate(model, dis, alg; maxiter = maxiter, callback = History())
     h = History()
     t = @elapsed sol = groundstate(model, dis, alg; maxiter = maxiter, callback = h)
     sol, h, t

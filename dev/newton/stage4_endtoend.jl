@@ -26,8 +26,8 @@ function run(Z, N, nspin, alg; lh = 2, nh = 4)
     ec = BuiltinFunctional(:lda_c_pw; nspin = nspin)
     model = KSEModel(; Z = Z, N = N, ex = ex, ec = ec)
     basis = P1IntLegendreBasis(expmesh(0, 60, 15; s = 1.2); ordermax = 8)
-    dis = KSEDiscretization(basis, model; lh = lh, nh = nh,
-                            fem_integration_method = GaussLegendre(basis, 300))
+    dis = KSEDiscretization(basis, model; lh = lh, nh = nh)
+    groundstate(model, dis, alg; maxiter = 500, callback = History())
     h = History()
     t = @elapsed sol = groundstate(model, dis, alg; maxiter = 500, callback = h)
     sol, h, t
