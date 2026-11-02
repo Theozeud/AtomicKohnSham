@@ -169,8 +169,8 @@ end
 """
 Assemble the exchange–correlation potential operators from the current density `D`.
 
-For a GGA model (`has_gga(model)`), the weak-form derivation in `dev/gga/PLAN.md`
-gives, per spin channel σ ∈ {↑,↓}:
+For a GGA model (`has_gga(model)`), integrating the `vsigma` term of the XC
+potential by parts in the weak form gives, per spin channel σ ∈ {↑,↓}:
 
     Vxcσ = M[vrhoσ - 2Kσ/r] + Mmix[Kσ] + Mmix[Kσ]ᵀ
 

@@ -79,7 +79,7 @@ struct KSHamiltonian{T<:Real, HamType}
     Hartree::SparseMatrixCSC{T,Int}
     VxcUP::SparseMatrixCSC{T,Int}
     VxcDOWN::SparseMatrixCSC{T,Int}
-    # GGA-only scratch: holds Mmix[w] (see dev/gga/PLAN.md) before it's added
+    # GGA-only scratch: holds Mmix[w] (see `assemble_exc!`) before it's added
     # with its own transpose into VxcUP/VxcDOWN. Shared between the up/down
     # assembly passes (used one spin at a time, never simultaneously).
     VxcMix::SparseMatrixCSC{T,Int}
