@@ -58,13 +58,23 @@ end
 
 
 """
-Assemble the Hartree potential operator from the current density `D`.
+    assemble_hartree!(discretization, D, N, coeff = true)
+    assemble_hartree!(Hartree, discretization, D, N, coeff = true)
+
+Assemble the Hartree potential operator from the density matrix `D`, into
+`discretization.ksham.Hartree` or into the given matrix `Hartree`. `N` enters
+the boundary term `N/Rmax`; the operator is linear in `(D, N)`, so `N = 0`
+gives the Hartree response to a density-matrix variation `D`.
 """
-function assemble_hartree!(discretization::KSEDiscretization,
+assemble_hartree!(discretization::KSEDiscretization, D::AbstractArray{<:Real}, N::Real,
+                  coeff::Real = true) =
+    assemble_hartree!(discretization.ksham.Hartree, discretization, D, N, coeff)
+
+function assemble_hartree!(Hartree::AbstractMatrix{<:Real},
+                          discretization::KSEDiscretization,
                           D::AbstractArray{<:Real}, N::Real, coeff::Real = true)
     @unpack Rmax, cache, nspin = discretization
     @unpack A, F, M₀ = discretization.femops
-    @unpack Hartree = discretization.ksham
     @unpack FW, B, W = cache.hartw
     if nspin == 1
         tensor_matrix_dict!(B, D, F)
