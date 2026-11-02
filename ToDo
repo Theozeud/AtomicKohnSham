@@ -1,30 +1,22 @@
-## PROBLEM
-- erreurs numériques sur les shifts ?? -> pourrait causé des problèmes numériques ultérieurement
+## TO DO
+
+- Why is there a problem when taking polynomials with too big degree ?
+- Define before the functin to assemble the exchnage correlation matrix
+- A\tmpC to optimsie and all A\
 
 
-# Plan :
+- 1) Vérifier GGA et commit
+- 2) Vérifier examples
 
-- Finir post-process pour les potentiels
+- vérifier le changement ODA guard
 
-- Faire les fichiers examples et tests en retravaillant monitor
---> Une fois les fichiers tests marchent. Voir codecov pour voir les fichiers inutiles.
+- push l'exemple functional compareason
 
-- Optimisation :
-    - prédéclarer la fonction pour l'assemblage de la matrice d'échnage-corrélation
-    - A\tmpC à optimiser
+- Documentation : 
+    - dossier pour expliquer pour avoir sa propre base, mesh
+    - examples d'utilisation : plusieurs densités, piece wise linear, ionisation
+    - Mettre à jour la doc
 
-- Quoi Monitorer ?
----> Penser à un truc qui s'écrit dans un fichier
+- Revoir les readme et les descriptions
 
-
-
-# Algorithm à ajouter :
-
-- Ajouter Smeared Aufbau et Frozen Aufbau
-- Algo pour minimiser sur trois orbitales
-- Algo pour tracker le seuil de l'ionisation !
-
-
-Objectif avant les vacances : 
-    --> Code qui tourne normalement sur LDA et LSDA sur Github avec examples et tests !
-
+- AJouter l'identité du viriel avec l'énergie cinétique de corrélation
