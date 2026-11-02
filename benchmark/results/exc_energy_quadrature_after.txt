@@ -1,0 +1,48 @@
+== Ne LDA: integration error of Exc on a fixed density matrix (vs n = 4000)
+   n = 2000   |ΔExc| = 8.9e-15   time =   4.89 ms
+   n =  500   |ΔExc| = 5.3e-15   time =   1.22 ms
+   n =  200   |ΔExc| = 1.1e-14   time =   0.49 ms
+   n =  100   |ΔExc| = 5.3e-15   time =   0.25 ms
+   n =   50   |ΔExc| = 3.6e-15   time =   0.13 ms
+   n =   30   |ΔExc| = 7.1e-15   time =   0.08 ms
+   n =   20   |ΔExc| = 8.9e-15   time =   0.06 ms
+== Ne LDA: full SCF (vs n = 2000)
+   n = 2000   SUCCESS   31 it   254.2 ms/it  ΔE =  0.0e+00   ΔϵF =  0.0e+00
+   n =  500   SUCCESS   29 it   101.7 ms/it  ΔE =  2.8e-14   ΔϵF = -1.5e-13
+   n =  200   SUCCESS   30 it    75.4 ms/it  ΔE =  2.8e-14   ΔϵF = -4.7e-12
+   n =  100   SUCCESS   33 it    37.4 ms/it  ΔE =  0.0e+00   ΔϵF = -7.9e-12
+   n =   50   SUCCESS   29 it    14.9 ms/it  ΔE =  2.8e-14   ΔϵF =  2.1e-12
+   n =   30   SUCCESS   28 it    11.9 ms/it  ΔE =  5.7e-14   ΔϵF = -7.7e-12
+   n =   20   SUCCESS   30 it    10.8 ms/it  ΔE =  2.8e-14   ΔϵF = -1.4e-12
+== Cl LSDA: integration error of Exc on a fixed density matrix (vs n = 4000)
+   n = 2000   |ΔExc| = 2.8e-14   time =  11.08 ms
+   n =  500   |ΔExc| = 7.1e-15   time =   2.70 ms
+   n =  200   |ΔExc| = 1.1e-14   time =   1.09 ms
+   n =  100   |ΔExc| = 7.1e-15   time =   0.55 ms
+   n =   50   |ΔExc| = 7.1e-15   time =   0.28 ms
+   n =   30   |ΔExc| = 7.1e-15   time =   0.17 ms
+   n =   20   |ΔExc| = 7.1e-15   time =   0.12 ms
+== Cl LSDA: full SCF (vs n = 2000)
+   n = 2000   SUCCESS   25 it   671.1 ms/it  ΔE =  0.0e+00   ΔϵF =  0.0e+00
+   n =  500   SUCCESS   30 it   179.1 ms/it  ΔE =  1.7e-13   ΔϵF = -1.4e-12
+   n =  200   SUCCESS   31 it    85.9 ms/it  ΔE = -2.3e-13   ΔϵF = -3.3e-11
+   n =  100   SUCCESS   26 it    65.1 ms/it  ΔE =  2.3e-13   ΔϵF =  1.2e-12
+   n =   50   SUCCESS   23 it    43.3 ms/it  ΔE =  1.7e-13   ΔϵF =  6.6e-14
+   n =   30   SUCCESS   28 it    33.2 ms/it  ΔE =  5.7e-14   ΔϵF = -2.6e-12
+   n =   20   SUCCESS   32 it    24.7 ms/it  ΔE = -1.1e-13   ΔϵF = -6.0e-12
+== Ar-0.45 LSDA: integration error of Exc on a fixed density matrix (vs n = 4000)
+   n = 2000   |ΔExc| = 2.8e-14   time =  10.50 ms
+   n =  500   |ΔExc| = 7.1e-15   time =   2.53 ms
+   n =  200   |ΔExc| = 2.5e-14   time =   1.02 ms
+   n =  100   |ΔExc| = 7.1e-15   time =   0.52 ms
+   n =   50   |ΔExc| = 7.1e-15   time =   0.27 ms
+   n =   30   |ΔExc| = 1.1e-14   time =   0.16 ms
+   n =   20   |ΔExc| = 1.8e-14   time =   0.11 ms
+== Ar-0.45 LSDA: full SCF (vs n = 2000)
+   n = 2000   SUCCESS   55 it   711.1 ms/it  ΔE =  0.0e+00   ΔϵF =  0.0e+00
+   n =  500   SUCCESS   58 it   209.6 ms/it  ΔE = -2.3e-13   ΔϵF = -3.9e-12
+   n =  200   SUCCESS   53 it   105.7 ms/it  ΔE =  0.0e+00   ΔϵF = -3.7e-12
+   n =  100   SUCCESS   54 it    61.5 ms/it  ΔE =  1.1e-13   ΔϵF = -8.4e-12
+   n =   50   SUCCESS   57 it    34.5 ms/it  ΔE = -1.1e-13   ΔϵF = -8.9e-13
+   n =   30   SUCCESS   54 it    32.1 ms/it  ΔE =  1.1e-13   ΔϵF = -3.7e-12
+   n =   20   SUCCESS   60 it    24.7 ms/it  ΔE =  1.1e-13   ΔϵF = -6.0e-12

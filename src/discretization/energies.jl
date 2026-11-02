@@ -150,23 +150,14 @@ Compute the exchange–correlation energy for the density matrix `D`.
 function compute_exc_energy(discretization::KSEDiscretization{T}, model::KSEModel,
                            D::AbstractArray{<:Real}) where T
     @unpack Rmax, nspin, fem_integration_method, cache, basis = discretization
-    @unpack fx, fx2, fy, wy, y, shiftx = fem_integration_method
+    @unpack fx, fx2, fy, shiftx = fem_integration_method
     if !has_exchcorr(model)
         return zero(T)
     end
     if has_gga(model)
-        # Unlike LDA (whose ρ-only integrand is C⁰ and integrates fine on the
-        # single global Gauss-Legendre grid `y`), GGA's σ=ρ'² integrand is
-        # genuinely discontinuous at every mesh node (this basis is only C⁰,
-        # so φᵢ' jumps across cell boundaries) -- a single high-order rule
-        # spanning all cells converges very poorly across those jumps. So,
-        # like the matrix assembly (fill_mass_matrix!/fill_mixed_mass_matrix!),
-        # integrate cell-by-cell using fem_integration_method's per-cell
-        # reference quadrature (x,w), which never asks one quadrature panel to
-        # span a discontinuity. (Confirmed empirically: at fixed global
-        # npoints, an analytic-vs-FD check of assemble_exc!'s VxcUP against
-        # this per-cell compute_exc_energy converges properly, whereas the
-        # single-global-grid version required a ~60x finer grid to agree.)
+        # GGA: σ = ρ'² is discontinuous at every mesh node (the basis is only
+        # C⁰), so, like the matrix assembly, integrate cell-by-cell with the
+        # per-cell reference quadrature (x, w), as for LDA below.
         @unpack dρ_buf, σ_buf = cache.excw
         @unpack x, w = fem_integration_method
         energy = zero(T)
@@ -214,23 +205,39 @@ function compute_exc_energy(discretization::KSEDiscretization{T}, model::KSEMode
             return 4π * energy
         end
     end
+    # LDA/LSDA: same cell-by-cell quadrature as the matrix assembly. A single
+    # Gauss-Legendre rule on [0, Rmax] cannot follow the exponential mesh near the
+    # nucleus: with the same number of points it is wrong by ~1e-7 Ha at best
+    # and by several Ha below ~200 points (benchmark/exc_energy_quadrature.jl).
+    @unpack x, w = fem_integration_method
+    energy = zero(T)
     if nspin == 1
-        eval_density!(fx, discretization, D, y)
-        evaluate_zk!(model; rho = fx, zk = fy, cache = shiftx)
-        @. fx = fx * fy * y^2
-        return 4π * dot(wy, fx)
+        zkcache = cache.excw.vρ_buf
+        for k in cellrange(basis.mesh)
+            eldata = getelement(basis, k, :M)
+            @. shiftx = eldata.invϕ[1] * x + eldata.invϕ[2]
+            optimized_eval_density!(fx, discretization, D, shiftx)
+            evaluate_zk!(model; rho = fx, zk = fy, cache = zkcache)
+            @. fx = fx * fy * shiftx^2
+            energy += eldata.invϕ[1] * dot(w, fx)
+        end
     else
         @views ρup = fx2[1, :]
         @views ρdown = fx2[2, :]
         @views DUP = D[:, :, 1]
         @views DDOWN = D[:, :, 2]
-        eval_density!(ρup, discretization, DUP, y)
-        eval_density!(ρdown, discretization, DDOWN, y)
-        evaluate_zk!(model; rho = fx2, zk = fy, cache = shiftx)
-        @. fx = ρup + ρdown
-        @. fx = fx * fy * y^2
-        return 4π * dot(wy, fx)
+        for k in cellrange(basis.mesh)
+            eldata = getelement(basis, k, :M)
+            @. shiftx = eldata.invϕ[1] * x + eldata.invϕ[2]
+            optimized_eval_density!(ρup, discretization, DUP, shiftx)
+            optimized_eval_density!(ρdown, discretization, DDOWN, shiftx)
+            evaluate_zk!(model; rho = fx2, zk = fy, cache = fx)
+            @. fx = ρup + ρdown
+            @. fx = fx * fy * shiftx^2
+            energy += eldata.invϕ[1] * dot(w, fx)
+        end
     end
+    return 4π * energy
 end
 
 #=

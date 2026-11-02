@@ -50,22 +50,22 @@ end
 
 function _density_norm_error(discretization::KSEDiscretization{T}, D) where {T}
     isnothing(D) && return T(NaN)
-    @unpack fem_integration_method, nspin, N = discretization
-    @unpack y, wy = fem_integration_method
-    ρ = similar(y)
-    if nspin == 1
-        eval_density!(ρ, discretization, D, y)
-    else
-        @views DUP = D[:, :, 1]
-        @views DDOWN = D[:, :, 2]
-        ρup = similar(y)
-        ρdown = similar(y)
-        eval_density!(ρup, discretization, DUP, y)
-        eval_density!(ρdown, discretization, DDOWN, y)
-        @. ρ = ρup + ρdown
+    @unpack fem_integration_method, nspin, N, basis = discretization
+    @unpack x, w = fem_integration_method
+    r, ρ, ρσ = similar(x), similar(x), similar(x)
+    charge = zero(T)
+    for k in cellrange(basis.mesh)
+        eldata = getelement(basis, k, :M)
+        @. r = eldata.invϕ[1] * x + eldata.invϕ[2]
+        fill!(ρ, zero(T))
+        for σ in 1:nspin
+            Dσ = nspin == 1 ? D : view(D, :, :, σ)
+            optimized_eval_density!(ρσ, discretization, Dσ, r)
+            ρ .+= ρσ
+        end
+        charge += eldata.invϕ[1] * dot(w, ρ .* r .^ 2)
     end
-    @. ρ *= y^2
-    4π * dot(wy, ρ) - N
+    4π * charge - N
 end
 
 function _orthonormality_error(discretization::KSEDiscretization{T}, U) where {T}
