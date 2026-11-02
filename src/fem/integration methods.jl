@@ -7,10 +7,22 @@ struct ExactIntegration <: FEMIntegrationMethod end
 abstract type QuadratureIntegration <: FEMIntegrationMethod end
 
 """
-    GaussLegendre(basis::FEMBasis, npoints::Int = 1000)
+    default_npoints(basis) -> Int
+
+Default number of Gauss-Legendre points per cell: `max(50, 2ordermax + 10)`.
+Products of two basis functions have degree `2ordermax`, which this integrates
+exactly with margin for the smooth weights (potentials, exchange-correlation);
+50 points per cell already give the exchange-correlation energy to machine
+precision (`benchmark/exc_energy_quadrature.jl`).
+"""
+default_npoints(basis::FEMBasis) = max(50, 2basis.generators.ordermax + 10)
+
+"""
+    GaussLegendre(basis::FEMBasis, npoints::Int = default_npoints(basis))
 
 Gauss–Legendre quadrature method for FEM matrix assembly and energy
-integrals, with `npoints` points per mesh cell.
+integrals, with `npoints` points per mesh cell (by default
+`max(50, 2ordermax + 10)`, see [`default_npoints`](@ref)).
 
 Precomputes and caches the quadrature nodes/weights (rescaled to the reference
 cell), together with the FEM generator polynomials evaluated at the nodes, so
@@ -42,7 +54,7 @@ struct GaussLegendre{T <: Real} <: FEMIntegrationMethod
     fx::Vector{T}
     fy::Vector{T}
     fx2::Matrix{T}
-    function GaussLegendre(basis::FEMBasis, npoints::Int = 1000)
+    function GaussLegendre(basis::FEMBasis, npoints::Int = default_npoints(basis))
         @unpack binf, bsup = basis.generators
         T = eltype(basis)
         # GENERATION OF GAUSS POINTS AND WEIGHTS ON [-1,1]
