@@ -1,7 +1,7 @@
 Name    = Sodium
-Success = SUCCESS
-niter   = 59
-Final stopping criterion = 1.5777218104420236e-30
+Success = MAXITERS
+niter   = 100
+Final stopping criterion = 1.18621493363011119762741787978265486e-18
 Data type = Double64
 
 PARAMETERS
@@ -10,7 +10,7 @@ PARAMETERS
     Z (nuclear charge)     = 11
     N (electrons)          = 11
     Hartree coefficient    = 1
-    Exchange functional    = None
+    Exchange functional    = Slater Exchange
     Correlation functional = None
     Spin channels          = 1
 
@@ -18,10 +18,10 @@ PARAMETERS
     Angular momentum cutoff (lh) = 2
     Orbitals per channel (nh)    = 10
     Basis                        = P1IntLegendreGenerator (ordermax = 10)
-    Number of basis functions    = 189
+    Number of basis functions    = 389
     Mesh                         = Exponential Mesh (s = 1.2,)
     Rmax                         = 500.0
-    Number of mesh points        = 20
+    Number of mesh points        = 40
     Integration method           = GaussLegendre (npoints = 2000)
 
   Algorithm = ODA
@@ -33,30 +33,31 @@ PARAMETERS
     reltol_ls  = 4.930380657631324e-28
     Aufbau = OptimizedAufbau
       max_degen               = 2
-      tol                     = 0.01
+      tol                     = 0.1
       handle_degen_spin_1iter = true
 
 ENERGIES
 --------
-  Ekin (kinetic)              = 1.48382791665487782343113389767688238e+02
-  Ecou (nuclear attraction)   = -3.69011485211791390776806077966746845e+02
-  Ehar (Hartree)              = 7.22459018800804806397223933549698962e+01
-  Eexc (exchange-correlation) = 3.944304526105059e-31
-  Etot (total)                = -1.48382791666223127793970294844088316e+02
+  Ekin (kinetic)              = 1.60628227587664563183791906162876348e+02
+  Ecou (nuclear attraction)   = -3.88006546009778390198111808408826639e+02
+  Ehar (Hartree)              = 7.9431553113859097632639825206288142e+01
+  Eexc (exchange-correlation) = -1.26814622793912780179383194543733005e+01
+  Etot (total)                = -1.60628227587646007399618396494032442e+02
 
 OCCUPIED ORBITALS
 -----------------
 Occupation number = 
-            1s : ε = -3.5065314228894230552668886957690e+01        n = 2.0
-            2s : ε = -1.4538723274711615740528714013635e+00        n = 2.0
-            2p : ε = -5.1434042852946770807420762139373e-01        n = 6.0
-            3s : ε = -1.2474102235049921300058528572663e-02        n = 1.0
+            1s : ε = -3.7647581798114678974798152921721e+01        n = 2.0
+            2s : ε = -2.0077374564037819837380993703846e+00        n = 2.0
+            2p : ε = -1.0060289951355778637065441216691e+00        n = 6.0
+            3s : ε = -7.7016087101316410556961500333273e-02        n = 9.99999999999999999999219723845826442e-01
+            3p : ε = -1.1116377813355388451399541338560e-02        n = 7.802761541735412e-22
 
 SANITY CHECKS
 -------------
 Sanity checks = 
-            energy balance (Etot - ΣE)          = 0.0e+0
+            energy balance (Etot - ΣE)          = 3.1554436208840472216469142611311e-30
             electron count error (Σn - N)       = 0.0e+0
-            density norm error (∫4πr²ρdr - N)   = 2.7396858115480426931753754615784e-09
-            orthonormality error (‖UᵀM₀U - I‖∞) = 3.3049130024649970515361869763929e-25
-            virial ratio (Ekin / -Etot)         = 9.9999999999504429748498068875051e-01
+            density norm error (∫4πr²ρdr - N)   = -6.0870642701491214351587886282424e-12
+            orthonormality error (‖UᵀM₀U - I‖∞) = 1.9189204713985115678513892667837e-25
+            virial ratio (Ekin / -Etot)         = 1.0000000000001154631945610162802e+00

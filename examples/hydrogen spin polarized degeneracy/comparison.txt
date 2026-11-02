@@ -1,0 +1,35 @@
+Hydrogen (Z=1, N=1), spin-polarized -- 1sUP/1sDOWN degeneracy resolution
+==============================================================================
+
+SCF OUTCOME
+------------------------------------------------------------------------------
+Hartree only, guard ON       SUCCESS in 16 iterations (stopping criterion = 0.0)
+Hartree only, guard OFF      SUCCESS in 16 iterations (stopping criterion = 0.0)
+LDA, guard ON                SUCCESS in 14 iterations (stopping criterion = 1.5509738360605527e-11)
+LDA, guard OFF               SUCCESS in 14 iterations (stopping criterion = 1.5509738360605527e-11)
+Hartree only, SmearedAufbau  SUCCESS in 16 iterations (stopping criterion = 0.0)
+
+ENERGIES (Ha)
+------------------------------------------------------------------------------
+            Hartree only, guard ON       Hartree only, guard OFF      LDA, guard ON                LDA, guard OFF               Hartree only, SmearedAufbau  
+Ekin        0.243965                     0.243965                     0.466675                     0.466675                     0.243965                     
+Ecou        -0.685672                    -0.685672                    -0.965653                    -0.965653                    -0.685672                    
+Ehar        0.197742                     0.197742                     0.29839                      0.29839                      0.197742                     
+Eexc        0.0                          0.0                          -0.278123                    -0.278123                    0.0                          
+Etot        -0.243965                    -0.243965                    -0.478711                    -0.478711                    -0.243965                    
+
+FINAL OCCUPATION (n(1sUP), n(1sDOWN))
+------------------------------------------------------------------------------
+Hartree only, guard ON       n_up = 0.5   n_down = 0.5
+Hartree only, guard OFF      n_up = 0.0   n_down = 1.0
+LDA, guard ON                n_up = 0.0   n_down = 1.0
+LDA, guard OFF               n_up = 0.0   n_down = 1.0
+Hartree only, SmearedAufbau  n_up = 0.5   n_down = 0.5
+
+OCCUPATION STABILITY (spread of n(1sUP) over the LAST 5 iterations)
+------------------------------------------------------------------------------
+Hartree only, guard ON       max-min(n_up, last 5 iters) = 0.0
+Hartree only, guard OFF      max-min(n_up, last 5 iters) = 0.0
+LDA, guard ON                max-min(n_up, last 5 iters) = 0.0
+LDA, guard OFF               max-min(n_up, last 5 iters) = 0.0
+Hartree only, SmearedAufbau  max-min(n_up, last 5 iters) = 0.0
