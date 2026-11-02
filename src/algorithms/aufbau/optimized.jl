@@ -1,5 +1,5 @@
 """
-    OptimizedAufbau(; max_degen=2, tol=1e-3, handle_degen_spin_1iter=true)
+    OptimizedAufbau(; max_degen=2, tol=1e-3, handle_degen_spin_1iter=true, flat_tol=1e-8)
 
 Aufbau occupation scheme with explicit treatment of low-dimensional degeneracies.
 
@@ -13,16 +13,31 @@ to minimize the total energy when the last shell is only partially filled.
 - `handle_degen_spin_1iter::Bool`:
     If `true`, spin-only degeneracies (same spatial orbital, opposite spins)
     are treated symmetrically at the first SCF iteration.
-
+- `flat_tol::Real`: When resolving a twofold degeneracy, if the total energy
+    sampled across the whole occupation-mixing line varies by less than
+    `flat_tol` (in Hartree), the line search is skipped and the occupation is
+    split symmetrically between the two orbitals (weighted by their own
+    degeneracies) instead. This guards against `line_search_energy`
+    minimizing a numerically-flat function: when the two orbitals have
+    near-identical densities, the quadratic curvature and the
+    exchange-correlation nonlinearity both collapse toward zero, and the
+    "optimal" `t` it returns becomes an artifact of roundoff rather than
+    physics -- which otherwise shows up as the SCF density oscillating
+    forever between arbitrary points of an energetically flat manifold,
+    never satisfying `scftol`. Set to `0` to disable and always trust the
+    line search (the previous, unguarded behavior).
 """
 struct OptimizedAufbau{T<:Real} <: Aufbau
     max_degen::Int                  # Maximal Dimension of degeneracy considered
     tol::T                          # Tolerance for degenescence of orbitals energy
     handle_degen_spin_1iter::Bool   # True if at the first iteration, in case of degeneracy
                                     # between (nlσ₁) and (nlσ₂), this is handle differently.
+    flat_tol::T                     # Below this total-energy spread across the mixing line,
+                                    # treat the pair as numerically flat (see docstring).
     function OptimizedAufbau(;max_degen::Int = 2, tol::Real = 1e-3,
-        handle_degen_spin_1iter::Bool = true)
-        new{typeof(tol)}(max_degen, tol, handle_degen_spin_1iter)
+        handle_degen_spin_1iter::Bool = true, flat_tol::Real = 1e-8)
+        T = promote_type(typeof(tol), typeof(flat_tol))
+        new{T}(max_degen, tol, handle_degen_spin_1iter, flat_tol)
     end
 end
 
@@ -40,6 +55,7 @@ mutable struct OptimizedAufbauCache{T<:Real, D <: AbstractArray{<:Real}, TF} <: 
     max_degen::Int
     tol::T
     handle_degen_spin_1iter::Bool
+    flat_tol::T
     ϵvec::Vector{T}
     indices_sort::Vector{Int}
     indices_block::Vector{Int}
@@ -52,7 +68,7 @@ mutable struct OptimizedAufbauCache{T<:Real, D <: AbstractArray{<:Real}, TF} <: 
     energies::Energies{T}
     function OptimizedAufbauCache(discretization::KSEDiscretization, model::KSEModel,
         aufbau::OptimizedAufbau)
-        @unpack max_degen, tol, handle_degen_spin_1iter = aufbau
+        @unpack max_degen, tol, handle_degen_spin_1iter, flat_tol = aufbau
         ϵ = zero_orbitals_energies(discretization)
         ϵvec = zero(vec(ϵ))
         indices_sort = zeros(Int,length(ϵ))
@@ -76,7 +92,7 @@ mutable struct OptimizedAufbauCache{T<:Real, D <: AbstractArray{<:Real}, TF} <: 
         postcomputations = false
         energies = Energies(dT)
         new{dT, typeof(D1), typeof(F)}(
-            max_degen, tol, handle_degen_spin_1iter, ϵvec, indices_sort,
+            max_degen, tol, handle_degen_spin_1iter, dT(flat_tol), ϵvec, indices_sort,
             indices_block, degen_block, D1, D2, Dbuf, F, postcomputations, energies)
     end
 end
@@ -132,7 +148,7 @@ function aufbau!(n::AbstractArray{<:Real}, ϵ::AbstractArray{<:Real},U::Abstract
         # NOT ENOUGH ELECTRONS TO DISTRIBUTE BETWEEN TWO ORBITALS
         elseif nb_degen == 2
             resolve_twofold_degeneracy!(
-                n, Nleft, U, aufbau, discretization, niter
+                n, Nleft, U, aufbau, discretization, niter; verbose
             )
             break
         else
@@ -224,14 +240,21 @@ end
 """
 Resolve a twofold degeneracy by energy minimization.
 Includes a special symmetric spin case.
+
+Before trusting the line search, the total energy is sampled at the two
+extreme occupations and at the degeneracy-weighted symmetric split; if all
+three agree to within `aufbau.flat_tol`, the pair is treated as numerically
+flat (see [`OptimizedAufbau`](@ref)) and the symmetric split is used
+directly instead of `line_search_energy`'s minimizer, which becomes
+roundoff-driven once the curvature it relies on collapses to zero.
 """
 function resolve_twofold_degeneracy!(
-    n::AbstractArray{<:Real}, Nleft::Int, U::AbstractArray{<:Real},
+    n::AbstractArray{<:Real}, Nleft::Real, U::AbstractArray{<:Real},
     aufbau::OptimizedAufbauCache, discretization::KSEDiscretization,
-    niter::Int
+    niter::Int; verbose::UInt8 = 0x00
 )
     @unpack indices_block, handle_degen_spin_1iter, degen_block, energies,
-            D1, D2, F = aufbau
+            D1, D2, F, flat_tol = aufbau
 
     l1,k1,σ1 = convert_index(discretization, indices_block[1])
     l2,k2,σ2 = convert_index(discretization, indices_block[2])
@@ -253,7 +276,7 @@ function resolve_twofold_degeneracy!(
     else
         n[indices_block[1]] = degen_first
         n[indices_block[2]] = Nleft - degen_first
-        n1_0 = degen_first
+        n1_0 = oftype(Nleft, degen_first)
         n2_0 = Nleft - degen_first
     end
     density!(discretization, U, n, D1)
@@ -272,7 +295,7 @@ function resolve_twofold_degeneracy!(
         n[indices_block[1]] = Nleft - degen_second
         n[indices_block[2]] = degen_second
         n1_1 = Nleft - degen_second
-        n2_1 = degen_second
+        n2_1 = oftype(Nleft, degen_second)
     end
     density!(discretization, U, n, D2)
     energy_kin1 = compute_kinetic_energy(discretization, U, n)
@@ -281,6 +304,46 @@ function resolve_twofold_degeneracy!(
 
     # COMPUTE THE QUADRATIC TERM RELATED TO HARTREE ENERGY
     energy_har01 = compute_hartree_mix_energy(discretization, D1, D2)
+
+    # ==== FLATNESS GUARD =====================================
+    # F(t) evaluates Exc at Dbuf = t*D1 + (1-t)*D2 (or is just the constant
+    # zero(T) when the model has no exchange-correlation at all) -- reuse it
+    # unchanged rather than re-deriving Eexc some other way.
+    Fval(t) = F isa Real ? F : F(t)
+
+    # Degeneracy-weighted symmetric split (reduces to 50/50 when the two
+    # orbitals share the same degeneracy, e.g. opposite-spin twins).
+    target1 = oftype(energy_kin0, Nleft) * degen_first / (degen_first + degen_second)
+    tmid = n1_0 == n1_1 ? oftype(energy_kin0, 0.5) :
+           clamp((target1 - n1_1) / (n1_0 - n1_1), zero(energy_kin0), one(energy_kin0))
+
+    Ekin_mid = tmid*energy_kin0 + (1-tmid)*energy_kin1
+    Ecou_mid = tmid*energy_cou0 + (1-tmid)*energy_cou1
+    Ehar_mid = tmid^2*energy_har0 + (1-tmid)^2*energy_har1 +
+                    2 * tmid * (1-tmid) * energy_har01
+    Eexc_mid = Fval(tmid)
+    E_mid = Ekin_mid + Ecou_mid + Ehar_mid + Eexc_mid
+
+    E_t0 = energy_kin1 + energy_cou1 + energy_har1 + Fval(zero(energy_kin0))  # t=0 <-> D2
+    E_t1 = energy_kin0 + energy_cou0 + energy_har0 + Fval(one(energy_kin0))   # t=1 <-> D1
+
+    spread = max(E_t0, E_t1, E_mid) - min(E_t0, E_t1, E_mid)
+
+    if spread < flat_tol
+        if verbose == 1
+            println("Near-degenerate pair is numerically flat (energy spread = ",
+                spread, " < flat_tol = ", flat_tol, "): using symmetric occupation split.")
+        end
+        n[indices_block[1]] = target1
+        n[indices_block[2]] = Nleft - target1
+        @. D1 = tmid * D1 + (1 - tmid) * D2
+        energies.Ekin = Ekin_mid
+        energies.Ecou = Ecou_mid
+        energies.Ehar = Ehar_mid
+        energies.Eexc = Eexc_mid
+        energies.Etot = E_mid
+        return
+    end
 
     # FIND THE OPTIMUM OCCUPATION
     tdegen, energies.Etot = line_search_energy(

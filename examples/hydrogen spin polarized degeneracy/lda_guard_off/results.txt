@@ -1,0 +1,59 @@
+Name    = Hydrogen
+Success = SUCCESS
+niter   = 14
+Final stopping criterion = 1.5509738360605527e-11
+Data type = Float64
+
+PARAMETERS
+----------
+  Model
+    Z (nuclear charge)     = 1
+    N (electrons)          = 1
+    Hartree coefficient    = 1
+    Exchange functional    = Slater exchange
+    Correlation functional = Perdew & Wang
+    Spin channels          = 2
+
+  Discretization
+    Angular momentum cutoff (lh) = 0
+    Orbitals per channel (nh)    = 1
+    Basis                        = P1IntLegendreGenerator (ordermax = 10)
+    Number of basis functions    = 289
+    Mesh                         = Exponential Mesh (s = 1.2,)
+    Rmax                         = 1000.0
+    Number of mesh points        = 30
+    Integration method           = GaussLegendre (npoints = 1000)
+
+  Algorithm = ODA
+    scftol     = 1.0e-10
+    tinit      = 0.6
+    frozen_t   = false
+    maxiter_ls = 100
+    abstol_ls  = 2.220446049250313e-12
+    reltol_ls  = 2.220446049250313e-12
+    Aufbau = OptimizedAufbau
+      max_degen               = 2
+      tol                     = 0.001
+      handle_degen_spin_1iter = true
+
+ENERGIES
+--------
+  Ekin (kinetic)              = 0.46667477495918663
+  Ecou (nuclear attraction)   = -0.9656527879995578
+  Ehar (Hartree)              = 0.29839037887128506
+  Eexc (exchange-correlation) = -0.2781230597568364
+  Etot (total)                = -0.4787106939259225
+
+OCCUPIED ORBITALS
+-----------------
+Occupation number = 
+            1s↓ : ε = -2.690160286202192e-01        n = 1.0
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = -5.551115123125783e-17
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = 3.463895836830488e-14
+            orthonormality error (‖UᵀM₀U - I‖∞) = 4.662936703425657e-14
+            virial ratio (Ekin / -Etot)         = 9.748576350613166e-01
