@@ -1,0 +1,51 @@
+Z=20 (calcium, Z=N=20), nspin=1, Slater exchange only (no correlation)
+|Etot - Etot_ref| vs (Nmesh, Rmax), one block per ordermax
+==========================================================================================
+
+Reference: Etot = -674.160146551105  (Rmax=2000, Nmesh=48, ordermax=13, scftol=1.0e-9)
+Best grid error vs reference: 2.1617619154312706e-5  (<= target 0.0001)
+
+ordermax = 2
+------------------------------------------------------------------------------------------
+Nmesh \ Rmax  2            5            10           20           50           100          300          1000         
+8             6.2785e+01   1.2259e+02   1.7664e+02   2.1851e+02   2.5928e+02   2.8607e+02   3.2619e+02   3.6808e+02   
+16            1.6906e+01   1.6530e+01   3.5384e+01   6.1244e+01   9.9590e+01   1.2797e+02   1.6780e+02   2.0249e+02   
+32            1.3346e+01   1.3849e+00   2.8108e+00   5.9011e+00   1.2714e+01   2.0054e+01   3.5025e+01   5.4806e+01   
+
+ordermax = 5
+------------------------------------------------------------------------------------------
+Nmesh \ Rmax  2            5            10           20           50           100          300          1000         
+8             1.3111e+01   4.5087e-01   1.5986e+00   6.8233e+00   2.3594e+01   4.3832e+01   8.4486e+01   1.3312e+02   
+16            1.3110e+01   2.6848e-01   3.3158e-03   4.6132e-03   6.0210e-02   2.3589e-01   1.1545e+00   3.9502e+00   
+32            1.3110e+01   2.6850e-01   3.1825e-03   2.9559e-05   2.6230e-05   8.8768e-05   1.5339e-04   3.4264e-03   
+
+ordermax = 10
+------------------------------------------------------------------------------------------
+Nmesh \ Rmax  2            5            10           20           50           100          300          1000         
+8             1.3110e+01   2.6850e-01   3.1689e-03   2.1792e-04   2.6155e-03   5.3070e-03   5.8663e-02   7.6730e-01   
+16            1.3110e+01   2.6850e-01   3.1826e-03   2.8931e-05   2.8590e-05   2.8365e-05   2.1618e-05   5.7443e-05   
+32            1.3110e+01   2.6850e-01   3.1826e-03   2.8934e-05   2.8627e-05   2.8627e-05   2.8609e-05   2.7765e-05   
+
+SUCCESS/FAILURE per point
+==========================================================================================
+ordermax = 2
+------------------------------------------------------------------------------------------
+Nmesh \ Rmax  2            5            10           20           50           100          300          1000         
+8             SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      
+16            SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      
+32            SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      
+
+ordermax = 5
+------------------------------------------------------------------------------------------
+Nmesh \ Rmax  2            5            10           20           50           100          300          1000         
+8             SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      MAXITERS     MAXITERS     SUCCESS      
+16            SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      MAXITERS     SUCCESS      SUCCESS      
+32            SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      
+
+ordermax = 10
+------------------------------------------------------------------------------------------
+Nmesh \ Rmax  2            5            10           20           50           100          300          1000         
+8             SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      MAXITERS     
+16            SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      
+32            SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      SUCCESS      
+
