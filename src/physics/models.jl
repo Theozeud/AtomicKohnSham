@@ -120,7 +120,7 @@ end
 
 GGA counterpart of [`evaluate_vrho!`](@ref) that also returns
 `vsigma = ∂(ρ·εxc)/∂σ`, needed for the weak-form GGA XC potential matrix (see
-`dev/gga/PLAN.md`). Only meaningful when `has_gga(model)`; a `NoFunctional`
+[`assemble_exc!`](@ref)). Only meaningful when `has_gga(model)`; a `NoFunctional`
 component contributes zero to both `vrho` and `vsigma`.
 """
 function evaluate_vrho_vsigma!(model::KSEModel;

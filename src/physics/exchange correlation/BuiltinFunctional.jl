@@ -27,7 +27,7 @@ is_lda(f::BuiltinFunctional) = f.family == :lda
 
 # Every BuiltinFunctional implemented in AtomicKohnSham.jl today (SlaterXα,
 # PerdewWang, NoFunctional) is LDA-only -- GGA builtins are a separate,
-# deferred task (see dev/gga/PLAN.md). NoFunctional has no `family` field, so
+# deferred task. NoFunctional has no `family` field, so
 # this can't reuse `is_lda`'s `f.family == :lda` pattern.
 is_gga(f::BuiltinFunctional) = false
 
