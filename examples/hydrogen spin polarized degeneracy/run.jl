@@ -135,11 +135,11 @@ open("comparison.txt", "w") do io
     end
     println(io)
 
-    println(io, "OCCUPATION STABILITY (spread of n(1sUP) over the LAST 20 iterations)")
+    println(io, "OCCUPATION STABILITY (spread of n(1sUP) over the LAST 5 iterations)")
     println(io, "-"^78)
     for (c, tr) in zip(cases, trackers)
-        tail = tr.up[max(1, end - 19):end]
-        println(io, _col(c.name), "max-min(n_up, last 20 iters) = ",
+        tail = tr.up[max(1, end - 4):end]
+        println(io, _col(c.name), "max-min(n_up, last 5 iters) = ",
             round(maximum(tail) - minimum(tail); digits = 6))
     end
 end

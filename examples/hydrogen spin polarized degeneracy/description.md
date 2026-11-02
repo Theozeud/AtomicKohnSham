@@ -91,7 +91,7 @@ intended: `guard ON`/`guard OFF` land on the *identical* answer
 gives a single electron split 50/50 across spin channels strictly higher
 exchange energy than the same electron fully in one channel (a real,
 `~0.01-0.1 Ha`-scale energy difference here, nowhere near `flat_tol`'s
-`1e-8`), so the flatness check correctly declines to override
+`1e-12`), so the flatness check correctly declines to override
 `line_search_energy` -- which correctly finds the true (if two-fold, by the
 `UP<->DOWN` mirror symmetry) minimum.
 

@@ -22,14 +22,13 @@ arrays. This example uses `BuiltinFunctional(:lda_x)` instead —
 claimed "higher precision than Float64"; that turned out not to be true yet
 (see point 3), fixed along the way.
 
-**2. `Z`, `N` stay plain `Int`, not `Double64`.**
-`resolve_twofold_degeneracy!` (used here, since 3s/3p end up nearly
-degenerate) has a hardcoded `Nleft::Int` argument. Leaving `Z`/`N` as plain
-`Int` — which the original script already does — avoids the mismatch
-without affecting precision at all: the mesh, basis, and all SCF arithmetic
-are controlled separately via `expmesh(...; T=Double64)` and
-`P1IntLegendreBasis(mesh, Double64; ...)`. Left as-is rather than
-generalized; that's aufbau-logic work beyond this example's scope.
+**2. `Z`, `N` are plain `Int`.**
+They used to have to be: `resolve_twofold_degeneracy!` (used here, since
+3s/3p end up nearly degenerate) had a hardcoded `Nleft::Int` argument. It now
+takes `Nleft::Real`, so `Double64` (or non-integer) `Z`, `N` work as well.
+Keeping them as `Int` does not affect precision: the mesh, basis and all SCF
+arithmetic are controlled separately via `expmesh(...; T=Double64)` and
+`P1IntLegendreBasis(mesh, Double64; ...)`.
 
 **3. The real blocker: `GaussLegendre` was silently Float64-only.**
 `Ekin`/`Ecou`/`Ehar` are exact polynomial integration and were always

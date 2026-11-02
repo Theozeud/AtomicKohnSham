@@ -17,12 +17,10 @@ using DoubleFloats
 # building this example, so Slater exchange is back and the two runs now
 # agree to Float64's full ~16 digits of precision.
 #
-# Two smaller adaptations remain (see description.md for why):
-#   - the exchange functional (Libxc is a Float64-only C library; the
-#     built-in pure-Julia Slater exchange is used instead), and
-#   - Z, N are kept as plain Int rather than Double64 (an unrelated
-#     internal Int-only signature on the twofold-degeneracy resolution path
-#     would otherwise reject them).
+# One adaptation remains (see description.md for why): the exchange
+# functional (Libxc is a Float64-only C library; the built-in pure-Julia
+# Slater exchange is used instead). Z, N are plain Int, which does not
+# affect precision.
 
 # ===================== STEP 1 : PARAMETERS =====================#
 # MODEL

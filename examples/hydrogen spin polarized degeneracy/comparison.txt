@@ -26,10 +26,10 @@ LDA, guard ON                n_up = 0.0   n_down = 1.0
 LDA, guard OFF               n_up = 0.0   n_down = 1.0
 Hartree only, SmearedAufbau  n_up = 0.5   n_down = 0.5
 
-OCCUPATION STABILITY (spread of n(1sUP) over the LAST 20 iterations)
+OCCUPATION STABILITY (spread of n(1sUP) over the LAST 5 iterations)
 ------------------------------------------------------------------------------
-Hartree only, guard ON       max-min(n_up, last 20 iters) = 0.0
-Hartree only, guard OFF      max-min(n_up, last 20 iters) = 0.5
-LDA, guard ON                max-min(n_up, last 20 iters) = 0.5
-LDA, guard OFF               max-min(n_up, last 20 iters) = 0.5
-Hartree only, SmearedAufbau  max-min(n_up, last 20 iters) = 0.0
+Hartree only, guard ON       max-min(n_up, last 5 iters) = 0.0
+Hartree only, guard OFF      max-min(n_up, last 5 iters) = 0.0
+LDA, guard ON                max-min(n_up, last 5 iters) = 0.0
+LDA, guard OFF               max-min(n_up, last 5 iters) = 0.0
+Hartree only, SmearedAufbau  max-min(n_up, last 5 iters) = 0.0

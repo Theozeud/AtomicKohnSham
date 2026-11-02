@@ -1,5 +1,5 @@
 """
-    OptimizedAufbau(; max_degen=2, tol=1e-3, handle_degen_spin_1iter=true, flat_tol=1e-8)
+    OptimizedAufbau(; max_degen=2, tol=1e-3, handle_degen_spin_1iter=true, flat_tol=1e-12)
 
 Aufbau occupation scheme with explicit treatment of low-dimensional degeneracies.
 
@@ -14,18 +14,16 @@ to minimize the total energy when the last shell is only partially filled.
     If `true`, spin-only degeneracies (same spatial orbital, opposite spins)
     are treated symmetrically at the first SCF iteration.
 - `flat_tol::Real`: When resolving a twofold degeneracy, if the total energy
-    sampled across the whole occupation-mixing line varies by less than
-    `flat_tol` (in Hartree), the line search is skipped and the occupation is
-    split symmetrically between the two orbitals (weighted by their own
-    degeneracies) instead. This guards against `line_search_energy`
-    minimizing a numerically-flat function: when the two orbitals have
-    near-identical densities, the quadratic curvature and the
-    exchange-correlation nonlinearity both collapse toward zero, and the
-    "optimal" `t` it returns becomes an artifact of roundoff rather than
-    physics -- which otherwise shows up as the SCF density oscillating
-    forever between arbitrary points of an energetically flat manifold,
-    never satisfying `scftol`. Set to `0` to disable and always trust the
-    line search (the previous, unguarded behavior).
+    sampled at both ends of the occupation-mixing line and at the symmetric
+    split varies by less than `flat_tol` (in Hartree), the line search is
+    skipped and the occupation is split symmetrically between the two orbitals
+    (weighted by their own degeneracies). On an energetically flat line the
+    line search has no minimum to find: its result is set by its tie-break
+    (all the charge goes to whichever orbital is sorted first, an artifact of
+    the array layout) or, if the line is only flat up to roundoff, by the
+    roundoff. The guard makes the result deterministic and symmetric. The
+    default `1e-12` lies just above the roundoff of the energy, so that genuine
+    energy differences are never overridden. Set to `0` to disable the guard.
 """
 struct OptimizedAufbau{T<:Real} <: Aufbau
     max_degen::Int                  # Maximal Dimension of degeneracy considered
@@ -35,7 +33,7 @@ struct OptimizedAufbau{T<:Real} <: Aufbau
     flat_tol::T                     # Below this total-energy spread across the mixing line,
                                     # treat the pair as numerically flat (see docstring).
     function OptimizedAufbau(;max_degen::Int = 2, tol::Real = 1e-3,
-        handle_degen_spin_1iter::Bool = true, flat_tol::Real = 1e-8)
+        handle_degen_spin_1iter::Bool = true, flat_tol::Real = 1e-12)
         T = promote_type(typeof(tol), typeof(flat_tol))
         new{T}(max_degen, tol, handle_degen_spin_1iter, flat_tol)
     end
