@@ -116,6 +116,23 @@ function evaluate_zk!(
 end
 
 """
+    evaluate_v2rho2!(model; rho, v2rho2, cache)
+
+Exchange-correlation kernel `∂²(ρεxc)/∂ρ_σ∂ρ_σ'` (Libxc `v2rho2` layout: one
+component unpolarized, `(↑↑, ↑↓, ↓↓)` spin-polarized), sum of the exchange and
+correlation parts. LDA and LSDA only.
+"""
+function evaluate_v2rho2!(model::KSEModel;
+        rho::AbstractArray{<:Real},
+        v2rho2::AbstractArray{<:Real},
+        cache::AbstractArray{<:Real})
+    has_gga(model) && error("evaluate_v2rho2!: GGA kernels are not implemented.")
+    evaluate_functional!(model.correlation; rho = rho, v2rho2 = cache)
+    evaluate_functional!(model.exchange; rho = rho, v2rho2 = v2rho2)
+    @. v2rho2 += cache
+end
+
+"""
     evaluate_vrho_vsigma!(model; rho, sigma, vrho, vsigma, cache_vrho, cache_vsigma)
 
 GGA counterpart of [`evaluate_vrho!`](@ref) that also returns

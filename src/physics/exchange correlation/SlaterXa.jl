@@ -28,3 +28,11 @@ function eval_zk(func::SlaterXα, ρup::Real, ρdown::Real)
 end
 eval_vrho_up(func::SlaterXα, ρup::Real, ρdown::Real) = eval_vrho(func, 2ρup)
 eval_vrho_down(func::SlaterXα, ρup::Real, ρdown::Real) = eval_vrho(func, 2ρdown)
+
+# Second derivatives (exchange-correlation kernel), Libxc `v2rho2` convention:
+# d²(ρεₓ)/dρ² unpolarized; (↑↑, ↑↓, ↓↓) spin-polarized. Exchange has no
+# cross-spin term. The kernel diverges like ρ^(-2/3) at ρ = 0, where it is set to 0.
+eval_v2rho2(::SlaterXα, ρ::Real) = iszero(ρ) ? zero(ρ) : - (3/π)^(1/3) / 3 * ρ^(-2/3)
+function eval_v2rho2(func::SlaterXα, ρup::Real, ρdown::Real)
+    (2eval_v2rho2(func, 2ρup), zero(ρup), 2eval_v2rho2(func, 2ρdown))
+end

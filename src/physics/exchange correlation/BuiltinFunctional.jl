@@ -76,6 +76,7 @@ function evaluate_functional!(
         rho::AbstractArray{<:Real},
         zk::OptRealArray = C_NULL,
         vrho::OptRealArray = C_NULL,
+        v2rho2::OptRealArray = C_NULL,
         sigma = nothing,
         vsigma::OptRealArray = C_NULL)
     # sigma/vsigma: accepted (and ignored beyond zeroing vsigma) so that a
@@ -93,6 +94,10 @@ function evaluate_functional!(
 
         if !(vsigma == C_NULL)
             fill!(vsigma, 0)
+        end
+
+        if !(v2rho2 == C_NULL)
+            fill!(v2rho2, 0)
         end
         return
     end
@@ -136,6 +141,21 @@ function evaluate_functional!(
                 @views ρi = rho[:, i]
                 vrho[1, i] = eval_vrho_up(func, _nonneg(ρi[1]), _nonneg(ρi[2]))
                 vrho[2, i] = eval_vrho_down(func, _nonneg(ρi[1]), _nonneg(ρi[2]))
+            end
+        end
+    end
+
+    if !(v2rho2 == C_NULL)
+        fill!(v2rho2, 0)
+        if func.n_spin == 1
+            for i in eachindex(rho)
+                v2rho2[i] = eval_v2rho2(func, _nonneg(rho[i]))
+            end
+        else
+            for i in axes(rho, 2)
+                @views ρi = rho[:, i]
+                v2rho2[1, i], v2rho2[2, i], v2rho2[3, i] =
+                    eval_v2rho2(func, _nonneg(ρi[1]), _nonneg(ρi[2]))
             end
         end
     end
