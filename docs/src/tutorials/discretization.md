@@ -41,6 +41,17 @@ FEM matrix assembly and energy integrals need numerical quadrature:
 
 ```@docs
 GaussLegendre
+AtomicKohnSham.default_npoints
+```
+
+## Eigensolver
+
+Each channel `(l, σ)` of the Hamiltonian is a generalized eigenproblem; only its
+`nh` lowest eigenpairs are needed by the Aufbau:
+
+```@docs
+PartialEigenSolver
+FullEigenSolver
 ```
 
 ## Putting it together

@@ -98,7 +98,10 @@ end
 
     X = [0.5, 1.0, 2.0, 3.0]
     R_exact = 2 .* Z^1.5 .* exp.(-Z .* X)
+    # An eigenvector is only defined up to its sign (LAPACK may return either,
+    # depending on the platform): fix it by R(X[1]) > 0, the 1s having no node.
     R_computed = eval_orbital(sol, 1, 0, X)
+    R_computed .*= sign(R_computed[1])
     @test isapprox(R_computed, R_exact; rtol = 1e-9)
 
     rho_exact = R_exact .^ 2 ./ (4π)
