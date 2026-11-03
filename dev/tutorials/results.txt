@@ -1,7 +1,7 @@
 Name    = Sodium
 Success = SUCCESS
-niter   = 20
-Final stopping criterion = 5.569658855746759e-10
+niter   = 21
+Final stopping criterion = 8.269409635699164e-10
 Data type = Float64
 
 PARAMETERS
@@ -38,17 +38,26 @@ PARAMETERS
 
 ENERGIES
 --------
-  Ekin (kinetic)              = 160.62822758864036
-  Ecou (nuclear attraction)   = -388.0065460113607
-  Ehar (Hartree)              = 79.43155311453171
-  Eexc (exchange-correlation) = -12.681462279485856
-  Etot (total)                = -160.6282275876745
+  Ekin (kinetic)              = 160.6282275906857
+  Ecou (nuclear attraction)   = -388.0065460112801
+  Ehar (Hartree)              = 79.43155311230326
+  Eexc (exchange-correlation) = -12.681462279379602
+  Etot (total)                = -160.62822758767072
 
 OCCUPIED ORBITALS
 -----------------
 Occupation number = 
-            1s : ε = -3.764758179762527e+01        n = 2.0
-            2s : ε = -2.007737456192821e+00        n = 2.0
-            2p : ε = -1.006028994917961e+00        n = 6.0
-            3s : ε = -7.701608708314467e-02        n = 0.999999999991612
-            3p : ε = -1.111637722765135e-02        n = 8.387956995647983e-12
+            1s : ε = -3.764758179824412e+01        n = 2.0
+            2s : ε = -2.007737456715132e+00        n = 2.0
+            2p : ε = -1.006028995427295e+00        n = 6.0
+            3s : ε = -7.701608719891445e-02        n = 0.999999999991612
+            3p : ε = -1.111637729367250e-02        n = 8.387956995647983e-12
+
+SANITY CHECKS
+-------------
+Sanity checks = 
+            energy balance (Etot - ΣE)          = 0.0e+0
+            electron count error (Σn - N)       = 0.0e+0
+            density norm error (∫4πr²ρdr - N)   = -1.421085471520200e-14
+            orthonormality error (‖UᵀM₀U - I‖∞) = 3.658946368112481e-09
+            virial ratio (Ekin / -Etot)         = 1.000000000018770e+00
