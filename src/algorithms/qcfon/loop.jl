@@ -111,7 +111,8 @@ function newton_step!(cache::QCFONCache{T}, alg::QCFON, solver::KSESolver) where
     density_matrix!(Dout, channels)
     R = Dout .- Dn
     rp = fon_residuals(cache)
-    crit = isempty(rp) ? norm(R) : max(norm(R), norm(rp))
+    rc = isempty(rp) ? zero(T) : electron_residual(cache, model)
+    crit = isempty(rp) ? norm(R) : max(norm(R), norm(rp), abs(rc))
     record_state!(cache, solver)
     crit < alg.scftol && return crit
     if zero(T) < cache.prevcrit < 2crit && crit < sqrt(alg.scftol)
@@ -122,7 +123,7 @@ function newton_step!(cache::QCFONCache{T}, alg::QCFON, solver::KSESolver) where
     cache.prevcrit = crit
 
     np = length(rp)
-    b = pack_newton(R, rp)
+    b = pack_newton(R, rp, rc)
     prepare_newton_operator!(cache, solver)
     tol = max(min(T(0.1), crit) * norm(b), 10eps(T) * norm(b))
     x, info = linsolve(x -> newton_operator(x, cache, solver), b, zero(b),
@@ -319,8 +320,25 @@ function newton_operator(x::AbstractVector, cache::QCFONCache{T}, solver::KSESol
     vcat(vec(yD), yp, yc)
 end
 
-pack_newton(R::AbstractArray, rp::AbstractVector) =
-    isempty(rp) ? vec(copy(R)) : vcat(vec(R), rp, zero(eltype(R)))
+"""
+    electron_residual(cache, model) -> T
+
+Electron-number residual `N - Σ nocc` of the current occupations. The Newton
+steps conserve the electron number only up to the GMRES tolerance, so this
+residual is part of the Newton right-hand side, which corrects the drift.
+"""
+electron_residual(cache::QCFONCache, model::KSEModel) =
+    model.N - sum(sum(ch.nocc; init = zero(model.N)) for ch in cache.channels)
+
+"""
+    pack_newton(R, rp, rc) -> b
+
+Newton right-hand side: the density-matrix residual `R`, and, with at least two
+fractional orbitals, the degeneracy residuals `rp` and the electron-number
+residual `rc`.
+"""
+pack_newton(R::AbstractArray, rp::AbstractVector, rc) =
+    isempty(rp) ? vec(copy(R)) : vcat(vec(R), rp, rc)
 
 """
     unpack_newton(x, dims, np) -> (δD, δλ, δμ)
