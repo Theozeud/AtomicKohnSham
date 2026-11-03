@@ -29,7 +29,7 @@ any matrix. LDA and LSDA only.
 - `aufbau_tol`: tolerance of the Aufbau check of the Newton iterates. When it
   fails (an empty orbital below the Fermi level, a full one above it, or a
   fractional occupation leaving its range), the structure is updated as in an
-  active-set method (see [`update_structure!`](@ref)); if no consistent update
+  active-set method; if no consistent update
   exists, or after `max_structure_updates` updates, the iterations go back to
   `warmup`, with a switch tolerance divided by 100.
 - `max_structure_updates`: maximal number of structure updates (guards against
