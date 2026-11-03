@@ -82,3 +82,54 @@ end
                                                 for (a, b) in zip(sq.occupied, so.occupied))
     end
 end
+
+"""Records the number of structure updates of QCFON at every iteration."""
+struct StructureUpdates
+    n::Vector{Int}
+end
+AtomicKohnSham.callback!(u::StructureUpdates, solver::KSESolver) =
+    (push!(u.n, solver.algcache.nupdates); nothing)
+
+"""Iron in reduced Hartree-Fock: 3d and 5s degenerate at the Fermi level (box of radius 60)."""
+function iron_rhf()
+    model = RHF(Z = 26, N = 26)
+    basis = P1IntLegendreBasis(expmesh(0, 60, 15; s = 1.2); ordermax = 8)
+    model, KSEDiscretization(basis, model; lh = 2, nh = 5)
+end
+
+@testset "QCFON with two degenerate fractional levels" begin
+    model, dis = iron_rhf()
+    sol = groundstate(model, dis, QCFON(scftol = 1e-11); maxiter = 300)
+    @test sol.success == "SUCCESS"
+    n3d, n5s = sol.n[3, 1, 1], sol.n[1, 5, 1]
+    @test 0 < n5s < 2 && 0 < n3d < 10
+    @test abs(sol.ϵ[1, 5, 1] - sol.ϵ[3, 1, 1]) < 1e-9
+    @test abs(sum(sol.n) - 26) < 1e-10
+    @test sol.stopping_criteria < 1e-9
+    @test isapprox(n5s, 0.013533; atol = 1e-6)
+
+    # Same problem with a late switch to Newton and structure updates allowed far
+    # from the solution: the wrong structure of the ODA iterate is corrected by an
+    # active-set update instead of a return to ODA, with the same solution.
+    model, dis = iron_rhf()
+    u = StructureUpdates(Int[])
+    sol2 = groundstate(model, dis, QCFON(scftol = 1e-11, switch_tol = 1e-3, structure_tol = 1.0);
+                       maxiter = 300, callback = u)
+    @test sol2.success == "SUCCESS"
+    @test maximum(u.n) ≥ 1
+    @test abs(sum(sol2.n) - 26) < 1e-10
+    @test isapprox(sol2.n, sol.n; atol = 1e-8)
+    @test abs(sol2.energies.Etot - sol.energies.Etot) < 1e-9
+end
+
+@testset "QCFON report and log header" begin
+    model, dis = small_lda_problem(10, 10, 1)
+    alg = QCFON(scftol = 1e-11)
+    sol = groundstate(model, dis, alg; maxiter = 100)
+    header = sprint(io -> write_log_header(io, model, alg, dis))
+    @test occursin("Algorithm = QCFON", header) && occursin("Warm-up = ODA", header)
+    path = tempname()
+    write_report(sol, path)
+    @test occursin("switch_tol", read(path, String))
+    rm(path)
+end
