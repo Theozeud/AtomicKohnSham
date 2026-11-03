@@ -20,13 +20,19 @@ function Logging.handle_message(l::GMRESLog, level, message, args...; kwargs...)
     nothing
 end
 
-"""Newton residuals (stopping criterion of the Newton iterations)."""
+"""
+Newton residuals: stopping criterion of the iterations that started in the Newton
+phase (the ODA iteration that triggers the switch returns the ODA criterion).
+"""
 struct Residuals
     crit::Vector{Float64}
+    started::Base.RefValue{Bool}
 end
+Residuals() = Residuals(Float64[], Ref(false))
 function AtomicKohnSham.callback!(r::Residuals, solver::KSESolver)
     c = solver.algcache
-    c isa AtomicKohnSham.QCFONCache && c.newton && push!(r.crit, solver.stopping_criteria)
+    r.started[] && push!(r.crit, solver.stopping_criteria)
+    r.started[] = c isa AtomicKohnSham.QCFONCache && c.newton
 end
 
 function problem(N)
@@ -42,12 +48,12 @@ oda = ODA(tinit = 0.6, scftol = scftol, aufbau = OptimizedAufbau(max_degen = 2, 
 qc = QCFON(scftol = scftol)
 let (m, d) = problem(17.5)
     groundstate(m, d, oda; maxiter = 1000)
-    groundstate(m, d, qc; maxiter = 1000, callback = Residuals(Float64[]))
+    groundstate(m, d, qc; maxiter = 1000, callback = Residuals())
 end
 for N in (17.5, 17.9, 17.98, 17.9864, 17.98643, 17.9865, 17.99)
     model, dis = problem(N)
     to = @elapsed so = groundstate(model, dis, oda; maxiter = 1000)
-    r, lg = Residuals(Float64[]), GMRESLog(Int[])
+    r, lg = Residuals(), GMRESLog(Int[])
     tq = @elapsed sq = with_logger(lg) do
         groundstate(model, dis, qc; maxiter = 1000, callback = r)
     end
