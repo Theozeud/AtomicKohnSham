@@ -45,7 +45,8 @@ qcfon = QCFON(scftol = scftol)
 Callback recording, at every iteration, the self-consistency residual
 ‖D_out[D] - D‖ of the current iterate, its total energy, the wall time since the
 first iteration (minus the time spent in this callback), and whether the
-iteration is a Newton one.
+iteration is a Newton one (started in the Newton phase: the ODA iteration that
+triggers the switch is an ODA one).
 """
 struct Monitor
     residual::Vector{Float64}
@@ -53,8 +54,9 @@ struct Monitor
     time::Vector{Float64}
     newton::Vector{Bool}
     clock::Vector{Float64}
+    started::Base.RefValue{Bool}
 end
-Monitor() = Monitor(Float64[], Float64[], Float64[], Bool[], [0.0, 0.0])
+Monitor() = Monitor(Float64[], Float64[], Float64[], Bool[], [0.0, 0.0], Ref(false))
 
 """
     true_residual(solver) -> Float64
@@ -85,7 +87,8 @@ function AtomicKohnSham.callback!(m::Monitor, solver::KSESolver)
     push!(m.residual, true_residual(solver))
     push!(m.energy, solver.energies.Etot)
     c = solver.algcache
-    push!(m.newton, c isa QCFONCache && c.newton)
+    push!(m.newton, m.started[])
+    m.started[] = c isa QCFONCache && c.newton
     m.clock[2] += time() - tin
     nothing
 end

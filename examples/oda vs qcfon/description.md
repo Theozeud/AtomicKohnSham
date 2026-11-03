@@ -9,7 +9,7 @@ independently of the algorithm by a callback: the self-consistency residual
 from the eigenvectors of `H[D]` with the current occupations. For ODA, `D` is the mixed density
 matrix of the line search; for QCFON, it is the density matrix that QCFON keeps
 as its current solution, `D_out[D_n]` built from the Newton iterate `D_n` (this
-is why the first Newton point lies above the last ODA one: the output of a
+is why the first Newton point can lie above the last ODA one: the output of a
 not yet converged density matrix is less converged than the ODA mixture). The
 energy error is measured against the QCFON energy.
 
