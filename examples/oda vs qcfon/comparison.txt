@@ -1,0 +1,8 @@
+Neutral atoms, LSDA (Slater + PW92), Rmax = 100, 25 cells, degree 10, scftol = 1.0e-11
+residual = ‖D_out[D] - D‖ at the last iterate; time excludes compilation and monitoring, fastest of 3 runs
+
+atom |   ODA  time(s)   residual | QCFON Newton  time(s)   residual | E_ODA-E_QC
+C    |    24     2.47    2.5e-11 |    12      5     0.96    1.2e-11 |   -2.1e-14
+Ne   |    31     3.13    1.8e-11 |    15      5     1.14    2.6e-11 |   -1.4e-13
+Na   |    30     2.37    1.9e-11 |    12      5     1.48    2.4e-11 |   -2.8e-14
+Cl   |    27     2.53    1.7e-11 |    13      5     1.11    3.0e-11 |   -5.7e-14
