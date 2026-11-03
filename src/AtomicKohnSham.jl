@@ -95,6 +95,7 @@ module AtomicKohnSham
     include("discretization/assemble.jl")
     include("discretization/energies.jl")
     include("discretization/density.jl")
+    include("discretization/response.jl")
 
     abstract type SCFAlgorithm end
     abstract type SCFCache end
@@ -135,6 +136,10 @@ module AtomicKohnSham
     export ODA
     include("algorithms/oda/types.jl")
     include("algorithms/oda/loop.jl")
+
+    export QCFON
+    include("algorithms/qcfon/types.jl")
+    include("algorithms/qcfon/loop.jl")
 
 
     # =====================================

@@ -9,15 +9,39 @@ The nonlinear eigenvalue problem is solved by a **Self-Consistent Field
 diagonalize it to get new orbitals, form the new density, and repeat until
 convergence.
 
-## SCF algorithm
+## SCF algorithms
 
-The **Optimal Damping Algorithm (ODA)** is currently the supported SCF
-scheme. It mixes successive densities along an energy-minimizing line search
-rather than replacing them outright, which stabilizes convergence:
+Two SCF schemes are available.
+
+The **Optimal Damping Algorithm (ODA)** mixes successive densities along an
+energy-minimizing line search rather than replacing them outright, which
+stabilizes convergence:
 
 ```@docs
 ODA
 ```
+
+**QCFON** is a quadratically convergent algorithm for fractional occupation
+numbers: after a few ODA iterations, it solves the self-consistency equations by
+a Newton method on the density matrix, with the fractional occupations and the
+Fermi level as additional unknowns when several levels are degenerate at the
+Fermi level:
+
+```@docs
+QCFON
+```
+
+Which one to use:
+
+- `QCFON` needs fewer iterations and is usually faster, and its stopping
+  criterion is a true residual of the self-consistency equations, so that
+  first-order quantities (orbital energies, occupations, density) are
+  converged to the tolerance;
+- with two or more fractional levels degenerate at the Fermi level, ODA can
+  stall (its line search no longer detects any energy decrease) while `QCFON`
+  converges;
+- `QCFON` supports LDA and LSDA functionals and reduced Hartree-Fock, not GGA;
+  use `ODA` for GGA functionals.
 
 ## Aufbau (occupation) scheme
 
@@ -59,6 +83,13 @@ aufbau = OptimizedAufbau(max_degen = 2, tol = 1e-1)
 alg = ODA(tinit = 0.6, aufbau = aufbau, scftol = 1e-9)
 
 sol = groundstate(model, discretization, alg; maxiter = 100)
+println(sol)
+```
+
+The same calculation with `QCFON` (only the algorithm changes):
+
+```@example manual
+sol = groundstate(model, discretization, QCFON(scftol = 1e-9); maxiter = 100)
 println(sol)
 ```
 

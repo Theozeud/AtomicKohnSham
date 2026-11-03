@@ -1,5 +1,13 @@
-function scf_step!(alg::ODA, solver::KSESolver)
-    @unpack discretization, model, energies, algcache, niter = solver
+scf_step!(alg::ODA, solver::KSESolver) = oda_step!(alg, solver.algcache, solver)
+
+"""
+    oda_step!(alg::ODA, algcache::ODACache, solver::KSESolver) -> stopping_criteria
+
+One ODA iteration on the workspace `algcache` (usually `solver.algcache`; an
+algorithm that starts with ODA iterations, such as [`QCFON`](@ref), passes its own).
+"""
+function oda_step!(alg::ODA, algcache::ODACache, solver::KSESolver)
+    @unpack discretization, model, energies, niter = solver
     @unpack D, Dprev, U, ϵ, n, aufbaucache, energies_prev  = algcache
 
     # ==== STEP 1 : Save previous density and energies
@@ -37,7 +45,7 @@ function scf_step!(alg::ODA, solver::KSESolver)
     end
 
     # ==== STEP 6 : Relaxation Step
-    niter > 0 ? line_search_density!(alg, solver) : nothing
+    niter > 0 ? line_search_density!(alg, algcache, solver) : nothing
 
     # ==== STEP 7 : Return the current stopping criteria
     stop_D = norm(D - Dprev)
@@ -76,8 +84,8 @@ function find_orbital!(discretization::KSEDiscretization,
     end
 end
 
-function line_search_density!(alg::ODA, solver::KSESolver)
-    @unpack discretization, energies, algcache = solver
+function line_search_density!(alg::ODA, algcache::ODACache, solver::KSESolver)
+    @unpack discretization, energies = solver
     @unpack D, Dprev, Dbuf, energies_prev, F = algcache
     @unpack frozen_t, maxiter_ls, abstol_ls, reltol_ls = alg
 
