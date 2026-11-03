@@ -21,12 +21,12 @@ const ODA_TEST = ODA(tinit = 0.6, scftol = 1e-11,
         x1, x2 = Functional(lib; n_spin = 1), Functional(lib; n_spin = 2)
         for ρ in (1e-4, 1e-2, 1.0, 1e2)
             @test isapprox(eval_v2rho2(f1, ρ),
-                           Libxc.evaluate(x1; rho = [ρ], derivatives = 2).v2rho2[1];
+                           Libxc.evaluate(x1; rho = [ρ], derivatives = 2:2).v2rho2[1];
                            rtol = 1e-12)
             for ζ in (-0.5, 0.0, 0.8)
                 ρu, ρd = ρ * (1 + ζ) / 2, ρ * (1 - ζ) / 2
                 lx = Libxc.evaluate(x2; rho = reshape([ρu, ρd], 2, 1),
-                                    derivatives = 2).v2rho2[:, 1]
+                                    derivatives = 2:2).v2rho2[:, 1]
                 k = collect(eval_v2rho2(f2, ρu, ρd))
                 @test norm(k - lx) ≤ rtol2 * norm(lx)
             end
