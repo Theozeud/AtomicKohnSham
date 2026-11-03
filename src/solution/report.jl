@@ -55,8 +55,16 @@ _write_aufbau(io::IO, aufbau::Aufbau) = println(io, "    Aufbau = $(nameof(typeo
 # ===================================================================
 #                     ALGORITHM PARAMETER DUMP
 # ===================================================================
-function _write_algorithm(io::IO, alg::ODA)
-    println(io, "  Algorithm = ODA")
+_write_algorithm(io::IO, alg::ODA) = _write_oda(io, alg, "Algorithm")
+
+"""
+    _write_oda(io, alg::ODA, title)
+
+Parameter block of an ODA algorithm, under the heading `title = ODA` (also used
+for the warm-up of [`QCFON`](@ref)).
+"""
+function _write_oda(io::IO, alg::ODA, title::AbstractString)
+    println(io, "  ", title, " = ODA")
     _write_kv_block(io, 4, [
         ("scftol", alg.scftol),
         ("tinit", alg.tinit),
@@ -66,6 +74,21 @@ function _write_algorithm(io::IO, alg::ODA)
         ("reltol_ls", alg.reltol_ls),
     ])
     _write_aufbau(io, alg.aufbau)
+end
+
+function _write_algorithm(io::IO, alg::QCFON)
+    println(io, "  Algorithm = QCFON")
+    _write_kv_block(io, 4, [
+        ("scftol", alg.scftol),
+        ("switch_tol", alg.switch_tol),
+        ("krylovdim", alg.krylovdim),
+        ("maxiter_krylov", alg.maxiter_krylov),
+        ("occ_tol", alg.occ_tol),
+        ("aufbau_tol", alg.aufbau_tol),
+        ("structure_tol", alg.structure_tol),
+        ("max_structure_updates", alg.max_structure_updates),
+    ])
+    _write_oda(io, alg.warmup, "Warm-up")
 end
 
 function _write_algorithm(io::IO, alg::SCFAlgorithm)
